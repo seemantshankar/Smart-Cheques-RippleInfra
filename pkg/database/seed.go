@@ -58,7 +58,7 @@ func (s *Seeder) seedEnterprises() error {
 			ON CONFLICT DO NOTHING
 		`
 		now := time.Now()
-		_, err := s.postgres.DB.Exec(query, id, enterprise.legalName, enterprise.jurisdiction, 
+		_, err := s.postgres.DB.Exec(query, id, enterprise.legalName, enterprise.jurisdiction,
 			enterprise.kybStatus, enterprise.xrplWallet, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert enterprise %s: %w", enterprise.legalName, err)
@@ -92,18 +92,18 @@ func (s *Seeder) seedContracts() error {
 	}
 
 	contracts := []struct {
-		parties           []string
-		contractHash      string
+		parties              []string
+		contractHash         string
 		aiAnalysisConfidence float64
 	}{
 		{
-			parties:           []string{enterpriseIDs[0], enterpriseIDs[1]},
-			contractHash:      "contract_hash_001_supply_agreement",
+			parties:              []string{enterpriseIDs[0], enterpriseIDs[1]},
+			contractHash:         "contract_hash_001_supply_agreement",
 			aiAnalysisConfidence: 0.95,
 		},
 		{
-			parties:           []string{enterpriseIDs[1], enterpriseIDs[2]},
-			contractHash:      "contract_hash_002_service_agreement",
+			parties:              []string{enterpriseIDs[1], enterpriseIDs[2]},
+			contractHash:         "contract_hash_002_service_agreement",
 			aiAnalysisConfidence: 0.87,
 		},
 	}
@@ -116,7 +116,7 @@ func (s *Seeder) seedContracts() error {
 			ON CONFLICT (contract_hash) DO NOTHING
 		`
 		now := time.Now()
-		_, err := s.postgres.DB.Exec(query, id, pq.Array(contract.parties), contract.contractHash, 
+		_, err := s.postgres.DB.Exec(query, id, pq.Array(contract.parties), contract.contractHash,
 			contract.aiAnalysisConfidence, now, now)
 		if err != nil {
 			return fmt.Errorf("failed to insert contract %s: %w", contract.contractHash, err)
@@ -131,7 +131,7 @@ func (s *Seeder) ClearDevelopmentData() error {
 	log.Println("Clearing development data...")
 
 	tables := []string{"audit_logs", "milestones", "smart_cheques", "contracts", "enterprises"}
-	
+
 	for _, table := range tables {
 		query := fmt.Sprintf("DELETE FROM %s", table)
 		_, err := s.postgres.DB.Exec(query)

@@ -11,13 +11,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/smart-payment-infrastructure/internal/handlers"
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/smart-payment-infrastructure/pkg/auth"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
@@ -30,7 +30,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func setupAuthTestRouter(db *sql.DB) *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	
+
 	// Initialize services
 	jwtService := auth.NewJWTService("test-secret-key", 15*time.Minute, 24*time.Hour)
 	userRepo := repository.NewUserRepository(db)
@@ -38,7 +38,7 @@ func setupAuthTestRouter(db *sql.DB) *gin.Engine {
 	authHandler := handlers.NewAuthHandler(authService)
 
 	r := gin.New()
-	
+
 	// Authentication endpoints
 	auth := r.Group("/auth")
 	{
@@ -137,7 +137,7 @@ func TestAuthEndpoints_Integration(t *testing.T) {
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		user := response["user"].(map[string]interface{})
 		assert.Equal(t, "test@example.com", user["email"])
 	})

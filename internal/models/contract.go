@@ -5,14 +5,14 @@ import (
 )
 
 type Contract struct {
-	ID               string            `json:"id" db:"id"`
-	Parties          []string          `json:"parties"`
-	Obligations      []Obligation      `json:"obligations"`
-	PaymentTerms     []PaymentTerm     `json:"payment_terms"`
+	ID                string           `json:"id" db:"id"`
+	Parties           []string         `json:"parties"`
+	Obligations       []Obligation     `json:"obligations"`
+	PaymentTerms      []PaymentTerm    `json:"payment_terms"`
 	DisputeResolution DisputeConfig    `json:"dispute_resolution"`
-	AIAnalysis       ContractAnalysis  `json:"ai_analysis"`
-	CreatedAt        time.Time         `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time         `json:"updated_at" db:"updated_at"`
+	AIAnalysis        ContractAnalysis `json:"ai_analysis"`
+	CreatedAt         time.Time        `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time        `json:"updated_at" db:"updated_at"`
 }
 
 type Obligation struct {
@@ -24,11 +24,11 @@ type Obligation struct {
 }
 
 type PaymentTerm struct {
-	ID          string    `json:"id"`
-	Amount      float64   `json:"amount"`
-	Currency    Currency  `json:"currency"`
-	DueDate     time.Time `json:"due_date"`
-	Conditions  []string  `json:"conditions"`
+	ID         string    `json:"id"`
+	Amount     float64   `json:"amount"`
+	Currency   Currency  `json:"currency"`
+	DueDate    time.Time `json:"due_date"`
+	Conditions []string  `json:"conditions"`
 }
 
 type DisputeConfig struct {

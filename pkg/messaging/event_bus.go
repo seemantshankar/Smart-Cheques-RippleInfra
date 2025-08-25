@@ -38,7 +38,7 @@ func (e *RedisEventBus) PublishEvent(ctx context.Context, event *Event) error {
 
 func (e *RedisEventBus) SubscribeToEvent(ctx context.Context, eventType string, handler func(*Event) error) error {
 	channel := fmt.Sprintf("events.%s", eventType)
-	
+
 	messageHandler := func(message *Message) error {
 		// Extract event from message payload
 		eventData, ok := message.Payload["event"]
@@ -73,16 +73,16 @@ func (e *RedisEventBus) Close() error {
 
 // Common event types for the Smart Payment Infrastructure
 const (
-	EventTypeEnterpriseRegistered    = "enterprise.registered"
-	EventTypeEnterpriseKYBUpdated    = "enterprise.kyb_updated"
-	EventTypeSmartChequeCreated      = "smart_cheque.created"
-	EventTypeSmartChequeLocked       = "smart_cheque.locked"
-	EventTypeMilestoneCompleted      = "milestone.completed"
-	EventTypeMilestoneVerified       = "milestone.verified"
-	EventTypePaymentReleased         = "payment.released"
-	EventTypeDisputeCreated          = "dispute.created"
-	EventTypeDisputeResolved         = "dispute.resolved"
-	EventTypeXRPLTransactionCreated  = "xrpl.transaction.created"
+	EventTypeEnterpriseRegistered     = "enterprise.registered"
+	EventTypeEnterpriseKYBUpdated     = "enterprise.kyb_updated"
+	EventTypeSmartChequeCreated       = "smart_cheque.created"
+	EventTypeSmartChequeLocked        = "smart_cheque.locked"
+	EventTypeMilestoneCompleted       = "milestone.completed"
+	EventTypeMilestoneVerified        = "milestone.verified"
+	EventTypePaymentReleased          = "payment.released"
+	EventTypeDisputeCreated           = "dispute.created"
+	EventTypeDisputeResolved          = "dispute.resolved"
+	EventTypeXRPLTransactionCreated   = "xrpl.transaction.created"
 	EventTypeXRPLTransactionConfirmed = "xrpl.transaction.confirmed"
 )
 
@@ -117,9 +117,9 @@ func NewMilestoneCompletedEvent(milestoneID, smartChequeID string, amount float6
 		Type:   EventTypeMilestoneCompleted,
 		Source: "orchestration-service",
 		Data: map[string]interface{}{
-			"milestone_id":     milestoneID,
-			"smart_cheque_id":  smartChequeID,
-			"amount":           amount,
+			"milestone_id":    milestoneID,
+			"smart_cheque_id": smartChequeID,
+			"amount":          amount,
 		},
 	}
 }

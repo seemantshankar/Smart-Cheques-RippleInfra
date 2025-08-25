@@ -179,7 +179,7 @@ func (r *EnterpriseRepository) GetEnterpriseByID(id uuid.UUID) (*models.Enterpri
 // GetEnterpriseByRegistrationNumber retrieves an enterprise by registration number
 func (r *EnterpriseRepository) GetEnterpriseByRegistrationNumber(regNumber string) (*models.Enterprise, error) {
 	query := `SELECT id FROM enterprises WHERE registration_number = $1 AND is_active = true`
-	
+
 	var id uuid.UUID
 	err := r.db.QueryRow(query, regNumber).Scan(&id)
 	if err != nil {
@@ -221,7 +221,7 @@ func (r *EnterpriseRepository) UpdateEnterpriseXRPLWallet(id uuid.UUID, walletAd
 // RegistrationNumberExists checks if a registration number already exists
 func (r *EnterpriseRepository) RegistrationNumberExists(regNumber string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM enterprises WHERE registration_number = $1)`
-	
+
 	var exists bool
 	err := r.db.QueryRow(query, regNumber).Scan(&exists)
 	if err != nil {

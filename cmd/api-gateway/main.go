@@ -27,10 +27,10 @@ func main() {
 	defer messagingService.Close()
 
 	r := gin.Default()
-	
+
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))
-	
+
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

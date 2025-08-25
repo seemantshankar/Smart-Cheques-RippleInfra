@@ -21,8 +21,8 @@ type SmartCheque struct {
 type Currency string
 
 const (
-	CurrencyUSDT Currency = "USDT"
-	CurrencyUSDC Currency = "USDC"
+	CurrencyUSDT   Currency = "USDT"
+	CurrencyUSDC   Currency = "USDC"
 	CurrencyERupee Currency = "e₹"
 )
 
@@ -37,13 +37,13 @@ const (
 )
 
 type Milestone struct {
-	ID                 string               `json:"id"`
-	Description        string               `json:"description"`
-	Amount             float64              `json:"amount"`
-	VerificationMethod VerificationMethod   `json:"verification_method"`
-	OracleConfig       *OracleConfig        `json:"oracle_config,omitempty"`
-	Status             MilestoneStatus      `json:"status"`
-	CompletedAt        *time.Time           `json:"completed_at,omitempty"`
+	ID                 string             `json:"id"`
+	Description        string             `json:"description"`
+	Amount             float64            `json:"amount"`
+	VerificationMethod VerificationMethod `json:"verification_method"`
+	OracleConfig       *OracleConfig      `json:"oracle_config,omitempty"`
+	Status             MilestoneStatus    `json:"status"`
+	CompletedAt        *time.Time         `json:"completed_at,omitempty"`
 }
 
 type VerificationMethod string

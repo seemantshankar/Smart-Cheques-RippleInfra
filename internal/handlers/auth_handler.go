@@ -28,7 +28,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.UserRegistrationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request payload",
+			"error":   "Invalid request payload",
 			"details": err.Error(),
 		})
 		return
@@ -66,7 +66,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request payload",
+			"error":   "Invalid request payload",
 			"details": err.Error(),
 		})
 		return
@@ -95,7 +95,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req models.TokenRefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request payload",
+			"error":   "Invalid request payload",
 			"details": err.Error(),
 		})
 		return

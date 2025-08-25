@@ -330,9 +330,10 @@ func (c *Client) GetEscrowInfo(owner, sequence string) (*EscrowInfo, error) {
 
 	// Mock escrow info for simulation - use different amounts for realistic testing
 	amount := "1000000" // Default 1 XRP in drops
-	if sequence == "2" {
+	switch sequence {
+	case "2":
 		amount = "5000000" // 5 XRP for sequence 2
-	} else if sequence == "3" {
+	case "3":
 		amount = "25000000" // 25 XRP for sequence 3
 	}
 

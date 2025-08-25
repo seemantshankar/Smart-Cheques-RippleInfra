@@ -31,7 +31,7 @@ func NewRedisClient(addr, password string, db int) (*RedisClient, error) {
 	})
 
 	ctx := context.Background()
-	
+
 	// Test connection
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
@@ -39,7 +39,7 @@ func NewRedisClient(addr, password string, db int) (*RedisClient, error) {
 	}
 
 	log.Printf("Successfully connected to Redis at %s", addr)
-	
+
 	return &RedisClient{
 		client: rdb,
 		ctx:    ctx,
@@ -53,14 +53,14 @@ func (r *RedisClient) Close() error {
 func (r *RedisClient) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(r.ctx, 5*time.Second)
 	defer cancel()
-	
+
 	_, err := r.client.Ping(ctx).Result()
 	return err
 }
 
 func (r *RedisClient) Publish(channel string, message *Message) error {
 	message.Timestamp = time.Now()
-	
+
 	data, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
@@ -100,7 +100,7 @@ func (r *RedisClient) Subscribe(channel string, handler func(*Message) error) er
 
 func (r *RedisClient) EnqueueWithRetry(queue string, message *Message, maxRetries int) error {
 	message.Timestamp = time.Now()
-	
+
 	data, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
@@ -133,7 +133,7 @@ func (r *RedisClient) DequeueWithRetry(queue string, handler func(*Message) erro
 		// Try to process the message
 		if err := handler(&message); err != nil {
 			message.Retries++
-			log.Printf("Handler error for message %s (retry %d/%d): %v", 
+			log.Printf("Handler error for message %s (retry %d/%d): %v",
 				message.ID, message.Retries, maxRetries, err)
 
 			if message.Retries < maxRetries {
@@ -147,7 +147,7 @@ func (r *RedisClient) DequeueWithRetry(queue string, handler func(*Message) erro
 				if dlqErr := r.EnqueueWithRetry(deadLetterQueue, &message, 0); dlqErr != nil {
 					log.Printf("Failed to move message to dead letter queue: %v", dlqErr)
 				}
-				log.Printf("Message %s moved to dead letter queue after %d retries", 
+				log.Printf("Message %s moved to dead letter queue after %d retries",
 					message.ID, message.Retries)
 			}
 		} else {

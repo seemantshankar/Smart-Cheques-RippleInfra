@@ -21,7 +21,7 @@ func GetMessagingService(c *gin.Context) (*messaging.MessagingService, bool) {
 	if !exists {
 		return nil, false
 	}
-	
+
 	messagingService, ok := service.(*messaging.MessagingService)
 	return messagingService, ok
 }
@@ -45,7 +45,7 @@ func MessagingHealthCheck(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "healthy",
+		"status":  "healthy",
 		"service": "messaging",
 	})
 }

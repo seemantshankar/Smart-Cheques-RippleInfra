@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
@@ -59,4 +62,128 @@ type AuditRepositoryInterface interface {
 	GetAuditLogs(userID *uuid.UUID, enterpriseID *uuid.UUID, action, resource string, limit, offset int) ([]models.AuditLog, error)
 	GetAuditLogsByUser(userID uuid.UUID, limit, offset int) ([]models.AuditLog, error)
 	GetAuditLogsByEnterprise(enterpriseID uuid.UUID, limit, offset int) ([]models.AuditLog, error)
+}
+
+// TransactionRepositoryInterface defines the interface for transaction repository operations
+type TransactionRepositoryInterface interface {
+	// Transaction CRUD operations
+	CreateTransaction(transaction *models.Transaction) error
+	GetTransactionByID(id string) (*models.Transaction, error)
+	UpdateTransaction(transaction *models.Transaction) error
+	DeleteTransaction(id string) error
+
+	// Transaction queries
+	GetTransactionsByStatus(status models.TransactionStatus, limit, offset int) ([]*models.Transaction, error)
+	GetTransactionsByBatchID(batchID string) ([]*models.Transaction, error)
+	GetTransactionsByEnterpriseID(enterpriseID string, limit, offset int) ([]*models.Transaction, error)
+	GetTransactionsByUserID(userID string, limit, offset int) ([]*models.Transaction, error)
+	GetTransactionsByType(txType models.TransactionType, limit, offset int) ([]*models.Transaction, error)
+	GetPendingTransactions(limit int) ([]*models.Transaction, error)
+	GetExpiredTransactions() ([]*models.Transaction, error)
+	GetRetriableTransactions() ([]*models.Transaction, error)
+
+	// Batch operations
+	CreateTransactionBatch(batch *models.TransactionBatch) error
+	GetTransactionBatchByID(id string) (*models.TransactionBatch, error)
+	UpdateTransactionBatch(batch *models.TransactionBatch) error
+	DeleteTransactionBatch(id string) error
+	GetTransactionBatchesByStatus(status models.TransactionStatus, limit, offset int) ([]*models.TransactionBatch, error)
+	GetPendingBatches(limit int) ([]*models.TransactionBatch, error)
+
+	// Statistics and monitoring
+	GetTransactionStats() (*models.TransactionStats, error)
+	GetTransactionStatsByDateRange(start, end time.Time) (*models.TransactionStats, error)
+	GetTransactionCountByStatus() (map[models.TransactionStatus]int64, error)
+	GetAverageProcessingTime() (float64, error)
+}
+
+// AssetRepositoryInterface defines the interface for asset repository operations
+type AssetRepositoryInterface interface {
+	// Asset CRUD operations
+	CreateAsset(ctx context.Context, asset *models.SupportedAsset) error
+	GetAssetByID(ctx context.Context, id uuid.UUID) (*models.SupportedAsset, error)
+	GetAssetByCurrency(ctx context.Context, currencyCode string) (*models.SupportedAsset, error)
+	UpdateAsset(ctx context.Context, asset *models.SupportedAsset) error
+	DeleteAsset(ctx context.Context, id uuid.UUID) error
+
+	// Asset queries
+	GetAssets(ctx context.Context, activeOnly bool) ([]*models.SupportedAsset, error)
+	GetAssetsByType(ctx context.Context, assetType models.AssetType) ([]*models.SupportedAsset, error)
+
+	// Asset statistics
+	GetAssetCount(ctx context.Context) (int64, error)
+	GetActiveAssetCount(ctx context.Context) (int64, error)
+
+	// Asset transaction operations
+	CreateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error
+	GetAssetTransaction(ctx context.Context, id uuid.UUID) (*models.AssetTransaction, error)
+	GetAssetTransactionsByEnterprise(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*models.AssetTransaction, error)
+	GetAssetTransactionsByCurrency(ctx context.Context, currencyCode string, limit, offset int) ([]*models.AssetTransaction, error)
+	GetAssetTransactionsByType(ctx context.Context, txType models.AssetTransactionType, limit, offset int) ([]*models.AssetTransaction, error)
+	UpdateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error
+}
+
+// AssetRepository defines the interface for asset repository operations
+type AssetRepository interface {
+	// Asset CRUD operations
+	CreateAsset(ctx context.Context, asset *models.SupportedAsset) error
+	GetAssetByID(ctx context.Context, id uuid.UUID) (*models.SupportedAsset, error)
+	GetAssetByCurrency(ctx context.Context, currencyCode string) (*models.SupportedAsset, error)
+	UpdateAsset(ctx context.Context, asset *models.SupportedAsset) error
+	DeleteAsset(ctx context.Context, id uuid.UUID) error
+
+	// Asset queries
+	GetAssets(ctx context.Context, activeOnly bool) ([]*models.SupportedAsset, error)
+	GetAssetsByType(ctx context.Context, assetType models.AssetType) ([]*models.SupportedAsset, error)
+
+	// Asset statistics
+	GetAssetCount(ctx context.Context) (int64, error)
+	GetActiveAssetCount(ctx context.Context) (int64, error)
+}
+
+// BalanceRepositoryInterface defines the interface for balance repository operations
+type BalanceRepositoryInterface interface {
+	// Enterprise balance operations
+	CreateEnterpriseBalance(ctx context.Context, balance *models.EnterpriseBalance) error
+	GetBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) (*models.EnterpriseBalance, error)
+	GetEnterpriseBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) (*models.EnterpriseBalance, error)
+	GetEnterpriseBalances(ctx context.Context, enterpriseID uuid.UUID) ([]*models.EnterpriseBalance, error)
+	UpdateBalance(ctx context.Context, balance *models.EnterpriseBalance) error
+	UpdateEnterpriseBalance(ctx context.Context, balance *models.EnterpriseBalance) error
+
+	// Balance queries
+	GetEnterpriseBalanceSummary(ctx context.Context, enterpriseID uuid.UUID) ([]*models.EnterpriseBalanceSummary, error)
+	GetAllBalanceSummaries(ctx context.Context) ([]*models.EnterpriseBalanceSummary, error)
+	IsAssetInUse(ctx context.Context, currencyCode string) (bool, error)
+
+	// Balance operations
+	FreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, reason string) error
+	UnfreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) error
+}
+
+// BalanceRepository defines the interface for balance repository operations
+type BalanceRepository interface {
+	// Enterprise balance operations
+	CreateEnterpriseBalance(ctx context.Context, balance *models.EnterpriseBalance) error
+	GetEnterpriseBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) (*models.EnterpriseBalance, error)
+	GetEnterpriseBalances(ctx context.Context, enterpriseID uuid.UUID) ([]*models.EnterpriseBalance, error)
+	UpdateEnterpriseBalance(ctx context.Context, balance *models.EnterpriseBalance) error
+
+	// Balance queries
+	GetEnterpriseBalanceSummary(ctx context.Context, enterpriseID uuid.UUID) ([]*models.EnterpriseBalanceSummary, error)
+	GetAllBalanceSummaries(ctx context.Context) ([]*models.EnterpriseBalanceSummary, error)
+	IsAssetInUse(ctx context.Context, currencyCode string) (bool, error)
+
+	// Asset transaction operations
+	CreateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error
+	GetAssetTransaction(ctx context.Context, id uuid.UUID) (*models.AssetTransaction, error)
+	GetAssetTransactionsByEnterprise(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*models.AssetTransaction, error)
+	GetAssetTransactionsByCurrency(ctx context.Context, currencyCode string, limit, offset int) ([]*models.AssetTransaction, error)
+	GetAssetTransactionsByType(ctx context.Context, txType models.AssetTransactionType, limit, offset int) ([]*models.AssetTransaction, error)
+	UpdateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error
+
+	// Balance operations
+	UpdateBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, amount string, txType models.AssetTransactionType, referenceID *string) error
+	FreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, reason string) error
+	UnfreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) error
 }

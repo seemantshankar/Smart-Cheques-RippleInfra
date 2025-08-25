@@ -15,9 +15,9 @@ var (
 
 // JWTClaims represents the claims in a JWT token
 type JWTClaims struct {
-	UserID       uuid.UUID `json:"user_id"`
-	Email        string    `json:"email"`
-	Role         string    `json:"role"`
+	UserID       uuid.UUID  `json:"user_id"`
+	Email        string     `json:"email"`
+	Role         string     `json:"role"`
 	EnterpriseID *uuid.UUID `json:"enterprise_id,omitempty"`
 	jwt.RegisteredClaims
 }

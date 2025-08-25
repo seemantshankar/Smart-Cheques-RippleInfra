@@ -2,13 +2,12 @@ package messaging
 
 import (
 	"testing"
-	"time"
 )
 
 func TestNewRedisClient(t *testing.T) {
 	// This test would require a running Redis instance
 	// For now, we'll just test that the function exists and can be called
-	
+
 	// Test with invalid connection string
 	_, err := NewRedisClient("invalid-host:6379", "", 0)
 	if err == nil {
@@ -19,11 +18,9 @@ func TestNewRedisClient(t *testing.T) {
 func TestMessage(t *testing.T) {
 	// Test message creation
 	message := &Message{
-		ID:        "test-123",
-		Type:      "test-event",
-		Payload:   map[string]interface{}{"key": "value"},
-		Timestamp: time.Now(),
-		Retries:   0,
+		ID:   "test-123",
+		Type: "test-event",
+		// Note: Payload, Timestamp, and Retries are not being tested
 	}
 
 	if message.ID != "test-123" {
@@ -38,7 +35,7 @@ func TestMessage(t *testing.T) {
 func TestEventCreation(t *testing.T) {
 	// Test event helper functions
 	event := NewEnterpriseRegisteredEvent("ent-123", "Test Corp")
-	
+
 	if event.Type != EventTypeEnterpriseRegistered {
 		t.Errorf("Expected event type '%s', got '%s'", EventTypeEnterpriseRegistered, event.Type)
 	}
@@ -55,7 +52,7 @@ func TestEventCreation(t *testing.T) {
 
 func TestSmartChequeEventCreation(t *testing.T) {
 	event := NewSmartChequeCreatedEvent("sc-123", "payer-1", "payee-1", 1000.0, "USDT")
-	
+
 	if event.Type != EventTypeSmartChequeCreated {
 		t.Errorf("Expected event type '%s', got '%s'", EventTypeSmartChequeCreated, event.Type)
 	}

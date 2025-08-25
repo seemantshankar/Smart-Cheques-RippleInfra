@@ -79,7 +79,7 @@ func PublishTestEvent(c *gin.Context) {
 
 	if err := messagingService.PublishEvent(event); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to publish event",
+			"error":   "failed to publish event",
 			"details": err.Error(),
 		})
 		return

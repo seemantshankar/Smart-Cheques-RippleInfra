@@ -98,7 +98,7 @@ func TestHealthCheck(t *testing.T) {
 
 	// Note: This might fail if the actual endpoint is not reachable
 	// In a real test environment, you might want to mock this
-	err = client.HealthCheck()
+	_ = client.HealthCheck()
 	// We'll just check that the method doesn't panic for now
 	// assert.NoError(t, err)
 }

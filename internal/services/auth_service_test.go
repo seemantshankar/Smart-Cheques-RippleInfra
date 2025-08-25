@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/pkg/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/smart-payment-infrastructure/internal/models"
-	"github.com/smart-payment-infrastructure/pkg/auth"
 )
 
 // MockUserRepository is a mock implementation of UserRepositoryInterface

@@ -37,10 +37,10 @@ func main() {
 	}
 
 	r := gin.Default()
-	
+
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))
-	
+
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -102,10 +102,10 @@ func createSmartCheque(c *gin.Context) {
 
 	// Publish Smart Cheque created event
 	event := messaging.NewSmartChequeCreatedEvent(
-		chequeID, 
-		request.PayerID, 
-		request.PayeeID, 
-		request.Amount, 
+		chequeID,
+		request.PayerID,
+		request.PayeeID,
+		request.Amount,
 		request.Currency,
 	)
 	if err := messagingService.PublishEvent(event); err != nil {
@@ -132,7 +132,7 @@ func completeMilestone(c *gin.Context) {
 	}
 
 	milestoneID := c.Param("id")
-	
+
 	var request struct {
 		SmartChequeID string  `json:"smart_cheque_id" binding:"required"`
 		Amount        float64 `json:"amount" binding:"required"`
@@ -158,9 +158,9 @@ func completeMilestone(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"milestone_id":     milestoneID,
-		"smart_cheque_id":  request.SmartChequeID,
-		"amount":           request.Amount,
-		"status":           "completed",
+		"milestone_id":    milestoneID,
+		"smart_cheque_id": request.SmartChequeID,
+		"amount":          request.Amount,
+		"status":          "completed",
 	})
 }

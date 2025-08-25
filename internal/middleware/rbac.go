@@ -34,9 +34,9 @@ func RequirePermission(permission models.Permission) gin.HandlerFunc {
 		userRole := models.Role(userClaims.Role)
 		if !userRole.HasPermission(permission) {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error":      "Forbidden - insufficient permissions",
-				"required":   string(permission),
-				"user_role":  string(userRole),
+				"error":     "Forbidden - insufficient permissions",
+				"required":  string(permission),
+				"user_role": string(userRole),
 			})
 			c.Abort()
 			return
@@ -78,9 +78,9 @@ func RequireRole(roles ...models.Role) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusForbidden, gin.H{
-			"error":         "Forbidden - insufficient role",
+			"error":          "Forbidden - insufficient role",
 			"required_roles": roles,
-			"user_role":     string(userRole),
+			"user_role":      string(userRole),
 		})
 		c.Abort()
 	}

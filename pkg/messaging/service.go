@@ -36,14 +36,14 @@ func NewMessagingService(redisAddr, redisPassword string, redisDB int) (*Messagi
 func (m *MessagingService) PublishEvent(event *Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	return m.eventBus.PublishEvent(ctx, event)
 }
 
 // SubscribeToEvent subscribes to events of a specific type
 func (m *MessagingService) SubscribeToEvent(eventType string, handler func(*Event) error) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	m.mu.Lock()
 	m.subscribers[eventType] = cancel
 	m.mu.Unlock()
@@ -61,7 +61,7 @@ func (m *MessagingService) SubscribeToEvent(eventType string, handler func(*Even
 func (m *MessagingService) UnsubscribeFromEvent(eventType string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if cancel, exists := m.subscribers[eventType]; exists {
 		cancel()
 		delete(m.subscribers, eventType)
@@ -105,10 +105,10 @@ func (m *MessagingService) GetQueueStats(queue string) (QueueStats, error) {
 	}
 
 	return QueueStats{
-		QueueName:         queue,
-		MessageCount:      length,
-		DeadLetterCount:   dlqLength,
-		LastChecked:       time.Now(),
+		QueueName:       queue,
+		MessageCount:    length,
+		DeadLetterCount: dlqLength,
+		LastChecked:     time.Now(),
 	}, nil
 }
 
@@ -142,11 +142,11 @@ func generateMessageID() string {
 
 // Common queue names for the Smart Payment Infrastructure
 const (
-	QueueEnterpriseEvents    = "enterprise_events"
-	QueueSmartChequeEvents   = "smart_cheque_events"
-	QueueMilestoneEvents     = "milestone_events"
-	QueuePaymentEvents       = "payment_events"
-	QueueXRPLTransactions    = "xrpl_transactions"
-	QueueNotifications       = "notifications"
-	QueueAuditLogs          = "audit_logs"
+	QueueEnterpriseEvents  = "enterprise_events"
+	QueueSmartChequeEvents = "smart_cheque_events"
+	QueueMilestoneEvents   = "milestone_events"
+	QueuePaymentEvents     = "payment_events"
+	QueueXRPLTransactions  = "xrpl_transactions"
+	QueueNotifications     = "notifications"
+	QueueAuditLogs         = "audit_logs"
 )

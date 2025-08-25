@@ -24,7 +24,7 @@ func (r *UserRepository) CreateUser(user *models.User) error {
 		INSERT INTO users (id, email, password_hash, first_name, last_name, role, enterprise_id, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	
+
 	user.ID = uuid.New()
 	user.IsActive = true
 	user.CreatedAt = time.Now()
@@ -113,7 +113,7 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 // EmailExists checks if an email already exists in the database
 func (r *UserRepository) EmailExists(email string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
-	
+
 	var exists bool
 	err := r.db.QueryRow(query, email).Scan(&exists)
 	if err != nil {

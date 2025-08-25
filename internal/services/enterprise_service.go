@@ -18,8 +18,8 @@ var (
 	ErrEnterpriseAlreadyExists = errors.New("enterprise already exists")
 	ErrEnterpriseNotFound      = errors.New("enterprise not found")
 	ErrInvalidDocumentType     = errors.New("invalid document type")
-	ErrFileTooLarge           = errors.New("file too large")
-	ErrInvalidFileType        = errors.New("invalid file type")
+	ErrFileTooLarge            = errors.New("file too large")
+	ErrInvalidFileType         = errors.New("invalid file type")
 )
 
 const (
