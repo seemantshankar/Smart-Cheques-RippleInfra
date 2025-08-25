@@ -1,0 +1,162 @@
+services:
+  # Databases
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: smart_payment
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d smart_payment"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongodb:
+    image: mongo:7-jammy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: smart_payment
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Message Queue (Redis for development)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Microservices
+  api-gateway:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
+      - MONGO_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis:6379
+      - ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.identity-service
+    ports:
+      - "8001:8001"
+    environment:
+      - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
+      - MONGO_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis:6379
+      - ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  orchestration-service:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.orchestration-service
+    ports:
+      - "8002:8002"
+    environment:
+      - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
+      - MONGO_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis:6379
+      - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
+      - XRPL_TESTNET=true
+      - ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  xrpl-service:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.xrpl-service
+    ports:
+      - "8003:8003"
+    environment:
+      - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
+      - MONGO_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis:6379
+      - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
+      - XRPL_TESTNET=true
+      - ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  asset-gateway:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.asset-gateway
+    ports:
+      - "8004:8004"
+    environment:
+      - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
+      - MONGO_URL=mongodb://admin:password@mongodb:27017
+      - REDIS_URL=redis:6379
+      - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
+      - XRPL_TESTNET=true
+      - ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+
+networks:
+  default:
+    name: smart-payment-network

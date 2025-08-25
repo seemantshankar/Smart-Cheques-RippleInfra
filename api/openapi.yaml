@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: Smart Payment Infrastructure API
+  description: Enterprise B2B payment platform built on XRPL
+  version: 1.0.0
+  contact:
+    name: Smart Payment Infrastructure Team
+    email: support@smartpayment.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.smartpayment.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/enterprises:
+    post:
+      summary: Register a new enterprise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnterpriseRegistration'
+      responses:
+        '201':
+          description: Enterprise registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enterprise'
+        '400':
+          description: Invalid request data
+        '409':
+          description: Enterprise already exists
+
+    get:
+      summary: List enterprises
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of enterprises
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enterprises:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Enterprise'
+                  total:
+                    type: integer
+
+components:
+  schemas:
+    Enterprise:
+      type: object
+      properties:
+        id:
+          type: string
+        legal_name:
+          type: string
+        jurisdiction:
+          type: string
+        kyb_status:
+          type: string
+          enum: [pending, verified, rejected]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EnterpriseRegistration:
+      type: object
+      required:
+        - legal_name
+        - jurisdiction
+      properties:
+        legal_name:
+          type: string
+        jurisdiction:
+          type: string
+        contact_email:
+          type: string
+          format: email
