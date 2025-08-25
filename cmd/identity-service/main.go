@@ -49,12 +49,41 @@ func main() {
 	jwtService := auth.NewJWTService(cfg.JWT.SecretKey, accessTokenDuration, refreshTokenDuration)
 	userRepo := repository.NewUserRepository(db)
 	enterpriseRepo := repository.NewEnterpriseRepository(db)
+	walletRepo := repository.NewWalletRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+
+	// Initialize XRPL service
+	xrplService := services.NewXRPLService(services.XRPLConfig{
+		NetworkURL: cfg.XRPL.NetworkURL,
+		TestNet:    cfg.XRPL.TestNet,
+	})
+
+	if err := xrplService.Initialize(); err != nil {
+		log.Fatalf("Failed to initialize XRPL service: %v", err)
+	}
+
+	// Initialize wallet service
+	walletService, err := services.NewWalletService(
+		walletRepo,
+		enterpriseRepo,
+		xrplService,
+		services.WalletServiceConfig{
+			EncryptionKey: cfg.JWT.SecretKey, // Using JWT secret as encryption key for now
+		},
+	)
+	if err != nil {
+		log.Fatalf("Failed to initialize wallet service: %v", err)
+	}
+
+	// Initialize wallet monitoring service
+	walletMonitoringService := services.NewWalletMonitoringService(walletRepo, xrplService)
+
 	authService := services.NewAuthService(userRepo, jwtService)
-	enterpriseService := services.NewEnterpriseService(enterpriseRepo)
+	enterpriseService := services.NewEnterpriseService(enterpriseRepo, walletService)
 	auditService := services.NewAuditService(auditRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 	enterpriseHandler := handlers.NewEnterpriseHandler(enterpriseService)
+	walletHandler := handlers.NewWalletHandler(walletService, walletMonitoringService)
 	auditHandler := handlers.NewAuditHandler(auditService)
 
 	// Initialize messaging service
@@ -75,13 +104,13 @@ func main() {
 	}
 
 	r := gin.Default()
-	
+
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))
-	
+
 	// Add audit middleware for authenticated routes
 	r.Use(middleware.AuditMiddleware(auditService))
-	
+
 	// Health check endpoints
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -107,53 +136,108 @@ func main() {
 	protected.Use(handlers.AuthMiddleware(authService))
 	{
 		// Enterprise endpoints with RBAC
-		protected.POST("/enterprises", 
+		protected.POST("/enterprises",
 			middleware.RequirePermission(models.PermissionCreateEnterprise),
 			enterpriseHandler.RegisterEnterprise)
-		
-		protected.GET("/enterprises/:id", 
+
+		protected.GET("/enterprises/:id",
 			middleware.RequirePermission(models.PermissionReadEnterprise),
 			middleware.EnterpriseOwnership(),
 			enterpriseHandler.GetEnterprise)
-		
-		protected.PUT("/enterprises/:id/kyb-status", 
+
+		protected.PUT("/enterprises/:id/kyb-status",
 			middleware.RequirePermission(models.PermissionApproveKYB),
 			enterpriseHandler.UpdateKYBStatus)
-		
-		protected.POST("/enterprises/:id/documents", 
+
+		protected.POST("/enterprises/:id/documents",
 			middleware.RequirePermission(models.PermissionUploadDocument),
 			middleware.EnterpriseOwnership(),
 			enterpriseHandler.UploadDocument)
-		
-		protected.GET("/enterprises/:id/documents", 
+
+		protected.GET("/enterprises/:id/documents",
 			middleware.RequirePermission(models.PermissionViewDocument),
 			middleware.EnterpriseOwnership(),
 			enterpriseHandler.GetDocuments)
-		
-		protected.PUT("/documents/:docId/verify", 
+
+		protected.PUT("/documents/:docId/verify",
 			middleware.RequirePermission(models.PermissionVerifyDocument),
 			enterpriseHandler.VerifyDocument)
-		
-		protected.POST("/enterprises/:id/kyb-check", 
+
+		protected.POST("/enterprises/:id/kyb-check",
 			middleware.RequirePermission(models.PermissionManageKYB),
 			enterpriseHandler.PerformKYBCheck)
-		
-		protected.POST("/enterprises/:id/compliance-check", 
+
+		protected.POST("/enterprises/:id/compliance-check",
 			middleware.RequirePermission(models.PermissionRunChecks),
 			enterpriseHandler.PerformComplianceCheck)
 
 		// Audit endpoints
-		protected.GET("/audit-logs", 
+		protected.GET("/audit-logs",
 			middleware.RequirePermission(models.PermissionViewAuditLogs),
 			auditHandler.GetAuditLogs)
-		
-		protected.GET("/audit-logs/me", 
+
+		protected.GET("/audit-logs/me",
 			auditHandler.GetUserAuditLogs)
-		
-		protected.GET("/enterprises/:id/audit-logs", 
+
+		protected.GET("/enterprises/:id/audit-logs",
 			middleware.RequirePermission(models.PermissionViewAuditLogs),
 			middleware.EnterpriseOwnership(),
 			auditHandler.GetEnterpriseAuditLogs)
+
+		// Wallet endpoints with RBAC
+		protected.POST("/wallets",
+			middleware.RequirePermission(models.PermissionCreateEnterprise),
+			walletHandler.CreateWallet)
+
+		protected.GET("/wallets/:id",
+			middleware.RequirePermission(models.PermissionReadEnterprise),
+			walletHandler.GetWallet)
+
+		protected.GET("/wallets/address/:address",
+			middleware.RequirePermission(models.PermissionReadEnterprise),
+			walletHandler.GetWalletByAddress)
+
+		protected.GET("/enterprises/:enterpriseId/wallets",
+			middleware.RequirePermission(models.PermissionReadEnterprise),
+			middleware.EnterpriseOwnership(),
+			walletHandler.GetEnterpriseWallets)
+
+		protected.PUT("/wallets/:id/activate",
+			middleware.RequirePermission(models.PermissionApproveKYB),
+			walletHandler.ActivateWallet)
+
+		protected.PUT("/wallets/:id/whitelist",
+			middleware.RequirePermission(models.PermissionApproveKYB),
+			walletHandler.WhitelistWallet)
+
+		protected.PUT("/wallets/:id/suspend",
+			middleware.RequirePermission(models.PermissionApproveKYB),
+			walletHandler.SuspendWallet)
+
+		protected.GET("/wallets/whitelisted",
+			middleware.RequirePermission(models.PermissionViewAuditLogs),
+			walletHandler.GetWhitelistedWallets)
+
+		protected.POST("/wallets/validate-address",
+			middleware.RequirePermission(models.PermissionReadEnterprise),
+			walletHandler.ValidateAddress)
+
+		// Wallet monitoring endpoints
+		protected.GET("/wallets/health-status",
+			middleware.RequirePermission(models.PermissionViewAuditLogs),
+			walletHandler.GetWalletHealthStatus)
+
+		protected.POST("/wallets/:id/health-check",
+			middleware.RequirePermission(models.PermissionApproveKYB),
+			walletHandler.PerformWalletHealthCheck)
+
+		protected.GET("/wallets/inactive",
+			middleware.RequirePermission(models.PermissionViewAuditLogs),
+			walletHandler.GetInactiveWallets)
+
+		protected.GET("/wallets/metrics",
+			middleware.RequirePermission(models.PermissionViewAuditLogs),
+			walletHandler.GetWalletMetrics)
 	}
 
 	log.Println("Identity Service starting on :8001")
@@ -165,4 +249,3 @@ func handleEnterpriseRegistered(event *messaging.Event) error {
 	// TODO: Implement actual business logic
 	return nil
 }
-

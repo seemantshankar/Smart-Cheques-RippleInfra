@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/smart-payment-infrastructure/internal/models"
 )
 
 // MockEnterpriseRepository is a mock implementation of EnterpriseRepositoryInterface
@@ -46,6 +46,11 @@ func (m *MockEnterpriseRepository) UpdateEnterpriseComplianceStatus(id uuid.UUID
 	return args.Error(0)
 }
 
+func (m *MockEnterpriseRepository) UpdateEnterpriseXRPLWallet(id uuid.UUID, walletAddress string) error {
+	args := m.Called(id, walletAddress)
+	return args.Error(0)
+}
+
 func (m *MockEnterpriseRepository) RegistrationNumberExists(regNumber string) (bool, error) {
 	args := m.Called(regNumber)
 	return args.Bool(0), args.Error(1)
@@ -63,7 +68,7 @@ func (m *MockEnterpriseRepository) UpdateDocumentStatus(docID uuid.UUID, status 
 
 func TestEnterpriseService_RegisterEnterprise_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil) // Pass nil wallet service for testing
 
 	req := &models.EnterpriseRegistrationRequest{
 		LegalName:          "Test Corp Ltd",
@@ -117,7 +122,7 @@ func TestEnterpriseService_RegisterEnterprise_Success(t *testing.T) {
 
 func TestEnterpriseService_RegisterEnterprise_AlreadyExists(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	req := &models.EnterpriseRegistrationRequest{
 		LegalName:          "Test Corp Ltd",
@@ -159,7 +164,7 @@ func TestEnterpriseService_RegisterEnterprise_AlreadyExists(t *testing.T) {
 
 func TestEnterpriseService_GetEnterpriseByID_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 	expectedEnterprise := &models.Enterprise{
@@ -185,7 +190,7 @@ func TestEnterpriseService_GetEnterpriseByID_Success(t *testing.T) {
 
 func TestEnterpriseService_GetEnterpriseByID_NotFound(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 
@@ -204,7 +209,7 @@ func TestEnterpriseService_GetEnterpriseByID_NotFound(t *testing.T) {
 
 func TestEnterpriseService_UpdateKYBStatus_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 	enterprise := &models.Enterprise{
@@ -228,7 +233,7 @@ func TestEnterpriseService_UpdateKYBStatus_Success(t *testing.T) {
 
 func TestEnterpriseService_UpdateComplianceStatus_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 	enterprise := &models.Enterprise{
@@ -252,7 +257,7 @@ func TestEnterpriseService_UpdateComplianceStatus_Success(t *testing.T) {
 
 func TestEnterpriseService_PerformKYBCheck_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 	enterprise := &models.Enterprise{
@@ -276,7 +281,7 @@ func TestEnterpriseService_PerformKYBCheck_Success(t *testing.T) {
 
 func TestEnterpriseService_PerformComplianceCheck_Success(t *testing.T) {
 	mockRepo := new(MockEnterpriseRepository)
-	enterpriseService := NewEnterpriseService(mockRepo)
+	enterpriseService := NewEnterpriseService(mockRepo, nil)
 
 	enterpriseID := uuid.New()
 	enterprise := &models.Enterprise{

@@ -50,6 +50,16 @@ logs:
 test:
 	go test -v ./...
 
+# Run integration tests
+test-integration:
+	@echo "Running integration tests..."
+	@echo "Note: Ensure PostgreSQL is running on localhost:5432"
+	go test -v ./test/integration/...
+
+# Run unit tests only
+test-unit:
+	go test -v ./internal/... ./pkg/...
+
 # Clean up Docker resources
 clean:
 	docker-compose down -v

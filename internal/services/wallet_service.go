@@ -12,10 +12,10 @@ import (
 )
 
 type WalletService struct {
-	walletRepo      *repository.WalletRepository
-	enterpriseRepo  *repository.EnterpriseRepository
-	xrplService     *XRPLService
-	encryptor       *crypto.Encryptor
+	walletRepo     repository.WalletRepositoryInterface
+	enterpriseRepo repository.EnterpriseRepositoryInterface
+	xrplService    repository.XRPLServiceInterface
+	encryptor      *crypto.Encryptor
 }
 
 type WalletServiceConfig struct {
@@ -23,9 +23,9 @@ type WalletServiceConfig struct {
 }
 
 func NewWalletService(
-	walletRepo *repository.WalletRepository,
-	enterpriseRepo *repository.EnterpriseRepository,
-	xrplService *XRPLService,
+	walletRepo repository.WalletRepositoryInterface,
+	enterpriseRepo repository.EnterpriseRepositoryInterface,
+	xrplService repository.XRPLServiceInterface,
 	config WalletServiceConfig,
 ) (*WalletService, error) {
 	encryptor, err := crypto.NewEncryptor(config.EncryptionKey)
@@ -43,7 +43,7 @@ func NewWalletService(
 
 func (s *WalletService) CreateWalletForEnterprise(enterpriseID uuid.UUID, networkType string) (*models.WalletResponse, error) {
 	// Verify enterprise exists
-	enterprise, err := s.enterpriseRepo.GetByID(enterpriseID)
+	enterprise, err := s.enterpriseRepo.GetEnterpriseByID(enterpriseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get enterprise: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *WalletService) CreateWalletForEnterprise(enterpriseID uuid.UUID, networ
 		Status:              models.WalletStatusPending,
 		IsWhitelisted:       false,
 		NetworkType:         networkType,
-		Metadata:            make(map[string]string),
+		Metadata:            make(models.WalletMetadata),
 	}
 
 	// Store in database
@@ -90,7 +90,7 @@ func (s *WalletService) CreateWalletForEnterprise(enterpriseID uuid.UUID, networ
 		return nil, fmt.Errorf("failed to store wallet: %w", err)
 	}
 
-	log.Printf("Created wallet %s for enterprise %s (%s) on network %s", 
+	log.Printf("Created wallet %s for enterprise %s (%s) on network %s",
 		wallet.Address, enterprise.LegalName, enterpriseID, networkType)
 
 	return wallet.ToResponse(), nil
@@ -151,7 +151,7 @@ func (s *WalletService) SuspendWallet(walletID uuid.UUID, reason string) error {
 
 	wallet.Status = models.WalletStatusSuspended
 	if wallet.Metadata == nil {
-		wallet.Metadata = make(map[string]string)
+		wallet.Metadata = make(models.WalletMetadata)
 	}
 	wallet.Metadata["suspension_reason"] = reason
 	wallet.Metadata["suspended_at"] = time.Now().Format(time.RFC3339)

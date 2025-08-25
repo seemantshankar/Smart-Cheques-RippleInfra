@@ -18,7 +18,7 @@ func main() {
 
 	// Parse command line flags
 	var (
-		action = flag.String("action", "up", "Migration action: up, down, version, seed, clear")
+		action         = flag.String("action", "up", "Migration action: up, down, version, seed, clear")
 		migrationsPath = flag.String("migrations", "migrations", "Path to migrations directory")
 	)
 	flag.Parse()
@@ -33,12 +33,18 @@ func main() {
 	}
 	defer postgres.Close()
 
-	// Connect to MongoDB
-	mongo, err := database.NewMongoConnection(cfg.Database.MongoURL, "smart_payment")
-	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	// Connect to MongoDB (optional for Supabase-only setup)
+	var mongo interface{}
+	if cfg.Database.MongoURL != "" {
+		mongoConn, err := database.NewMongoConnection(cfg.Database.MongoURL, "smart_payment")
+		if err != nil {
+			log.Printf("Warning: Failed to connect to MongoDB: %v", err)
+			log.Println("Continuing with PostgreSQL-only operations...")
+		} else {
+			mongo = mongoConn
+			defer mongoConn.Close()
+		}
 	}
-	defer mongo.Close()
 
 	// Get absolute path for migrations
 	absPath, err := filepath.Abs(*migrationsPath)
@@ -83,13 +89,24 @@ func main() {
 		log.Printf("Current migration version: %d (dirty: %v)", version, dirty)
 
 	case "seed":
-		seeder := database.NewSeeder(postgres, mongo)
+		if mongo == nil {
+			log.Println("Warning: MongoDB not available, skipping seed operation")
+			log.Println("For PostgreSQL-only seeding, you can run SQL scripts manually")
+			return
+		}
+		mongoConn := mongo.(*database.MongoDB)
+		seeder := database.NewSeeder(postgres, mongoConn)
 		if err := seeder.SeedDevelopmentData(); err != nil {
 			log.Fatalf("Failed to seed development data: %v", err)
 		}
 
 	case "clear":
-		seeder := database.NewSeeder(postgres, mongo)
+		if mongo == nil {
+			log.Println("Warning: MongoDB not available, skipping clear operation")
+			return
+		}
+		mongoConn := mongo.(*database.MongoDB)
+		seeder := database.NewSeeder(postgres, mongoConn)
 		if err := seeder.ClearDevelopmentData(); err != nil {
 			log.Fatalf("Failed to clear development data: %v", err)
 		}

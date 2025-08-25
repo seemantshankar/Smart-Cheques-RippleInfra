@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -231,7 +230,7 @@ func (r *WalletRepository) Update(wallet *models.Wallet) error {
 
 func (r *WalletRepository) UpdateLastActivity(walletID uuid.UUID) error {
 	query := `UPDATE wallets SET last_activity = NOW() WHERE id = $1`
-	
+
 	result, err := r.db.Exec(query, walletID)
 	if err != nil {
 		return fmt.Errorf("failed to update wallet activity: %w", err)
@@ -251,7 +250,7 @@ func (r *WalletRepository) UpdateLastActivity(walletID uuid.UUID) error {
 
 func (r *WalletRepository) Delete(id uuid.UUID) error {
 	query := `DELETE FROM wallets WHERE id = $1`
-	
+
 	result, err := r.db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete wallet: %w", err)
@@ -267,6 +266,47 @@ func (r *WalletRepository) Delete(id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// GetAllWallets retrieves all wallets (for monitoring purposes)
+func (r *WalletRepository) GetAllWallets() ([]*models.Wallet, error) {
+	query := `
+		SELECT id, enterprise_id, address, public_key, encrypted_private_key,
+			   encrypted_seed, status, is_whitelisted, network_type, metadata,
+			   last_activity, created_at, updated_at
+		FROM wallets ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all wallets: %w", err)
+	}
+	defer rows.Close()
+
+	var wallets []*models.Wallet
+	for rows.Next() {
+		wallet := &models.Wallet{}
+		err := rows.Scan(
+			&wallet.ID,
+			&wallet.EnterpriseID,
+			&wallet.Address,
+			&wallet.PublicKey,
+			&wallet.EncryptedPrivateKey,
+			&wallet.EncryptedSeed,
+			&wallet.Status,
+			&wallet.IsWhitelisted,
+			&wallet.NetworkType,
+			&wallet.Metadata,
+			&wallet.LastActivity,
+			&wallet.CreatedAt,
+			&wallet.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan wallet: %w", err)
+		}
+		wallets = append(wallets, wallet)
+	}
+
+	return wallets, nil
 }
 
 func (r *WalletRepository) GetWhitelistedWallets() ([]*models.Wallet, error) {

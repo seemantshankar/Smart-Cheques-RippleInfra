@@ -17,7 +17,7 @@ func NewEncryptor(key string) (*Encryptor, error) {
 	if len(key) != 32 {
 		return nil, fmt.Errorf("encryption key must be 32 bytes long")
 	}
-	
+
 	return &Encryptor{
 		key: []byte(key),
 	}, nil
@@ -43,7 +43,7 @@ func (e *Encryptor) Encrypt(plaintext string) (string, error) {
 
 	// Encrypt the plaintext
 	ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
-	
+
 	return hex.EncodeToString(ciphertext), nil
 }
 
@@ -68,8 +68,8 @@ func (e *Encryptor) Decrypt(ciphertext string) (string, error) {
 		return "", fmt.Errorf("ciphertext too short")
 	}
 
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	nonce, ciphertextBytes := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertextBytes, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt: %w", err)
 	}

@@ -62,7 +62,7 @@
   - Create unit tests for XRPL connectivity and basic operations
   - _Requirements: 3_
 
-- [ ] 3.2 Implement XRPL wallet provisioning
+- [x] 3.2 Implement XRPL wallet provisioning
   - Create automatic wallet generation during enterprise setup
   - Build wallet-to-enterprise mapping and storage
   - Implement basic wallet authorization and whitelisting
@@ -70,13 +70,13 @@
   - Create integration tests for wallet provisioning
   - _Requirements: 1, 3_
 
-- [ ] 3.3 Implement core escrow functionality for Smart Cheques
-  - Create EscrowCreate transaction builder with basic parameters
-  - Implement EscrowFinish transaction for milestone completion
-  - Build EscrowCancel transaction for failed milestones
-  - Add basic escrow status monitoring and querying
-  - Write integration tests using XRPL testnet
-  - _Requirements: 3, 4_
+- [x] 3.3 Implement core escrow functionality for Smart Cheques ✅ **COMPLETED**
+  - [x] Create EscrowCreate transaction builder with basic parameters ✅
+  - [x] Implement EscrowFinish transaction for milestone completion ✅
+  - [x] Build EscrowCancel transaction for failed milestones ✅
+  - [x] Add basic escrow status monitoring and querying ✅
+  - [x] Write integration tests using XRPL testnet ✅
+  - _Requirements: 3, 4_ **ALL TESTS PASSING**
 
 - [ ] 3.4 Build transaction management and batching
   - Implement transaction queue management system

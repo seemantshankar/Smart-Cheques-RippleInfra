@@ -2,27 +2,26 @@ package services
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
+	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/pkg/xrpl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/smart-payment-infrastructure/internal/models"
-	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
-// Mock repositories
-type MockWalletRepository struct {
+// MockWalletRepositoryInterface implements repository interface for testing
+type MockWalletRepositoryInterface struct {
 	mock.Mock
 }
 
-func (m *MockWalletRepository) Create(wallet *models.Wallet) error {
+func (m *MockWalletRepositoryInterface) Create(wallet *models.Wallet) error {
 	args := m.Called(wallet)
 	return args.Error(0)
 }
 
-func (m *MockWalletRepository) GetByID(id uuid.UUID) (*models.Wallet, error) {
+func (m *MockWalletRepositoryInterface) GetByID(id uuid.UUID) (*models.Wallet, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -30,7 +29,7 @@ func (m *MockWalletRepository) GetByID(id uuid.UUID) (*models.Wallet, error) {
 	return args.Get(0).(*models.Wallet), args.Error(1)
 }
 
-func (m *MockWalletRepository) GetByAddress(address string) (*models.Wallet, error) {
+func (m *MockWalletRepositoryInterface) GetByAddress(address string) (*models.Wallet, error) {
 	args := m.Called(address)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -38,7 +37,7 @@ func (m *MockWalletRepository) GetByAddress(address string) (*models.Wallet, err
 	return args.Get(0).(*models.Wallet), args.Error(1)
 }
 
-func (m *MockWalletRepository) GetByEnterpriseID(enterpriseID uuid.UUID) ([]*models.Wallet, error) {
+func (m *MockWalletRepositoryInterface) GetByEnterpriseID(enterpriseID uuid.UUID) ([]*models.Wallet, error) {
 	args := m.Called(enterpriseID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -46,7 +45,7 @@ func (m *MockWalletRepository) GetByEnterpriseID(enterpriseID uuid.UUID) ([]*mod
 	return args.Get(0).([]*models.Wallet), args.Error(1)
 }
 
-func (m *MockWalletRepository) GetActiveByEnterpriseAndNetwork(enterpriseID uuid.UUID, networkType string) (*models.Wallet, error) {
+func (m *MockWalletRepositoryInterface) GetActiveByEnterpriseAndNetwork(enterpriseID uuid.UUID, networkType string) (*models.Wallet, error) {
 	args := m.Called(enterpriseID, networkType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -54,22 +53,22 @@ func (m *MockWalletRepository) GetActiveByEnterpriseAndNetwork(enterpriseID uuid
 	return args.Get(0).(*models.Wallet), args.Error(1)
 }
 
-func (m *MockWalletRepository) Update(wallet *models.Wallet) error {
+func (m *MockWalletRepositoryInterface) Update(wallet *models.Wallet) error {
 	args := m.Called(wallet)
 	return args.Error(0)
 }
 
-func (m *MockWalletRepository) UpdateLastActivity(walletID uuid.UUID) error {
+func (m *MockWalletRepositoryInterface) UpdateLastActivity(walletID uuid.UUID) error {
 	args := m.Called(walletID)
 	return args.Error(0)
 }
 
-func (m *MockWalletRepository) Delete(id uuid.UUID) error {
+func (m *MockWalletRepositoryInterface) Delete(id uuid.UUID) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockWalletRepository) GetWhitelistedWallets() ([]*models.Wallet, error) {
+func (m *MockWalletRepositoryInterface) GetWhitelistedWallets() ([]*models.Wallet, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -77,17 +76,68 @@ func (m *MockWalletRepository) GetWhitelistedWallets() ([]*models.Wallet, error)
 	return args.Get(0).([]*models.Wallet), args.Error(1)
 }
 
-// Mock enterprise repository
-type MockEnterpriseRepository struct {
+func (m *MockWalletRepositoryInterface) GetAllWallets() ([]*models.Wallet, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Wallet), args.Error(1)
+}
+
+// MockEnterpriseRepositoryInterface implements enterprise repository interface for testing
+type MockEnterpriseRepositoryInterface struct {
 	mock.Mock
 }
 
-func (m *MockEnterpriseRepository) GetByID(id uuid.UUID) (*models.Enterprise, error) {
+func (m *MockEnterpriseRepositoryInterface) CreateEnterprise(enterprise *models.Enterprise) error {
+	args := m.Called(enterprise)
+	return args.Error(0)
+}
+
+func (m *MockEnterpriseRepositoryInterface) GetEnterpriseByID(id uuid.UUID) (*models.Enterprise, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.Enterprise), args.Error(1)
+}
+
+func (m *MockEnterpriseRepositoryInterface) GetEnterpriseByRegistrationNumber(regNumber string) (*models.Enterprise, error) {
+	args := m.Called(regNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Enterprise), args.Error(1)
+}
+
+func (m *MockEnterpriseRepositoryInterface) UpdateEnterpriseKYBStatus(id uuid.UUID, status models.KYBStatus) error {
+	args := m.Called(id, status)
+	return args.Error(0)
+}
+
+func (m *MockEnterpriseRepositoryInterface) UpdateEnterpriseComplianceStatus(id uuid.UUID, status models.ComplianceStatus) error {
+	args := m.Called(id, status)
+	return args.Error(0)
+}
+
+func (m *MockEnterpriseRepositoryInterface) UpdateEnterpriseXRPLWallet(id uuid.UUID, walletAddress string) error {
+	args := m.Called(id, walletAddress)
+	return args.Error(0)
+}
+
+func (m *MockEnterpriseRepositoryInterface) RegistrationNumberExists(regNumber string) (bool, error) {
+	args := m.Called(regNumber)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockEnterpriseRepositoryInterface) CreateDocument(doc *models.EnterpriseDocument) error {
+	args := m.Called(doc)
+	return args.Error(0)
+}
+
+func (m *MockEnterpriseRepositoryInterface) UpdateDocumentStatus(docID uuid.UUID, status models.DocumentStatus) error {
+	args := m.Called(docID, status)
+	return args.Error(0)
 }
 
 // Mock XRPL service
@@ -108,10 +158,23 @@ func (m *MockXRPLService) ValidateAddress(address string) bool {
 	return args.Bool(0)
 }
 
+func (m *MockXRPLService) GetAccountInfo(address string) (interface{}, error) {
+	args := m.Called(address)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockXRPLService) HealthCheck() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -142,7 +205,7 @@ func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 	}
 
 	// Setup expectations
-	mockEnterpriseRepo.On("GetByID", enterpriseID).Return(enterprise, nil)
+	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(enterprise, nil)
 	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, networkType).Return(nil, assert.AnError)
 	mockXRPLService.On("CreateWallet").Return(xrplWallet, nil)
 	mockWalletRepo.On("Create", mock.AnythingOfType("*models.Wallet")).Return(nil)
@@ -168,8 +231,8 @@ func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 
 func TestWalletService_CreateWalletForEnterprise_EnterpriseNotFound(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -188,7 +251,7 @@ func TestWalletService_CreateWalletForEnterprise_EnterpriseNotFound(t *testing.T
 	networkType := "testnet"
 
 	// Setup expectations
-	mockEnterpriseRepo.On("GetByID", enterpriseID).Return(nil, assert.AnError)
+	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(nil, assert.AnError)
 
 	// Execute
 	result, err := service.CreateWalletForEnterprise(enterpriseID, networkType)
@@ -204,8 +267,8 @@ func TestWalletService_CreateWalletForEnterprise_EnterpriseNotFound(t *testing.T
 
 func TestWalletService_CreateWalletForEnterprise_ExistingActiveWallet(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -236,7 +299,7 @@ func TestWalletService_CreateWalletForEnterprise_ExistingActiveWallet(t *testing
 	}
 
 	// Setup expectations
-	mockEnterpriseRepo.On("GetByID", enterpriseID).Return(enterprise, nil)
+	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(enterprise, nil)
 	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, networkType).Return(existingWallet, nil)
 
 	// Execute
@@ -254,8 +317,8 @@ func TestWalletService_CreateWalletForEnterprise_ExistingActiveWallet(t *testing
 
 func TestWalletService_ActivateWallet(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -298,8 +361,8 @@ func TestWalletService_ActivateWallet(t *testing.T) {
 
 func TestWalletService_WhitelistWallet(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -339,8 +402,8 @@ func TestWalletService_WhitelistWallet(t *testing.T) {
 
 func TestWalletService_WhitelistWallet_InactiveWallet(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -379,8 +442,8 @@ func TestWalletService_WhitelistWallet_InactiveWallet(t *testing.T) {
 
 func TestWalletService_SuspendWallet(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
@@ -423,8 +486,8 @@ func TestWalletService_SuspendWallet(t *testing.T) {
 
 func TestWalletService_ValidateWalletAddress(t *testing.T) {
 	// Setup mocks
-	mockWalletRepo := &MockWalletRepository{}
-	mockEnterpriseRepo := &MockEnterpriseRepository{}
+	mockWalletRepo := &MockWalletRepositoryInterface{}
+	mockEnterpriseRepo := &MockEnterpriseRepositoryInterface{}
 	mockXRPLService := &MockXRPLService{}
 
 	// Create service
