@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/smart-payment-infrastructure/internal/models"
@@ -140,4 +141,135 @@ func (m *EventBus) Subscribe(ctx context.Context, topic string, handler func(*me
 func (m *EventBus) Close() error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+// TransactionRepositoryInterface mock
+type TransactionRepositoryInterface struct {
+	mock.Mock
+}
+
+// Transaction CRUD operations
+func (m *TransactionRepositoryInterface) CreateTransaction(transaction *models.Transaction) error {
+	args := m.Called(transaction)
+	return args.Error(0)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionByID(id string) (*models.Transaction, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) UpdateTransaction(transaction *models.Transaction) error {
+	args := m.Called(transaction)
+	return args.Error(0)
+}
+
+func (m *TransactionRepositoryInterface) DeleteTransaction(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+// Transaction queries
+func (m *TransactionRepositoryInterface) GetTransactionsByStatus(status models.TransactionStatus, limit, offset int) ([]*models.Transaction, error) {
+	args := m.Called(status, limit, offset)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionsByBatchID(batchID string) ([]*models.Transaction, error) {
+	args := m.Called(batchID)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionsByEnterpriseID(enterpriseID string, limit, offset int) ([]*models.Transaction, error) {
+	args := m.Called(enterpriseID, limit, offset)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionsByUserID(userID string, limit, offset int) ([]*models.Transaction, error) {
+	args := m.Called(userID, limit, offset)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionsByType(txType models.TransactionType, limit, offset int) ([]*models.Transaction, error) {
+	args := m.Called(txType, limit, offset)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetPendingTransactions(limit int) ([]*models.Transaction, error) {
+	args := m.Called(limit)
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetExpiredTransactions() ([]*models.Transaction, error) {
+	args := m.Called()
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetRetriableTransactions() ([]*models.Transaction, error) {
+	args := m.Called()
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
+// Batch operations
+func (m *TransactionRepositoryInterface) CreateTransactionBatch(batch *models.TransactionBatch) error {
+	args := m.Called(batch)
+	return args.Error(0)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionBatchByID(id string) (*models.TransactionBatch, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TransactionBatch), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) UpdateTransactionBatch(batch *models.TransactionBatch) error {
+	args := m.Called(batch)
+	return args.Error(0)
+}
+
+func (m *TransactionRepositoryInterface) DeleteTransactionBatch(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionBatchesByStatus(status models.TransactionStatus, limit, offset int) ([]*models.TransactionBatch, error) {
+	args := m.Called(status, limit, offset)
+	return args.Get(0).([]*models.TransactionBatch), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetPendingBatches(limit int) ([]*models.TransactionBatch, error) {
+	args := m.Called(limit)
+	return args.Get(0).([]*models.TransactionBatch), args.Error(1)
+}
+
+// Statistics and monitoring
+func (m *TransactionRepositoryInterface) GetTransactionStats() (*models.TransactionStats, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TransactionStats), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionStatsByDateRange(start, end time.Time) (*models.TransactionStats, error) {
+	args := m.Called(start, end)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TransactionStats), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetTransactionCountByStatus() (map[models.TransactionStatus]int64, error) {
+	args := m.Called()
+	return args.Get(0).(map[models.TransactionStatus]int64), args.Error(1)
+}
+
+func (m *TransactionRepositoryInterface) GetAverageProcessingTime() (float64, error) {
+	args := m.Called()
+	return args.Get(0).(float64), args.Error(1)
 }

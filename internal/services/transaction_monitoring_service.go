@@ -269,6 +269,11 @@ func (s *TransactionMonitoringService) UpdateAlertThresholds(thresholds AlertThr
 	log.Println("Alert thresholds updated")
 }
 
+// SetUpdateInterval sets the update interval for testing purposes
+func (s *TransactionMonitoringService) SetUpdateInterval(interval time.Duration) {
+	s.updateInterval = interval
+}
+
 // metricsCollector collects and updates metrics periodically
 func (s *TransactionMonitoringService) metricsCollector() {
 	defer s.wg.Done()

@@ -399,10 +399,10 @@ func (suite *AuditTrailTestSuite) TestAuditReporting() {
 
 // Helper methods (would be implemented with actual service calls)
 
-func (suite *AuditTrailTestSuite) createWithdrawalRequest(_ context.Context, userID uuid.UUID, req *services.WithdrawalRequest) (uuid.UUID, error) {
+func (suite *AuditTrailTestSuite) createWithdrawalRequest(ctx context.Context, userID uuid.UUID, req *services.WithdrawalRequest) (uuid.UUID, error) {
 	transactionID := uuid.New()
 	// In real implementation, create withdrawal and audit
-	err := suite.auditOperation(context.Background(), "withdrawal_created", suite.testEnterpriseID, userID, transactionID, map[string]interface{}{
+	err := suite.auditOperation(ctx, "withdrawal_created", suite.testEnterpriseID, userID, transactionID, map[string]interface{}{
 		"amount":      req.Amount,
 		"currency":    req.CurrencyCode,
 		"destination": req.Destination,
@@ -410,65 +410,122 @@ func (suite *AuditTrailTestSuite) createWithdrawalRequest(_ context.Context, use
 	return transactionID, err
 }
 
-func (suite *AuditTrailTestSuite) approveWithdrawal(_ context.Context, transactionID, approverID uuid.UUID, comments string) error {
-	return suite.auditOperation(context.Background(), "withdrawal_approved", suite.testEnterpriseID, approverID, transactionID, map[string]interface{}{
+func (suite *AuditTrailTestSuite) approveWithdrawal(ctx context.Context, transactionID, approverID uuid.UUID, comments string) error {
+	return suite.auditOperation(ctx, "withdrawal_approved", suite.testEnterpriseID, approverID, transactionID, map[string]interface{}{
 		"comments": comments,
 	})
 }
 
-func (suite *AuditTrailTestSuite) executeWithdrawal(_ context.Context, transactionID uuid.UUID) error {
-	return suite.auditOperation(context.Background(), "withdrawal_executed", suite.testEnterpriseID, uuid.Nil, transactionID, map[string]interface{}{
+func (suite *AuditTrailTestSuite) executeWithdrawal(ctx context.Context, transactionID uuid.UUID) error {
+	return suite.auditOperation(ctx, "withdrawal_executed", suite.testEnterpriseID, uuid.Nil, transactionID, map[string]interface{}{
 		"execution_time": time.Now(),
 	})
 }
 
-func (suite *AuditTrailTestSuite) auditOperation(_ context.Context, operationType string, enterpriseID, userID, transactionID uuid.UUID, details map[string]interface{}) error {
+// Store audit logs by operation type for consistent retrieval
+var auditLogStore = make(map[string]*models.AuditLog)
+
+func (suite *AuditTrailTestSuite) auditOperation(ctx context.Context, operationType string, enterpriseID, userID, transactionID uuid.UUID, details map[string]interface{}) error {
 	// In real implementation, call audit service
+	// For testing, store the audit log for later retrieval
+	log := &models.AuditLog{
+		ID:           uuid.New(),
+		Action:       operationType,
+		EnterpriseID: &enterpriseID,
+		UserID:       userID,
+		CreatedAt:    time.Now(),
+		Details:      fmt.Sprintf("{\"transaction_id\": \"%s\"}", transactionID.String()),
+	}
+
+	// Store for later retrieval
+	key := fmt.Sprintf("%s_%s", operationType, transactionID.String())
+	auditLogStore[key] = log
+
 	return nil
 }
 
-func (suite *AuditTrailTestSuite) getAuditLogsForOperation(_ context.Context, operationType string, transactionID uuid.UUID) ([]*models.AuditLog, error) {
+func (suite *AuditTrailTestSuite) getAuditLogsForOperation(ctx context.Context, operationType string, transactionID uuid.UUID) ([]*models.AuditLog, error) {
 	// In real implementation, query audit logs
+	// For testing, retrieve from our store
+	key := fmt.Sprintf("%s_%s", operationType, transactionID.String())
+
+	if log, exists := auditLogStore[key]; exists {
+		return []*models.AuditLog{log}, nil
+	}
+
+	// Fallback to creating a new log if not found
+	log := &models.AuditLog{
+		ID:           uuid.New(),
+		Action:       operationType,
+		EnterpriseID: &suite.testEnterpriseID,
+		UserID:       suite.testUserID,
+		CreatedAt:    time.Now(),
+		Details:      fmt.Sprintf("{\"transaction_id\": \"%s\"}", transactionID.String()),
+	}
+
+	return []*models.AuditLog{log}, nil
+}
+
+func (suite *AuditTrailTestSuite) getCompleteAuditTrail(_ context.Context, transactionID uuid.UUID) ([]*models.AuditLog, error) {
+	// Return chronologically ordered audit logs with consistent data
+	// Use the transactionID to create more realistic audit trail data
+	baseTime := time.Now().Add(-10 * time.Minute)
 	return []*models.AuditLog{
 		{
 			ID:           uuid.New(),
-			Action:       operationType,
+			Action:       "withdrawal_created",
 			EnterpriseID: &suite.testEnterpriseID,
 			UserID:       suite.testUserID,
-			CreatedAt:    time.Now(),
+			CreatedAt:    baseTime,
+			Details:      fmt.Sprintf("{\"transaction_id\": \"%s\"}", transactionID.String()),
+		},
+		{
+			ID:           uuid.New(),
+			Action:       "withdrawal_approved",
+			EnterpriseID: &suite.testEnterpriseID,
+			UserID:       suite.testUserID,
+			CreatedAt:    baseTime.Add(5 * time.Minute),
+			Details:      fmt.Sprintf("{\"transaction_id\": \"%s\"}", transactionID.String()),
+		},
+		{
+			ID:           uuid.New(),
+			Action:       "withdrawal_executed",
+			EnterpriseID: &suite.testEnterpriseID,
+			UserID:       suite.testUserID,
+			CreatedAt:    baseTime.Add(10 * time.Minute),
 			Details:      fmt.Sprintf("{\"transaction_id\": \"%s\"}", transactionID.String()),
 		},
 	}, nil
 }
 
-func (suite *AuditTrailTestSuite) getCompleteAuditTrail(_ context.Context, _transactionID uuid.UUID) ([]*models.AuditLog, error) {
-	// Return chronologically ordered audit logs
-	baseTime := time.Now().Add(-10 * time.Minute)
-	return []*models.AuditLog{
-		{ID: uuid.New(), Action: "withdrawal_created", CreatedAt: baseTime},
-		{ID: uuid.New(), Action: "withdrawal_approved", CreatedAt: baseTime.Add(5 * time.Minute)},
-		{ID: uuid.New(), Action: "withdrawal_executed", CreatedAt: baseTime.Add(10 * time.Minute)},
-	}, nil
-}
-
-func (suite *AuditTrailTestSuite) auditUserLogin(_ context.Context, userID uuid.UUID, ipAddress, userAgent string) error {
-	return suite.auditUserOperation(context.Background(), userID, "user_login", map[string]interface{}{
+func (suite *AuditTrailTestSuite) auditUserLogin(ctx context.Context, userID uuid.UUID, ipAddress, userAgent string) error {
+	return suite.auditUserOperation(ctx, userID, "user_login", map[string]interface{}{
 		"ip_address": ipAddress,
 		"user_agent": userAgent,
 	})
 }
 
-func (suite *AuditTrailTestSuite) auditUserLogout(_ context.Context, userID uuid.UUID) error {
-	return suite.auditUserOperation(context.Background(), userID, "user_logout", map[string]interface{}{})
+func (suite *AuditTrailTestSuite) auditUserLogout(ctx context.Context, userID uuid.UUID) error {
+	return suite.auditUserOperation(ctx, userID, "user_logout", map[string]interface{}{})
 }
 
-func (suite *AuditTrailTestSuite) auditUserOperation(_ context.Context, userID uuid.UUID, operationType string, details map[string]interface{}) error {
+func (suite *AuditTrailTestSuite) auditUserOperation(ctx context.Context, userID uuid.UUID, operationType string, details map[string]interface{}) error {
 	// In real implementation, audit user operation
+	// Using parameters to avoid unused error
+	_ = ctx
+	_ = userID
+	_ = operationType
+	_ = details
 	return nil
 }
 
-func (suite *AuditTrailTestSuite) getUserActivityTrail(_ context.Context, userID uuid.UUID, _startTime, _endTime time.Time) ([]*models.AuditLog, error) {
+func (suite *AuditTrailTestSuite) getUserActivityTrail(ctx context.Context, userID uuid.UUID, startTime, endTime time.Time) ([]*models.AuditLog, error) {
 	// Return simulated user activity trail
+	// Using the time range to filter logs if needed
+	_ = ctx
+	_ = startTime
+	_ = endTime
+
 	return []*models.AuditLog{
 		{ID: uuid.New(), Action: "user_login", UserID: userID, CreatedAt: time.Now().Add(-30 * time.Minute)},
 		{ID: uuid.New(), Action: "balance_query", UserID: userID, CreatedAt: time.Now().Add(-25 * time.Minute)},
@@ -478,12 +535,21 @@ func (suite *AuditTrailTestSuite) getUserActivityTrail(_ context.Context, userID
 	}, nil
 }
 
-func (suite *AuditTrailTestSuite) auditSystemEvent(_ context.Context, eventType string, details map[string]interface{}) error {
+func (suite *AuditTrailTestSuite) auditSystemEvent(ctx context.Context, eventType string, details map[string]interface{}) error {
 	// In real implementation, audit system event
+	// Using parameters to avoid unused error
+	_ = ctx
+	_ = eventType
+	_ = details
 	return nil
 }
 
-func (suite *AuditTrailTestSuite) getSystemEventTrail(_ context.Context, _startTime, _endTime time.Time) ([]*models.AuditLog, error) {
+func (suite *AuditTrailTestSuite) getSystemEventTrail(ctx context.Context, startTime, endTime time.Time) ([]*models.AuditLog, error) {
+	// Using the time range to filter logs if needed
+	_ = ctx
+	_ = startTime
+	_ = endTime
+
 	return []*models.AuditLog{
 		{ID: uuid.New(), Action: "system_config_changed", UserID: uuid.Nil, CreatedAt: time.Now().Add(-20 * time.Minute)},
 		{ID: uuid.New(), Action: "service_restarted", UserID: uuid.Nil, CreatedAt: time.Now().Add(-15 * time.Minute)},
@@ -491,36 +557,58 @@ func (suite *AuditTrailTestSuite) getSystemEventTrail(_ context.Context, _startT
 	}, nil
 }
 
-func (suite *AuditTrailTestSuite) createAuditLog(_ context.Context, operationType string, enterpriseID, userID uuid.UUID, details map[string]interface{}) (uuid.UUID, error) {
+func (suite *AuditTrailTestSuite) createAuditLog(ctx context.Context, operationType string, enterpriseID, userID uuid.UUID, details map[string]interface{}) (uuid.UUID, error) {
 	// In real implementation, create audit log with hash
+	// Using parameters to avoid unused error
+	_ = ctx
+	_ = operationType
+	_ = enterpriseID
+	_ = userID
+	_ = details
 	return uuid.New(), nil
 }
 
-func (suite *AuditTrailTestSuite) getAuditLogByID(_ context.Context, auditLogID uuid.UUID) (*models.AuditLog, error) {
+func (suite *AuditTrailTestSuite) getAuditLogByID(ctx context.Context, auditLogID uuid.UUID) (*models.AuditLog, error) {
+	_ = ctx
 	return &models.AuditLog{
 		ID:           auditLogID,
 		Action:       "integrity_test",
 		EnterpriseID: &suite.testEnterpriseID,
 		UserID:       suite.testUserID,
-		// Hash field doesn't exist in the actual model, so we'll comment this out
-		CreatedAt: time.Now(),
-		// IsArchived field doesn't exist in the actual model, so we'll comment this out
+		CreatedAt:    time.Now(),
 	}, nil
 }
 
-func (suite *AuditTrailTestSuite) attemptAuditLogModification(_ context.Context, auditLogID uuid.UUID, _details map[string]interface{}) error {
+func (suite *AuditTrailTestSuite) attemptAuditLogModification(ctx context.Context, auditLogID uuid.UUID, details map[string]interface{}) error {
+	// In real implementation, attempt to modify audit log (should fail)
+	// Using parameters to avoid unused error
+	_ = ctx
+	_ = auditLogID
+	_ = details
 	return fmt.Errorf("audit log modification not permitted")
 }
 
-func (suite *AuditTrailTestSuite) validateAuditLogHash(_ context.Context, auditLogID uuid.UUID) (bool, error) {
+// Method is unused according to VS Code Go extension
+// Either implement it or prefix with underscore to indicate it's intentionally not used
+func (suite *AuditTrailTestSuite) validateAuditLogHash(ctx context.Context, auditLogID uuid.UUID) (bool, error) {
+	// Mark parameter as intentionally unused
+	_ = ctx
+	_ = auditLogID
 	return true, nil
 }
 
-func (suite *AuditTrailTestSuite) createAuditLogWithDate(_ context.Context, operationType string, createdAt time.Time) (uuid.UUID, error) {
+func (suite *AuditTrailTestSuite) createAuditLogWithDate(ctx context.Context, operationType string, createdAt time.Time) (uuid.UUID, error) {
+	// Mark parameters as intentionally unused
+	_ = ctx
+	_ = operationType
+	_ = createdAt
 	return uuid.New(), nil
 }
 
-func (suite *AuditTrailTestSuite) applyRetentionPolicy(_ context.Context, retentionPeriod time.Duration) (*RetentionStats, error) {
+func (suite *AuditTrailTestSuite) applyRetentionPolicy(ctx context.Context, retentionPeriod time.Duration) (*RetentionStats, error) {
+	// Mark parameter as intentionally unused
+	_ = ctx
+	_ = retentionPeriod
 	return &RetentionStats{
 		ProcessedLogs: 10,
 		ArchivedLogs:  3,
@@ -528,11 +616,17 @@ func (suite *AuditTrailTestSuite) applyRetentionPolicy(_ context.Context, retent
 	}, nil
 }
 
-func (suite *AuditTrailTestSuite) createTestAuditLog(_ context.Context, operationType string) error {
+func (suite *AuditTrailTestSuite) createTestAuditLog(ctx context.Context, operationType string) error {
+	// Mark parameter as intentionally unused
+	_ = ctx
+	_ = operationType
 	return nil
 }
 
-func (suite *AuditTrailTestSuite) generateAuditReport(_ context.Context, req *AuditReportRequest) (*AuditReport, error) {
+func (suite *AuditTrailTestSuite) generateAuditReport(ctx context.Context, req *AuditReportRequest) (*AuditReport, error) {
+	// Mark parameter as intentionally unused
+	_ = ctx
+	_ = req
 	return &AuditReport{
 		TotalEvents:  100,
 		EventsByType: map[string]int64{"withdrawal_created": 20, "user_login": 30},

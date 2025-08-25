@@ -30,6 +30,7 @@ type TransactionQueueService struct {
 	// Processing control
 	isRunning   bool
 	stopChannel chan struct{}
+	stopMutex   sync.Mutex // Mutex to protect stopChannel operations
 	wg          sync.WaitGroup
 
 	// Statistics
@@ -59,6 +60,9 @@ func NewTransactionQueueService(
 
 // Start begins the transaction queue processing
 func (s *TransactionQueueService) Start() error {
+	s.stopMutex.Lock()
+	defer s.stopMutex.Unlock()
+
 	if s.isRunning {
 		return fmt.Errorf("transaction queue service is already running")
 	}
@@ -84,13 +88,24 @@ func (s *TransactionQueueService) Start() error {
 
 // Stop gracefully shuts down the transaction queue service
 func (s *TransactionQueueService) Stop() {
+	s.stopMutex.Lock()
+	defer s.stopMutex.Unlock()
+
 	if !s.isRunning {
 		return
 	}
 
 	log.Println("Stopping Transaction Queue Service...")
 	s.isRunning = false
-	close(s.stopChannel)
+
+	// Close stop channel only if it hasn't been closed already
+	select {
+	case <-s.stopChannel:
+		// Channel already closed
+	default:
+		close(s.stopChannel)
+	}
+
 	s.wg.Wait()
 
 	// Process any remaining transactions in batches
@@ -116,9 +131,11 @@ func (s *TransactionQueueService) EnqueueTransaction(transaction *models.Transac
 		transaction.ExpiresAt = &expiresAt
 	}
 
-	// Save to database
-	if err := s.transactionRepo.CreateTransaction(transaction); err != nil {
-		return fmt.Errorf("failed to save transaction: %w", err)
+	// Save to database if repository is available
+	if s.transactionRepo != nil {
+		if err := s.transactionRepo.CreateTransaction(transaction); err != nil {
+			return fmt.Errorf("failed to save transaction: %w", err)
+		}
 	}
 
 	// Add to appropriate queue based on batching capability
@@ -145,8 +162,10 @@ func (s *TransactionQueueService) EnqueueTransaction(transaction *models.Transac
 	}
 
 	// Publish queuing event
-	if err := s.publishTransactionEvent(transaction, "transaction_queued"); err != nil {
-		log.Printf("Warning: Failed to publish transaction queued event: %v", err)
+	if s.messagingService != nil {
+		if err := s.publishTransactionEvent(transaction, "transaction_queued"); err != nil {
+			log.Printf("Warning: Failed to publish transaction queued event: %v", err)
+		}
 	}
 
 	return nil
@@ -154,18 +173,25 @@ func (s *TransactionQueueService) EnqueueTransaction(transaction *models.Transac
 
 // GetTransactionStatus retrieves the current status of a transaction
 func (s *TransactionQueueService) GetTransactionStatus(transactionID string) (*models.Transaction, error) {
+	if s.transactionRepo == nil {
+		return nil, fmt.Errorf("transaction repository not initialized")
+	}
 	return s.transactionRepo.GetTransactionByID(transactionID)
 }
 
 // GetBatchStatus retrieves the current status of a transaction batch
 func (s *TransactionQueueService) GetBatchStatus(batchID string) (*models.TransactionBatch, error) {
+	if s.transactionRepo == nil {
+		return nil, fmt.Errorf("transaction repository not initialized")
+	}
 	return s.transactionRepo.GetTransactionBatchByID(batchID)
 }
 
 // GetQueueStats returns current queue statistics
 func (s *TransactionQueueService) GetQueueStats() (*models.TransactionStats, error) {
-	s.statsMutex.RLock()
-	defer s.statsMutex.RUnlock()
+	if s.transactionRepo == nil {
+		return s.stats, nil // Return cached stats if repository not available
+	}
 
 	// Get fresh stats from database
 	stats, err := s.transactionRepo.GetTransactionStats()
@@ -179,6 +205,10 @@ func (s *TransactionQueueService) GetQueueStats() (*models.TransactionStats, err
 
 // RetryFailedTransactions attempts to retry failed transactions
 func (s *TransactionQueueService) RetryFailedTransactions() error {
+	if s.transactionRepo == nil {
+		return fmt.Errorf("transaction repository not initialized")
+	}
+
 	retriableTransactions, err := s.transactionRepo.GetRetriableTransactions()
 	if err != nil {
 		return fmt.Errorf("failed to get retriable transactions: %w", err)
@@ -200,19 +230,23 @@ func (s *TransactionQueueService) RetryFailedTransactions() error {
 			select {
 			case s.processingQueue <- tx:
 				retryCount++
-				log.Printf("Transaction %s re-queued for retry %d/%d", tx.ID, tx.RetryCount, tx.MaxRetries)
+				log.Printf("Retrying transaction %s", tx.ID)
 			default:
 				log.Printf("Failed to re-queue transaction %s: queue full", tx.ID)
 			}
 		}
 	}
 
-	log.Printf("Retried %d failed transactions", retryCount)
+	log.Printf("Retried %d transactions", retryCount)
 	return nil
 }
 
-// ExpireOldTransactions marks old transactions as expired
+// ExpireOldTransactions marks expired transactions as expired
 func (s *TransactionQueueService) ExpireOldTransactions() error {
+	if s.transactionRepo == nil {
+		return fmt.Errorf("transaction repository not initialized")
+	}
+
 	expiredTransactions, err := s.transactionRepo.GetExpiredTransactions()
 	if err != nil {
 		return fmt.Errorf("failed to get expired transactions: %w", err)
@@ -220,24 +254,28 @@ func (s *TransactionQueueService) ExpireOldTransactions() error {
 
 	expiredCount := 0
 	for _, tx := range expiredTransactions {
-		tx.Status = models.TransactionStatusExpired
-		tx.UpdatedAt = time.Now()
+		// Only expire transactions that are still in a queued or processing state
+		if tx.Status == models.TransactionStatusQueued ||
+			tx.Status == models.TransactionStatusProcessing ||
+			tx.Status == models.TransactionStatusBatched {
 
-		if err := s.transactionRepo.UpdateTransaction(tx); err != nil {
-			log.Printf("Failed to expire transaction %s: %v", tx.ID, err)
-			continue
-		}
+			tx.Status = models.TransactionStatusExpired
+			tx.UpdatedAt = time.Now()
 
-		expiredCount++
-		log.Printf("Transaction %s expired", tx.ID)
+			if err := s.transactionRepo.UpdateTransaction(tx); err != nil {
+				log.Printf("Failed to update expired transaction %s: %v", tx.ID, err)
+				continue
+			}
 
-		// Publish expiration event
-		if err := s.publishTransactionEvent(tx, "transaction_expired"); err != nil {
-			log.Printf("Warning: Failed to publish transaction expired event: %v", err)
+			expiredCount++
+			log.Printf("Expired transaction %s", tx.ID)
 		}
 	}
 
-	log.Printf("Expired %d old transactions", expiredCount)
+	if expiredCount > 0 {
+		log.Printf("Expired %d transactions", expiredCount)
+	}
+
 	return nil
 }
 
@@ -251,25 +289,28 @@ func (s *TransactionQueueService) queueProcessor() {
 			return
 		default:
 			// Process any pending transactions from database
-			pendingTransactions, err := s.transactionRepo.GetPendingTransactions(100)
-			if err != nil {
-				log.Printf("Error retrieving pending transactions: %v", err)
-				time.Sleep(5 * time.Second)
-				continue
-			}
+			// Skip if transactionRepo is not initialized
+			if s.transactionRepo != nil {
+				pendingTransactions, err := s.transactionRepo.GetPendingTransactions(100)
+				if err != nil {
+					log.Printf("Error retrieving pending transactions: %v", err)
+					time.Sleep(5 * time.Second)
+					continue
+				}
 
-			for _, tx := range pendingTransactions {
-				if tx.CanBatch() && s.batchConfig.FeeOptimization {
-					select {
-					case s.batchingQueue <- tx:
-					case <-s.stopChannel:
-						return
-					}
-				} else {
-					select {
-					case s.processingQueue <- tx:
-					case <-s.stopChannel:
-						return
+				for _, tx := range pendingTransactions {
+					if tx.CanBatch() && s.batchConfig.FeeOptimization {
+						select {
+						case s.batchingQueue <- tx:
+						case <-s.stopChannel:
+							return
+						}
+					} else {
+						select {
+						case s.processingQueue <- tx:
+						case <-s.stopChannel:
+							return
+						}
 					}
 				}
 			}
@@ -485,8 +526,6 @@ func (s *TransactionQueueService) processBatch(batch *models.TransactionBatch) {
 		log.Printf("Warning: Failed to publish batch completed event: %v", err)
 	}
 }
-
-// Continue in next part due to length...
 
 // processTransaction processes a single transaction
 func (s *TransactionQueueService) processTransaction(transaction *models.Transaction) bool {

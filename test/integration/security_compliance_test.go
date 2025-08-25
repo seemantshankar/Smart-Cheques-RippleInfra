@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,6 +17,17 @@ import (
 	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/smart-payment-infrastructure/pkg/auth"
 )
+
+// Session represents a user session for testing
+type Session struct {
+	ID        string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+}
+
+// Add session store for testing
+var sessionStore = make(map[string]*Session)
+var sessionMutex = sync.RWMutex{}
 
 // SecurityComplianceTestSuite tests security and compliance controls
 type SecurityComplianceTestSuite struct {
@@ -421,16 +433,49 @@ func (suite *SecurityComplianceTestSuite) testInvalidEncryptionKey() error {
 func (suite *SecurityComplianceTestSuite) createUserSession(user *models.User) (string, error) {
 	// In real implementation, create session in session store
 	sessionID := fmt.Sprintf("session_%s_%d", user.ID.String(), time.Now().Unix())
+
+	// Store session in memory for testing
+	sessionMutex.Lock()
+	sessionStore[sessionID] = &Session{
+		ID:        sessionID,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(1 * time.Hour), // 1 hour expiration
+	}
+	sessionMutex.Unlock()
+
 	return sessionID, nil
 }
 
 func (suite *SecurityComplianceTestSuite) validateSession(sessionID string, userID uuid.UUID) (bool, error) {
 	// In real implementation, validate session in session store
-	return true, nil // Simplified validation
+	sessionMutex.RLock()
+	session, exists := sessionStore[sessionID]
+	sessionMutex.RUnlock()
+
+	if !exists {
+		return false, nil // Session not found
+	}
+
+	// Check if session is expired
+	if time.Now().After(session.ExpiresAt) {
+		return false, nil // Session expired
+	}
+
+	// Check if session belongs to the user
+	if session.UserID != userID {
+		return false, nil // Session belongs to different user
+	}
+
+	return true, nil // Session is valid
 }
 
 func (suite *SecurityComplianceTestSuite) expireSession(sessionID string) error {
 	// In real implementation, expire session in session store
+	sessionMutex.Lock()
+	if session, exists := sessionStore[sessionID]; exists {
+		session.ExpiresAt = time.Now().Add(-1 * time.Hour) // Set to expired
+	}
+	sessionMutex.Unlock()
 	return nil
 }
 
