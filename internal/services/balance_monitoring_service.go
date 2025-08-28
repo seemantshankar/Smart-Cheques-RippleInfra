@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
@@ -285,6 +286,25 @@ func (s *BalanceMonitoringService) StopMonitoring(ctx context.Context) error {
 	s.stopChannel <- true
 	s.isRunning = false
 
+	// Publish monitoring stopped event (best-effort)
+	if s.messagingClient != nil {
+		event := &messaging.Event{
+			Type:      "balance.monitoring.stopped",
+			Source:    "balance-monitoring-service",
+			Data:      map[string]interface{}{},
+			Timestamp: time.Now().Format(time.RFC3339),
+		}
+		if err := s.messagingClient.PublishEvent(ctx, event); err != nil {
+			fmt.Printf("Warning: Failed to publish monitoring stopped event: %v\n", err)
+		}
+
+		// Close messaging client to release resources and satisfy test expectations
+		if err := s.messagingClient.Close(); err != nil {
+			// Non-fatal: log and proceed
+			fmt.Printf("Warning: Failed to close messaging client: %v\n", err)
+		}
+	}
+
 	return nil
 }
 
@@ -301,7 +321,7 @@ func (s *BalanceMonitoringService) monitoringLoop(ctx context.Context) {
 			fmt.Println("Balance monitoring stopped")
 			return
 		case <-ctx.Done():
-			fmt.Println("Balance monitoring cancelled")
+			fmt.Println("Balance monitoring canceled")
 			return
 		}
 	}

@@ -425,9 +425,17 @@ func (suite *AuditTrailTestSuite) executeWithdrawal(ctx context.Context, transac
 // Store audit logs by operation type for consistent retrieval
 var auditLogStore = make(map[string]*models.AuditLog)
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) auditOperation(ctx context.Context, operationType string, enterpriseID, userID, transactionID uuid.UUID, details map[string]interface{}) error {
 	// In real implementation, call audit service
 	// For testing, store the audit log for later retrieval
+	_ = ctx           // Using blank identifier to acknowledge unused parameter
+	_ = operationType // Using blank identifier to acknowledge unused parameter
+	_ = enterpriseID  // Using blank identifier to acknowledge unused parameter
+	_ = userID        // Using blank identifier to acknowledge unused parameter
+	_ = transactionID // Using blank identifier to acknowledge unused parameter
+	_ = details       // Using blank identifier to acknowledge unused parameter
+
 	log := &models.AuditLog{
 		ID:           uuid.New(),
 		Action:       operationType,
@@ -444,9 +452,11 @@ func (suite *AuditTrailTestSuite) auditOperation(ctx context.Context, operationT
 	return nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) getAuditLogsForOperation(ctx context.Context, operationType string, transactionID uuid.UUID) ([]*models.AuditLog, error) {
 	// In real implementation, query audit logs
 	// For testing, retrieve from our store
+	_ = ctx // Using blank identifier to acknowledge unused parameter
 	key := fmt.Sprintf("%s_%s", operationType, transactionID.String())
 
 	if log, exists := auditLogStore[key]; exists {
@@ -509,6 +519,7 @@ func (suite *AuditTrailTestSuite) auditUserLogout(ctx context.Context, userID uu
 	return suite.auditUserOperation(ctx, userID, "user_logout", map[string]interface{}{})
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) auditUserOperation(ctx context.Context, userID uuid.UUID, operationType string, details map[string]interface{}) error {
 	// In real implementation, audit user operation
 	// Using parameters to avoid unused error
@@ -519,12 +530,13 @@ func (suite *AuditTrailTestSuite) auditUserOperation(ctx context.Context, userID
 	return nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) getUserActivityTrail(ctx context.Context, userID uuid.UUID, startTime, endTime time.Time) ([]*models.AuditLog, error) {
 	// Return simulated user activity trail
 	// Using the time range to filter logs if needed
-	_ = ctx
-	_ = startTime
-	_ = endTime
+	_ = ctx       // Using blank identifier to acknowledge unused parameter
+	_ = startTime // Using blank identifier to acknowledge unused parameter
+	_ = endTime   // Using blank identifier to acknowledge unused parameter
 
 	return []*models.AuditLog{
 		{ID: uuid.New(), Action: "user_login", UserID: userID, CreatedAt: time.Now().Add(-30 * time.Minute)},
@@ -535,20 +547,22 @@ func (suite *AuditTrailTestSuite) getUserActivityTrail(ctx context.Context, user
 	}, nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) auditSystemEvent(ctx context.Context, eventType string, details map[string]interface{}) error {
 	// In real implementation, audit system event
 	// Using parameters to avoid unused error
-	_ = ctx
-	_ = eventType
-	_ = details
+	_ = ctx       // Using blank identifier to acknowledge unused parameter
+	_ = eventType // Using blank identifier to acknowledge unused parameter
+	_ = details   // Using blank identifier to acknowledge unused parameter
 	return nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) getSystemEventTrail(ctx context.Context, startTime, endTime time.Time) ([]*models.AuditLog, error) {
 	// Using the time range to filter logs if needed
-	_ = ctx
-	_ = startTime
-	_ = endTime
+	_ = ctx       // Using blank identifier to acknowledge unused parameter
+	_ = startTime // Using blank identifier to acknowledge unused parameter
+	_ = endTime   // Using blank identifier to acknowledge unused parameter
 
 	return []*models.AuditLog{
 		{ID: uuid.New(), Action: "system_config_changed", UserID: uuid.Nil, CreatedAt: time.Now().Add(-20 * time.Minute)},
@@ -557,19 +571,21 @@ func (suite *AuditTrailTestSuite) getSystemEventTrail(ctx context.Context, start
 	}, nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) createAuditLog(ctx context.Context, operationType string, enterpriseID, userID uuid.UUID, details map[string]interface{}) (uuid.UUID, error) {
 	// In real implementation, create audit log with hash
 	// Using parameters to avoid unused error
-	_ = ctx
-	_ = operationType
-	_ = enterpriseID
-	_ = userID
-	_ = details
+	_ = ctx           // Using blank identifier to acknowledge unused parameter
+	_ = operationType // Using blank identifier to acknowledge unused parameter
+	_ = enterpriseID  // Using blank identifier to acknowledge unused parameter
+	_ = userID        // Using blank identifier to acknowledge unused parameter
+	_ = details       // Using blank identifier to acknowledge unused parameter
 	return uuid.New(), nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) getAuditLogByID(ctx context.Context, auditLogID uuid.UUID) (*models.AuditLog, error) {
-	_ = ctx
+	_ = ctx // Using blank identifier to acknowledge unused parameter
 	return &models.AuditLog{
 		ID:           auditLogID,
 		Action:       "integrity_test",
@@ -579,36 +595,30 @@ func (suite *AuditTrailTestSuite) getAuditLogByID(ctx context.Context, auditLogI
 	}, nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) attemptAuditLogModification(ctx context.Context, auditLogID uuid.UUID, details map[string]interface{}) error {
 	// In real implementation, attempt to modify audit log (should fail)
 	// Using parameters to avoid unused error
-	_ = ctx
-	_ = auditLogID
-	_ = details
+	_ = ctx        // Using blank identifier to acknowledge unused parameter
+	_ = auditLogID // Using blank identifier to acknowledge unused parameter
+	_ = details    // Using blank identifier to acknowledge unused parameter
 	return fmt.Errorf("audit log modification not permitted")
 }
 
-// Method is unused according to VS Code Go extension
-// Either implement it or prefix with underscore to indicate it's intentionally not used
-func (suite *AuditTrailTestSuite) validateAuditLogHash(ctx context.Context, auditLogID uuid.UUID) (bool, error) {
-	// Mark parameter as intentionally unused
-	_ = ctx
-	_ = auditLogID
-	return true, nil
-}
-
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) createAuditLogWithDate(ctx context.Context, operationType string, createdAt time.Time) (uuid.UUID, error) {
 	// Mark parameters as intentionally unused
-	_ = ctx
-	_ = operationType
-	_ = createdAt
+	_ = ctx           // Using blank identifier to acknowledge unused parameter
+	_ = operationType // Using blank identifier to acknowledge unused parameter
+	_ = createdAt     // Using blank identifier to acknowledge unused parameter
 	return uuid.New(), nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) applyRetentionPolicy(ctx context.Context, retentionPeriod time.Duration) (*RetentionStats, error) {
 	// Mark parameter as intentionally unused
-	_ = ctx
-	_ = retentionPeriod
+	_ = ctx             // Using blank identifier to acknowledge unused parameter
+	_ = retentionPeriod // Using blank identifier to acknowledge unused parameter
 	return &RetentionStats{
 		ProcessedLogs: 10,
 		ArchivedLogs:  3,
@@ -616,17 +626,19 @@ func (suite *AuditTrailTestSuite) applyRetentionPolicy(ctx context.Context, rete
 	}, nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) createTestAuditLog(ctx context.Context, operationType string) error {
 	// Mark parameter as intentionally unused
-	_ = ctx
-	_ = operationType
+	_ = ctx           // Using blank identifier to acknowledge unused parameter
+	_ = operationType // Using blank identifier to acknowledge unused parameter
 	return nil
 }
 
+// nolint:unusedparams
 func (suite *AuditTrailTestSuite) generateAuditReport(ctx context.Context, req *AuditReportRequest) (*AuditReport, error) {
 	// Mark parameter as intentionally unused
-	_ = ctx
-	_ = req
+	_ = ctx // Using blank identifier to acknowledge unused parameter
+	_ = req // Using blank identifier to acknowledge unused parameter
 	return &AuditReport{
 		TotalEvents:  100,
 		EventsByType: map[string]int64{"withdrawal_created": 20, "user_login": 30},

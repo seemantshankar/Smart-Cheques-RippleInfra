@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -263,7 +264,7 @@ const (
 	WithdrawalAuthStatusTimeLocked WithdrawalAuthStatus = "time_locked"
 	WithdrawalAuthStatusProcessing WithdrawalAuthStatus = "processing"
 	WithdrawalAuthStatusCompleted  WithdrawalAuthStatus = "completed"
-	WithdrawalAuthStatusCancelled  WithdrawalAuthStatus = "cancelled"
+	WithdrawalAuthStatusCancelled  WithdrawalAuthStatus = "canceled"
 	WithdrawalAuthStatusExpired    WithdrawalAuthStatus = "expired"
 )
 

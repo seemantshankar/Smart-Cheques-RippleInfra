@@ -48,9 +48,9 @@ const (
 	PermissionViewCompliance   Permission = "compliance:view"
 	PermissionRunChecks        Permission = "compliance:run_checks"
 
-	// Smart Cheque permissions (for future use)
-	PermissionCreateSmartCheque Permission = "smart_cheque:create"
-	PermissionViewSmartCheque   Permission = "smart_cheque:view"
+	// Smart Check permissions (for future use)
+	PermissionCreateSmartCheque Permission = "smart_check:create"
+	PermissionViewSmartCheque   Permission = "smart_check:view"
 	PermissionApprovePayment    Permission = "payment:approve"
 	PermissionProcessPayment    Permission = "payment:process"
 
@@ -91,7 +91,7 @@ var RolePermissions = map[Role][]Permission{
 		PermissionViewCompliance,
 		PermissionRunChecks,
 
-		// Smart Cheques
+		// Smart Checks
 		PermissionCreateSmartCheque,
 		PermissionViewSmartCheque,
 		PermissionApprovePayment,
@@ -109,7 +109,7 @@ var RolePermissions = map[Role][]Permission{
 		PermissionUploadDocument,
 		PermissionViewDocument,
 
-		// Smart Cheques
+		// Smart Checks
 		PermissionCreateSmartCheque,
 		PermissionViewSmartCheque,
 		PermissionApprovePayment,

@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	// Importing pq driver for PostgreSQL database
 	_ "github.com/lib/pq"
 )
 

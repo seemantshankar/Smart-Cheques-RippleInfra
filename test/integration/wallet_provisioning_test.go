@@ -13,6 +13,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/smart-payment-infrastructure/internal/config"
 	"github.com/smart-payment-infrastructure/internal/handlers"
 	"github.com/smart-payment-infrastructure/internal/middleware"
@@ -20,8 +23,6 @@ import (
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/smart-payment-infrastructure/pkg/auth"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	_ "github.com/lib/pq"
 )

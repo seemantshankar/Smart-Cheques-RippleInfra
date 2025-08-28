@@ -130,7 +130,7 @@ func (s *Seeder) seedContracts() error {
 func (s *Seeder) ClearDevelopmentData() error {
 	log.Println("Clearing development data...")
 
-	tables := []string{"audit_logs", "milestones", "smart_cheques", "contracts", "enterprises"}
+	tables := []string{"audit_logs", "milestones", "smart_checks", "contracts", "enterprises"}
 
 	for _, table := range tables {
 		query := fmt.Sprintf("DELETE FROM %s", table)

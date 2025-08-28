@@ -70,7 +70,7 @@ func (s *XRPLService) HealthCheck() error {
 	return s.client.HealthCheck()
 }
 
-// CreateSmartChequeEscrow creates an escrow for a Smart Cheque
+// CreateSmartChequeEscrow creates an escrow for a Smart Check
 func (s *XRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error) {
 	if !s.initialized {
 		return nil, "", fmt.Errorf("XRPL service not initialized")
@@ -103,7 +103,7 @@ func (s *XRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string,
 		return nil, "", fmt.Errorf("failed to create escrow: %w", err)
 	}
 
-	log.Printf("Smart Cheque escrow created: %s, Amount: %s %s", result.TransactionID, amountStr, currency)
+	log.Printf("Smart Check escrow created: %s, Amount: %s %s", result.TransactionID, amountStr, currency)
 	return result, fulfillment, nil
 }
 
@@ -128,11 +128,11 @@ func (s *XRPLService) CompleteSmartChequeMilestone(payeeAddress, ownerAddress st
 		return nil, fmt.Errorf("failed to finish escrow: %w", err)
 	}
 
-	log.Printf("Smart Cheque milestone completed: %s, Sequence: %d", result.TransactionID, sequence)
+	log.Printf("Smart Check milestone completed: %s, Sequence: %d", result.TransactionID, sequence)
 	return result, nil
 }
 
-// CancelSmartCheque cancels a Smart Cheque escrow
+// CancelSmartCheque cancels a Smart Check escrow
 func (s *XRPLService) CancelSmartCheque(accountAddress, ownerAddress string, sequence uint32) (*xrpl.TransactionResult, error) {
 	if !s.initialized {
 		return nil, fmt.Errorf("XRPL service not initialized")
@@ -151,7 +151,7 @@ func (s *XRPLService) CancelSmartCheque(accountAddress, ownerAddress string, seq
 		return nil, fmt.Errorf("failed to cancel escrow: %w", err)
 	}
 
-	log.Printf("Smart Cheque cancelled: %s, Sequence: %d", result.TransactionID, sequence)
+	log.Printf("Smart Check canceled: %s, Sequence: %d", result.TransactionID, sequence)
 	return result, nil
 }
 

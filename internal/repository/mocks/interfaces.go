@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
-	"github.com/stretchr/testify/mock"
 )
 
 // AssetRepositoryInterface mock
@@ -272,4 +273,80 @@ func (m *TransactionRepositoryInterface) GetTransactionCountByStatus() (map[mode
 func (m *TransactionRepositoryInterface) GetAverageProcessingTime() (float64, error) {
 	args := m.Called()
 	return args.Get(0).(float64), args.Error(1)
+}
+
+// ContractRepositoryInterface mock
+type ContractRepositoryInterface struct {
+	mock.Mock
+}
+
+func (m *ContractRepositoryInterface) CreateContract(ctx context.Context, contract *models.Contract) error {
+	args := m.Called(ctx, contract)
+	return args.Error(0)
+}
+
+func (m *ContractRepositoryInterface) GetContractByID(ctx context.Context, id string) (*models.Contract, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Contract), args.Error(1)
+}
+
+func (m *ContractRepositoryInterface) UpdateContract(ctx context.Context, contract *models.Contract) error {
+	args := m.Called(ctx, contract)
+	return args.Error(0)
+}
+
+func (m *ContractRepositoryInterface) DeleteContract(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *ContractRepositoryInterface) GetContractsByStatus(ctx context.Context, status string, limit, offset int) ([]*models.Contract, error) {
+	args := m.Called(ctx, status, limit, offset)
+	return args.Get(0).([]*models.Contract), args.Error(1)
+}
+
+func (m *ContractRepositoryInterface) GetContractsByType(ctx context.Context, contractType string, limit, offset int) ([]*models.Contract, error) {
+	args := m.Called(ctx, contractType, limit, offset)
+	return args.Get(0).([]*models.Contract), args.Error(1)
+}
+
+func (m *ContractRepositoryInterface) GetContractsByParty(ctx context.Context, party string, limit, offset int) ([]*models.Contract, error) {
+	args := m.Called(ctx, party, limit, offset)
+	return args.Get(0).([]*models.Contract), args.Error(1)
+}
+
+// ContractMilestoneRepositoryInterface mock
+type ContractMilestoneRepositoryInterface struct {
+	mock.Mock
+}
+
+func (m *ContractMilestoneRepositoryInterface) CreateMilestone(ctx context.Context, milestone *models.ContractMilestone) error {
+	args := m.Called(ctx, milestone)
+	return args.Error(0)
+}
+
+func (m *ContractMilestoneRepositoryInterface) GetMilestoneByID(ctx context.Context, id string) (*models.ContractMilestone, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ContractMilestone), args.Error(1)
+}
+
+func (m *ContractMilestoneRepositoryInterface) UpdateMilestone(ctx context.Context, milestone *models.ContractMilestone) error {
+	args := m.Called(ctx, milestone)
+	return args.Error(0)
+}
+
+func (m *ContractMilestoneRepositoryInterface) DeleteMilestone(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *ContractMilestoneRepositoryInterface) GetMilestonesByContractID(ctx context.Context, contractID string) ([]*models.ContractMilestone, error) {
+	args := m.Called(ctx, contractID)
+	return args.Get(0).([]*models.ContractMilestone), args.Error(1)
 }

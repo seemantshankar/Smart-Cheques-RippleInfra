@@ -35,16 +35,19 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: Failed to query existing tables: %v", err)
 	} else {
-		var existingTables []string
+		var tables []string
 		for rows.Next() {
 			var tableName string
-			rows.Scan(&tableName)
-			existingTables = append(existingTables, tableName)
+			if err := rows.Scan(&tableName); err != nil {
+				log.Printf("Error scanning table name: %v", err)
+				continue
+			}
+			tables = append(tables, tableName)
 		}
 		rows.Close()
 
 		// Drop all existing tables
-		for _, table := range existingTables {
+		for _, table := range tables {
 			_, err = db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")
 			if err != nil {
 				log.Printf("Warning: Failed to drop table %s: %v", table, err)
@@ -60,7 +63,7 @@ func main() {
 		"milestones",
 		"audit_logs",
 		"contracts",
-		"smart_cheques",
+		"smart_checks",
 		"enterprise_documents",
 		"authorized_representatives",
 		"wallets",

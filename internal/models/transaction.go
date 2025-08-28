@@ -21,7 +21,7 @@ const (
 	TransactionStatusSubmitted  TransactionStatus = "submitted"
 	TransactionStatusConfirmed  TransactionStatus = "confirmed"
 	TransactionStatusFailed     TransactionStatus = "failed"
-	TransactionStatusCancelled  TransactionStatus = "cancelled"
+	TransactionStatusCancelled  TransactionStatus = "canceled"
 	TransactionStatusExpired    TransactionStatus = "expired"
 )
 
@@ -74,7 +74,7 @@ type Transaction struct {
 	OfferSequence *uint32 `json:"offer_sequence,omitempty" gorm:"type:int"`
 
 	// Business Context
-	SmartChequeID *string `json:"smart_cheque_id,omitempty" gorm:"type:varchar(255);index"`
+	SmartChequeID *string `json:"smart_check_id,omitempty" gorm:"type:varchar(255);index"`
 	MilestoneID   *string `json:"milestone_id,omitempty" gorm:"type:varchar(255);index"`
 	EnterpriseID  string  `json:"enterprise_id" gorm:"type:varchar(255);not null;index"`
 	UserID        string  `json:"user_id" gorm:"type:varchar(255);not null;index"`

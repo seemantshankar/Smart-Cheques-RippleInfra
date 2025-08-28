@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/smart-payment-infrastructure/internal/models"
 	"gorm.io/gorm"
+
+	"github.com/smart-payment-infrastructure/internal/models"
 )
 
 // TransactionRepository implements TransactionRepositoryInterface

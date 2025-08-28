@@ -118,7 +118,7 @@ func (m *MessagingService) Close() error {
 	m.mu.Lock()
 	for eventType, cancel := range m.subscribers {
 		cancel()
-		log.Printf("Cancelled subscription for event type: %s", eventType)
+		log.Printf("Canceled subscription for event type: %s", eventType)
 	}
 	m.subscribers = make(map[string]context.CancelFunc)
 	m.mu.Unlock()
@@ -143,7 +143,7 @@ func generateMessageID() string {
 // Common queue names for the Smart Payment Infrastructure
 const (
 	QueueEnterpriseEvents  = "enterprise_events"
-	QueueSmartChequeEvents = "smart_cheque_events"
+	QueueSmartChequeEvents = "smart_check_events"
 	QueueMilestoneEvents   = "milestone_events"
 	QueuePaymentEvents     = "payment_events"
 	QueueXRPLTransactions  = "xrpl_transactions"

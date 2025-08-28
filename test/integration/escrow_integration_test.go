@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smart-payment-infrastructure/internal/services"
 )
 
 func TestSmartChequeEscrowIntegration(t *testing.T) {
@@ -17,7 +18,7 @@ func TestSmartChequeEscrowIntegration(t *testing.T) {
 		t.Logf("No .env file found, using system environment variables: %v", err)
 	}
 
-	// This test demonstrates the complete Smart Cheque escrow workflow
+	// This test demonstrates the complete Smart Check escrow workflow
 	// using the XRPL testnet simulation
 
 	// Setup XRPL service
@@ -30,7 +31,7 @@ func TestSmartChequeEscrowIntegration(t *testing.T) {
 	err := xrplService.Initialize()
 	require.NoError(t, err, "XRPL service should initialize successfully")
 
-	t.Log("=== Smart Cheque Escrow Integration Test ===")
+	t.Log("=== Smart Check Escrow Integration Test ===")
 
 	// Step 1: Create enterprise wallets (simulate payer and payee enterprises)
 	t.Log("Step 1: Creating enterprise wallets...")
@@ -43,8 +44,8 @@ func TestSmartChequeEscrowIntegration(t *testing.T) {
 	require.NoError(t, err, "Should create payee wallet successfully")
 	t.Logf("  Payee wallet created: %s", payeeWallet.Address)
 
-	// Step 2: Create Smart Cheque escrow with milestone secret
-	t.Log("Step 2: Creating Smart Cheque escrow...")
+	// Step 2: Create Smart Check escrow with milestone secret
+	t.Log("Step 2: Creating Smart Check escrow...")
 
 	milestoneSecret := "project_milestone_completion_secret_2024"
 	escrowAmount := 100.0 // 100 XRP
@@ -122,7 +123,7 @@ func TestSmartChequeEscrowCancellation(t *testing.T) {
 	err := xrplService.Initialize()
 	require.NoError(t, err)
 
-	t.Log("=== Smart Cheque Escrow Cancellation Test ===")
+	t.Log("=== Smart Check Escrow Cancellation Test ===")
 
 	// Create wallets
 	payerWallet, err := xrplService.CreateWallet()
@@ -134,8 +135,8 @@ func TestSmartChequeEscrowCancellation(t *testing.T) {
 	t.Logf("Created test wallets: Payer=%s, Payee=%s",
 		payerWallet.Address, payeeWallet.Address)
 
-	// Create escrow that will be cancelled
-	milestoneSecret := "cancelled_project_secret_2024"
+	// Create escrow that will be canceled
+	milestoneSecret := "canceled_project_secret_2024"
 	escrowAmount := 50.0 // 50 XRP
 
 	escrowResult, _, err := xrplService.CreateSmartChequeEscrow(
@@ -150,7 +151,7 @@ func TestSmartChequeEscrowCancellation(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cancelResult)
 
-	t.Logf("Escrow cancelled with Transaction ID: %s", cancelResult.TransactionID)
+	t.Logf("Escrow canceled with Transaction ID: %s", cancelResult.TransactionID)
 
 	// Validate cancellation
 	assert.Equal(t, "tesSUCCESS", cancelResult.ResultCode, "Cancellation should be successful")

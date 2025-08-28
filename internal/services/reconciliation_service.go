@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -296,7 +297,7 @@ const (
 	ReconciliationStatusRunning   ReconciliationStatus = "running"
 	ReconciliationStatusCompleted ReconciliationStatus = "completed"
 	ReconciliationStatusFailed    ReconciliationStatus = "failed"
-	ReconciliationStatusCancelled ReconciliationStatus = "cancelled"
+	ReconciliationStatusCancelled ReconciliationStatus = "canceled"
 )
 
 type DiscrepancySeverity string

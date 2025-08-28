@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/joho/godotenv"
+
 	"github.com/smart-payment-infrastructure/internal/config"
 	"github.com/smart-payment-infrastructure/pkg/database"
 )

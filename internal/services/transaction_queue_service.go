@@ -258,7 +258,6 @@ func (s *TransactionQueueService) ExpireOldTransactions() error {
 		if tx.Status == models.TransactionStatusQueued ||
 			tx.Status == models.TransactionStatusProcessing ||
 			tx.Status == models.TransactionStatusBatched {
-
 			tx.Status = models.TransactionStatusExpired
 			tx.UpdatedAt = time.Now()
 
@@ -546,7 +545,9 @@ func (s *TransactionQueueService) processTransaction(transaction *models.Transac
 		if err != nil {
 			log.Printf("Failed to calculate fee for transaction %s: %v", transaction.ID, err)
 			transaction.SetError(fmt.Errorf("fee calculation failed: %w", err))
-			s.transactionRepo.UpdateTransaction(transaction)
+			if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
+				log.Printf("Failed to update transaction with fee calculation error: %v", err)
+			}
 			return false
 		}
 		transaction.Fee = fee
@@ -572,10 +573,14 @@ func (s *TransactionQueueService) processTransaction(transaction *models.Transac
 	if err != nil {
 		log.Printf("Transaction %s failed: %v", transaction.ID, err)
 		transaction.SetError(err)
-		s.transactionRepo.UpdateTransaction(transaction)
+		if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
+			log.Printf("Failed to update transaction with error: %v", err)
+		}
 
 		// Publish failure event
-		s.publishTransactionEvent(transaction, "transaction_failed")
+		if err := s.publishTransactionEvent(transaction, "transaction_failed"); err != nil {
+			log.Printf("Failed to publish transaction failed event: %v", err)
+		}
 		return false
 	}
 
@@ -592,7 +597,9 @@ func (s *TransactionQueueService) processTransaction(transaction *models.Transac
 	log.Printf("Transaction %s processed successfully", transaction.ID)
 
 	// Publish success event
-	s.publishTransactionEvent(transaction, "transaction_confirmed")
+	if err := s.publishTransactionEvent(transaction, "transaction_confirmed"); err != nil {
+		log.Printf("Failed to publish transaction confirmed event: %v", err)
+	}
 	return true
 }
 
@@ -792,7 +799,7 @@ func (s *TransactionQueueService) subscribeToBatchingEvents() error {
 		return fmt.Errorf("failed to subscribe to priority change events: %w", err)
 	}
 
-	if err := s.messagingService.SubscribeToEvent("transaction_cancelled", s.handleTransactionCancellation); err != nil {
+	if err := s.messagingService.SubscribeToEvent("transaction_canceled", s.handleTransactionCancellation); err != nil {
 		return fmt.Errorf("failed to subscribe to cancellation events: %w", err)
 	}
 

@@ -452,7 +452,7 @@ func TestXRPLService_FormatAmount(t *testing.T) {
 }
 
 func TestXRPLService_EscrowIntegrationFlow(t *testing.T) {
-	// Integration test that tests the complete Smart Cheque escrow flow
+	// Integration test that tests the complete Smart Check escrow flow
 	config := XRPLConfig{
 		NetworkURL: "https://s.altnet.rippletest.net:51234",
 		TestNet:    true,
@@ -469,7 +469,7 @@ func TestXRPLService_EscrowIntegrationFlow(t *testing.T) {
 	payeeWallet, err := service.CreateWallet()
 	require.NoError(t, err)
 
-	// Step 2: Create Smart Cheque escrow
+	// Step 2: Create Smart Check escrow
 	milestoneSecret := "integration_test_secret_12345"
 	escrowResult, fulfillment, err := service.CreateSmartChequeEscrow(
 		payerWallet.Address, payeeWallet.Address, 25.0, "XRP", milestoneSecret)

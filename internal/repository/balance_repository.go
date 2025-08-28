@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -271,8 +273,10 @@ func (r *PostgresBalanceRepository) GetAssetTransaction(ctx context.Context, id 
 	}
 
 	// Unmarshal metadata
-	if len(metadataJSON) > 0 {
-		json.Unmarshal(metadataJSON, &transaction.Metadata)
+	if metadataJSON != nil {
+		if err := json.Unmarshal(metadataJSON, &transaction.Metadata); err != nil {
+			log.Printf("Error unmarshaling metadata: %v", err)
+		}
 	}
 
 	return transaction, nil

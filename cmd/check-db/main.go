@@ -31,7 +31,10 @@ func main() {
 		for rows.Next() {
 			var version int
 			var dirty bool
-			rows.Scan(&version, &dirty)
+			if err := rows.Scan(&version, &dirty); err != nil {
+				log.Printf("Error scanning migration row: %v", err)
+				continue
+			}
 			log.Printf("Migration version: %d, dirty: %v", version, dirty)
 		}
 		rows.Close()
@@ -106,7 +109,10 @@ func main() {
 
 	for rows.Next() {
 		var tableName string
-		rows.Scan(&tableName)
+		if err := rows.Scan(&tableName); err != nil {
+			log.Printf("Error scanning table name: %v", err)
+			continue
+		}
 		log.Printf("Table: %s", tableName)
 	}
 
@@ -125,7 +131,10 @@ func main() {
 		defer colRows.Close()
 		for colRows.Next() {
 			var columnName, dataType string
-			colRows.Scan(&columnName, &dataType)
+			if err := colRows.Scan(&columnName, &dataType); err != nil {
+				log.Printf("Error scanning column info: %v", err)
+				continue
+			}
 			log.Printf("Column: %s (%s)", columnName, dataType)
 		}
 	}

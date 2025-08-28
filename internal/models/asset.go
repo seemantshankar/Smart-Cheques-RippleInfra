@@ -88,7 +88,7 @@ const (
 	AssetTransactionStatusProcessing AssetTransactionStatus = "processing"
 	AssetTransactionStatusCompleted  AssetTransactionStatus = "completed"
 	AssetTransactionStatusFailed     AssetTransactionStatus = "failed"
-	AssetTransactionStatusCancelled  AssetTransactionStatus = "cancelled"
+	AssetTransactionStatusCancelled  AssetTransactionStatus = "canceled"
 )
 
 // String returns string representation of AssetTransactionStatus
@@ -365,7 +365,7 @@ var SupportedCurrencies = map[string]SupportedAsset{
 		DecimalPlaces: 6,
 		MinimumAmount: "10000", // 0.01 USDC in microunits
 		IsActive:      true,
-		Description:   stringPtr("USD-pegged stablecoin issued by Centre"),
+		Description:   stringPtr("USD-pegged stablecoin issued by Center"),
 	},
 	"e₹": {
 		CurrencyCode:  "e₹",

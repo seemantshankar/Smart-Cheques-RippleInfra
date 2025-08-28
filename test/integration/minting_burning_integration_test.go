@@ -17,6 +17,10 @@ import (
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
+const (
+	wrappedUSDT = "wUSDT"
+)
+
 // Constants for test configurations
 const (
 	ConcurrentOperationsCount = 10
@@ -133,24 +137,22 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndMintingWorkflow() {
 	t.Logf("Initial USDT balance: %s", initialAvailable.String())
 
 	// Step 2: Create minting request
-	mintingRequest := &services.MintingRequest{
+	mintingReq := &services.MintingRequest{
 		EnterpriseID:     suite.testEnterpriseID,
-		WrappedAsset:     "wUSDT",
+		WrappedAsset:     wrappedUSDT,
 		MintAmount:       "10000000000", // 10,000 wUSDT
 		CollateralAsset:  "USDT",
-		CollateralAmount: "11000000000", // 11,000 USDT (10% over-collateralization)
-		Purpose:          "Integration test minting",
-		RequireApproval:  false,
+		CollateralAmount: "10000000000", // 10,000 USDT
 	}
 
 	// Step 3: Execute minting operation
-	mintingResult, err := suite.executeMintingOperation(ctx, mintingRequest)
+	mintingResult, err := suite.executeMintingOperation(ctx, mintingReq)
 	require.NoError(t, err)
 	require.NotNil(t, mintingResult)
 
 	assert.Equal(t, services.MintingStatusCompleted, mintingResult.Status)
 	assert.Equal(t, suite.testEnterpriseID, mintingResult.EnterpriseID)
-	assert.Equal(t, "wUSDT", mintingResult.WrappedAsset)
+	assert.Equal(t, wrappedUSDT, mintingResult.WrappedAsset)
 	assert.Equal(t, "10000000000", mintingResult.MintAmount)
 
 	t.Logf("Minting operation completed: %s", mintingResult.MintingID.String())
@@ -166,7 +168,7 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndMintingWorkflow() {
 	assert.Equal(t, expectedAvailable.String(), postMintAvailable.String())
 
 	// Step 5: Verify wrapped asset balance was created
-	wrappedBalance, err := suite.getBalance(suite.testEnterpriseID, "wUSDT")
+	wrappedBalance, err := suite.getBalance(suite.testEnterpriseID, wrappedUSDT)
 	require.NoError(t, err)
 	require.NotNil(t, wrappedBalance)
 
@@ -192,7 +194,7 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndMintingWorkflow() {
 	}
 
 	require.NotNil(t, mintingTx)
-	assert.Equal(t, "wUSDT", mintingTx.CurrencyCode)
+	assert.Equal(t, wrappedUSDT, mintingTx.CurrencyCode)
 	assert.Equal(t, "10000000000", mintingTx.Amount)
 	assert.Equal(t, models.AssetTransactionStatusCompleted, mintingTx.Status)
 
@@ -207,11 +209,11 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndBurningWorkflow() {
 	ctx := context.Background()
 
 	// Step 1: Setup wrapped asset balance (from previous minting)
-	err := suite.setupWrappedAssetBalance(suite.testEnterpriseID, "wUSDT", "5000000000") // 5,000 wUSDT
+	err := suite.setupWrappedAssetBalance(suite.testEnterpriseID, wrappedUSDT, "5000000000") // 5,000 wUSDT
 	require.NoError(t, err)
 
 	// Step 2: Verify initial wrapped asset balance
-	initialWrappedBalance, err := suite.getBalance(suite.testEnterpriseID, "wUSDT")
+	initialWrappedBalance, err := suite.getBalance(suite.testEnterpriseID, wrappedUSDT)
 	require.NoError(t, err)
 
 	initialWrappedAvailable, err := initialWrappedBalance.GetAvailableBalanceBigInt()
@@ -220,29 +222,27 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndBurningWorkflow() {
 	t.Logf("Initial wUSDT balance: %s", initialWrappedAvailable.String())
 
 	// Step 3: Create burning request
-	burningRequest := &services.BurningRequest{
+	burningReq := &services.BurningRequest{
 		EnterpriseID:      suite.testEnterpriseID,
-		WrappedAsset:      "wUSDT",
-		BurnAmount:        "3000000000",                         // 3,000 wUSDT
-		RedemptionAddress: "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH", // Example XRPL address
-		Purpose:           "Integration test burning",
-		RequireApproval:   false,
+		WrappedAsset:      wrappedUSDT,
+		BurnAmount:        "3000000000", // 3,000 wUSDT
+		RedemptionAddress: "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH",
 	}
 
 	// Step 4: Execute burning operation
-	burningResult, err := suite.executeBurningOperation(ctx, burningRequest)
+	burningResult, err := suite.executeBurningOperation(ctx, burningReq)
 	require.NoError(t, err)
 	require.NotNil(t, burningResult)
 
 	assert.Equal(t, services.BurningStatusCompleted, burningResult.Status)
 	assert.Equal(t, suite.testEnterpriseID, burningResult.EnterpriseID)
-	assert.Equal(t, "wUSDT", burningResult.WrappedAsset)
+	assert.Equal(t, wrappedUSDT, burningResult.WrappedAsset)
 	assert.Equal(t, "3000000000", burningResult.BurnAmount)
 
 	t.Logf("Burning operation completed: %s", burningResult.BurningID.String())
 
 	// Step 5: Verify wrapped asset balance was reduced
-	postBurnWrappedBalance, err := suite.getBalance(suite.testEnterpriseID, "wUSDT")
+	postBurnWrappedBalance, err := suite.getBalance(suite.testEnterpriseID, wrappedUSDT)
 	require.NoError(t, err)
 
 	postBurnWrappedAvailable, err := postBurnWrappedBalance.GetAvailableBalanceBigInt()
@@ -252,7 +252,7 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndBurningWorkflow() {
 	assert.Equal(t, expectedWrappedAvailable.String(), postBurnWrappedAvailable.String())
 
 	// Step 6: Verify redemption amount calculation (with fees)
-	expectedRedemptionAmount := suite.calculateExpectedRedemption("3000000000", "wUSDT")
+	expectedRedemptionAmount := suite.calculateExpectedRedemption("3000000000", wrappedUSDT)
 	assert.Equal(t, expectedRedemptionAmount, burningResult.RedemptionAmount)
 
 	t.Logf("Redemption amount: %s USDT", burningResult.RedemptionAmount)
@@ -287,7 +287,7 @@ func (suite *MintingBurningIntegrationTestSuite) TestMintingWithInsufficientColl
 
 	mintingRequest := &services.MintingRequest{
 		EnterpriseID:     suite.testEnterpriseID,
-		WrappedAsset:     "wUSDT",
+		WrappedAsset:     wrappedUSDT,
 		MintAmount:       "10000000000", // 10,000 wUSDT
 		CollateralAsset:  "USDT",
 		CollateralAmount: "9000000000", // Only 9,000 USDT (insufficient for 10% over-collateralization)
@@ -314,12 +314,12 @@ func (suite *MintingBurningIntegrationTestSuite) TestBurningWithInsufficientBala
 	ctx := context.Background()
 
 	// Setup minimal wrapped asset balance
-	err := suite.setupWrappedAssetBalance(suite.testEnterpriseID, "wUSDT", "1000000000") // 1,000 wUSDT
+	err := suite.setupWrappedAssetBalance(suite.testEnterpriseID, wrappedUSDT, "1000000000") // 1,000 wUSDT
 	require.NoError(t, err)
 
 	burningRequest := &services.BurningRequest{
 		EnterpriseID:      suite.testEnterpriseID,
-		WrappedAsset:      "wUSDT",
+		WrappedAsset:      wrappedUSDT,
 		BurnAmount:        "5000000000", // Try to burn 5,000 wUSDT (more than available)
 		RedemptionAddress: "rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH",
 		Purpose:           "Integration test insufficient balance",
@@ -710,8 +710,12 @@ func (suite *MintingBurningIntegrationTestSuite) setupInitialCollateral(enterpri
 }
 
 // calculateExpectedRedemption calculates the expected redemption amount with fees
+// nolint:unusedparams
 func (suite *MintingBurningIntegrationTestSuite) calculateExpectedRedemption(burnAmount, wrappedAsset string) string {
 	// Apply fee (simplified calculation)
+	// Mark parameter as intentionally unused
+	_ = wrappedAsset
+
 	amount := new(big.Int)
 	amount.SetString(burnAmount, 10)
 
@@ -725,13 +729,13 @@ func (suite *MintingBurningIntegrationTestSuite) calculateExpectedRedemption(bur
 // calculateCollateralRatio calculates the collateral ratio for assets
 func (suite *MintingBurningIntegrationTestSuite) calculateCollateralRatio(wrappedAsset, collateralAsset string) (float64, error) {
 	// Simplified ratio calculation
-	if wrappedAsset == "wUSDT" && collateralAsset == "USDT" {
+	if wrappedAsset == wrappedUSDT && collateralAsset == "USDT" {
 		return 1.0, nil
 	}
-	if wrappedAsset == "wUSDT" && collateralAsset == "USDC" {
+	if wrappedAsset == wrappedUSDT && collateralAsset == "USDC" {
 		return 1.1, nil
 	}
-	if wrappedAsset == "wUSDT" && collateralAsset == "XRP" {
+	if wrappedAsset == wrappedUSDT && collateralAsset == "XRP" {
 		return 1.5, nil
 	}
 	return 0, fmt.Errorf("unsupported asset combination")

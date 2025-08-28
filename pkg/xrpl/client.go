@@ -211,7 +211,7 @@ func (c *Client) SubmitTransaction(txBlob string) error {
 		return fmt.Errorf("empty transaction blob")
 	}
 
-	log.Printf("Transaction submitted successfully: %s", txBlob[:min(20, len(txBlob))]+"...")
+	log.Printf("Transaction submitted successfully: %s", txBlob[:minInt(20, len(txBlob))]+"...")
 	return nil
 }
 
@@ -305,7 +305,7 @@ func (c *Client) CancelEscrow(cancel *EscrowCancel) (*TransactionResult, error) 
 	// Generate a mock transaction ID for simulation
 	txID := c.generateTransactionID()
 
-	log.Printf("Cancelled escrow: Account: %s, Owner: %s, Sequence: %d, TxID: %s",
+	log.Printf("Canceled escrow: Account: %s, Owner: %s, Sequence: %d, TxID: %s",
 		cancel.Account, cancel.Owner, cancel.OfferSequence, txID)
 
 	return &TransactionResult{
@@ -353,7 +353,7 @@ func (c *Client) GetEscrowInfo(owner, sequence string) (*EscrowInfo, error) {
 }
 
 // GenerateCondition creates a cryptographic condition for escrow
-func (c *Client) GenerateCondition(secret string) (condition string, fulfillment string, error error) {
+func (c *Client) GenerateCondition(secret string) (condition string, fulfillment string, retErr error) {
 	if secret == "" {
 		return "", "", fmt.Errorf("secret cannot be empty")
 	}
@@ -369,12 +369,19 @@ func (c *Client) GenerateCondition(secret string) (condition string, fulfillment
 
 // generateTransactionID creates a mock transaction ID
 func (c *Client) generateTransactionID() string {
+	// Generate random bytes for transaction
 	txBytes := make([]byte, 32)
-	rand.Read(txBytes)
+	if _, err := rand.Read(txBytes); err != nil {
+		log.Printf("Failed to generate random bytes: %v", err)
+		// Return a default ID in case of error
+		return "DEFAULT_TX_ID"
+	}
+
 	return strings.ToUpper(hex.EncodeToString(txBytes))
 }
 
-func min(a, b int) int {
+// min returns the smaller of two integers
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}

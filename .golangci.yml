@@ -1,0 +1,76 @@
+run:
+  # Timeout for analysis
+  timeout: 5m
+
+  # Include test files
+  tests: true
+
+linters:
+  # Enable specific linters
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Suggest code simplifications
+    - govet         # Vet examines Go source code and reports suspicious constructs
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Staticcheck is a go vet on steroids
+    - typecheck     # Standard Go type checks
+    - unused        # Check for unused constants, variables, functions and types
+    - bodyclose     # Checks whether HTTP response body is closed
+    - dupl          # Tool for code clone detection
+    - goconst       # Finds repeated strings that could be replaced by a constant
+    - gofmt         # Checks whether code was gofmt-ed
+    - goimports     # Check import statements are formatted according to the 'goimport' command
+    - misspell      # Finds commonly misspelled English words
+    - nakedret      # Finds naked returns in functions greater than a specified function length
+    - prealloc      # Finds slice declarations that could potentially be preallocated
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter for Go
+    - unconvert     # Remove unnecessary type conversions
+    - whitespace    # Tool for detection of leading and trailing whitespace
+    - copyloopvar   # Replacement for deprecated exportloopref
+
+  # Disable specific linters
+  disable:
+    - depguard      # Check if package imports are in a list of acceptable packages
+
+linters-settings:
+  # Settings for specific linters
+  errcheck:
+    # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+    check-type-assertions: false
+
+    # Report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
+    check-blank: false
+
+  golint:
+    # Minimal confidence for issues
+    min-confidence: 0.8
+
+  gofmt:
+    # Simplify code: gofmt with `-s` option
+    simplify: true
+
+  goimports:
+    # Put imports beginning with prefix after 3rd-party packages.
+    local-prefixes: github.com/smart-payment-infrastructure
+
+  misspell:
+    # Correct spellings using locale preferences for US or UK.
+    locale: US
+
+  nakedret:
+    # Make an issue if func has more lines of code than this setting and it has naked returns.
+    max-func-lines: 30
+
+issues:
+  # Maximum count of issues to fix
+  max-issues-per-linter: 50
+  max-same-issues: 3
+
+  # Exclude some generated files
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
+
+  # Exclude some known issues
+  exclude:
+    - "SA1019"  # Using deprecated packages (we'll fix these gradually)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 

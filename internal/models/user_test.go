@@ -7,9 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testPassword = "testpassword123"
+
 func TestUser_HashPassword(t *testing.T) {
+	password := testPassword
 	user := &User{}
-	password := "testpassword123"
 
 	err := user.HashPassword(password)
 	require.NoError(t, err)
@@ -18,8 +20,8 @@ func TestUser_HashPassword(t *testing.T) {
 }
 
 func TestUser_CheckPassword(t *testing.T) {
+	password := testPassword
 	user := &User{}
-	password := "testpassword123"
 
 	// Hash the password
 	err := user.HashPassword(password)

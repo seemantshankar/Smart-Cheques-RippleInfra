@@ -34,6 +34,9 @@ func TestAnomalyDetectionService_AnalyzeTransaction(t *testing.T) {
 
 	service := NewAnomalyDetectionService(mockAssetRepo, mockBalanceRepo, mockEventBus, config)
 
+	// Use a fixed timestamp within business hours to avoid time-of-day behavioral penalties
+	businessHourTime := time.Date(2025, 1, 1, 14, 0, 0, 0, time.UTC)
+
 	testCases := []struct {
 		name                   string
 		request                *TransactionAnalysisRequest
@@ -49,7 +52,7 @@ func TestAnomalyDetectionService_AnalyzeTransaction(t *testing.T) {
 				CurrencyCode:    "USD",
 				TransactionType: "transfer",
 				Destination:     "normal_dest",
-				Timestamp:       time.Now(),
+				Timestamp:       businessHourTime,
 			},
 			expectedRiskLevel:      RiskLevelLow,
 			expectedRecommendation: AnomalyActionMonitor,
@@ -63,7 +66,7 @@ func TestAnomalyDetectionService_AnalyzeTransaction(t *testing.T) {
 				CurrencyCode:    "USD",
 				TransactionType: "withdrawal",
 				Destination:     "external_dest",
-				Timestamp:       time.Now(),
+				Timestamp:       businessHourTime,
 			},
 			expectedRiskLevel:      RiskLevelModerate,
 			expectedRecommendation: AnomalyActionAlert,

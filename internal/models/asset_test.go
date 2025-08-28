@@ -91,7 +91,7 @@ func TestAssetTransactionStatus(t *testing.T) {
 		{"Processing", AssetTransactionStatusProcessing, "processing"},
 		{"Completed", AssetTransactionStatusCompleted, "completed"},
 		{"Failed", AssetTransactionStatusFailed, "failed"},
-		{"Cancelled", AssetTransactionStatusCancelled, "cancelled"},
+		{"Canceled", AssetTransactionStatusCancelled, "canceled"},
 	}
 
 	for _, tt := range tests {

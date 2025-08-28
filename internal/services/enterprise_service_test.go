@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smart-payment-infrastructure/internal/models"
 )
 
 // MockEnterpriseRepository is a mock implementation of EnterpriseRepositoryInterface

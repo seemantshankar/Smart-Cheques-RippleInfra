@@ -13,6 +13,14 @@ import (
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
+const (
+	// Special currency code constants
+	specialCurrencyCode    = "E₹"
+	normalizedCurrencyCode = "e₹"
+	centerCurrencyCode     = "USDC"
+	centerDescription      = "USD-pegged stablecoin issued by Center"
+)
+
 // AssetService handles asset management operations
 type AssetService struct {
 	assetRepo       repository.AssetRepository
@@ -134,8 +142,8 @@ func (s *AssetService) GetSupportedAssets(ctx context.Context, activeOnly bool) 
 // GetAssetByCurrency returns asset information for a specific currency
 func (s *AssetService) GetAssetByCurrency(ctx context.Context, currencyCode string) (*models.SupportedAsset, error) {
 	currencyCode = strings.ToUpper(currencyCode)
-	if currencyCode == "E₹" {
-		currencyCode = "e₹" // Handle special case
+	if currencyCode == specialCurrencyCode {
+		currencyCode = normalizedCurrencyCode // Handle special case
 	}
 
 	return s.assetRepo.GetAssetByCurrency(ctx, currencyCode)
@@ -324,12 +332,12 @@ func (s *AssetService) InitializeDefaultAssets(ctx context.Context) error {
 			Description:   stringPtr("USD-pegged stablecoin issued by Tether"),
 		},
 		{
-			CurrencyCode:  "USDC",
+			CurrencyCode:  centerCurrencyCode,
 			CurrencyName:  "USD Coin",
 			AssetType:     "stablecoin",
 			DecimalPlaces: 6,
 			MinimumAmount: "10000", // 0.01 USDC in microunits
-			Description:   stringPtr("USD-pegged stablecoin issued by Centre"),
+			Description:   stringPtr(centerDescription),
 		},
 		{
 			CurrencyCode:  "e₹",

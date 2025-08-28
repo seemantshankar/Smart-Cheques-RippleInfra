@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
@@ -238,7 +239,10 @@ func (s *BalanceService) ProcessBalanceOperation(ctx context.Context, req *Balan
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		if err := s.messagingClient.PublishEvent(event); err != nil {
+			// Log the error but don't fail the operation
+			log.Printf("Failed to publish balance operation event: %v", err)
+		}
 	}
 
 	return transaction, nil
@@ -306,7 +310,10 @@ func (s *BalanceService) FreezeBalance(ctx context.Context, enterpriseID uuid.UU
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		if err := s.messagingClient.PublishEvent(event); err != nil {
+			// Log the error but don't fail the operation
+			log.Printf("Failed to publish balance frozen event: %v", err)
+		}
 	}
 
 	return nil
@@ -329,7 +336,10 @@ func (s *BalanceService) UnfreezeBalance(ctx context.Context, enterpriseID uuid.
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		if err := s.messagingClient.PublishEvent(event); err != nil {
+			// Log the error but don't fail the operation
+			log.Printf("Failed to publish balance unfrozen event: %v", err)
+		}
 	}
 
 	return nil
@@ -374,7 +384,10 @@ func (s *BalanceService) SyncXRPLBalance(ctx context.Context, enterpriseID uuid.
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		if err := s.messagingClient.PublishEvent(event); err != nil {
+			// Log the error but don't fail the operation
+			log.Printf("Failed to publish XRPL balance sync event: %v", err)
+		}
 	}
 
 	return nil

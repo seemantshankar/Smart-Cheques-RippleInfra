@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -223,7 +224,7 @@ const (
 	MintingStatusMinting    MintingStatus = "minting"
 	MintingStatusCompleted  MintingStatus = "completed"
 	MintingStatusFailed     MintingStatus = "failed"
-	MintingStatusCancelled  MintingStatus = "cancelled"
+	MintingStatusCancelled  MintingStatus = "canceled"
 )
 
 type BurningStatus string
@@ -235,7 +236,7 @@ const (
 	BurningStatusRedeeming BurningStatus = "redeeming"
 	BurningStatusCompleted BurningStatus = "completed"
 	BurningStatusFailed    BurningStatus = "failed"
-	BurningStatusCancelled BurningStatus = "cancelled"
+	BurningStatusCancelled BurningStatus = "canceled"
 )
 
 // CollateralLockStatus represents the status of collateral locks

@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
@@ -51,12 +53,21 @@ func (h *WithdrawalAuthorizationHandler) RegisterRoutes(router *gin.RouterGroup)
 	}
 }
 
+// parseWithdrawalUUIDParam parses a UUID parameter from the request context
+func parseWithdrawalUUIDParam(c *gin.Context, paramName string) (uuid.UUID, bool) {
+	paramStr := c.Param(paramName)
+	id, err := uuid.Parse(paramStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid %s", paramName)})
+		return uuid.Nil, false
+	}
+	return id, true
+}
+
 // CreateWithdrawalRequest handles withdrawal authorization request creation
 func (h *WithdrawalAuthorizationHandler) CreateWithdrawalRequest(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseWithdrawalUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -83,10 +94,8 @@ func (h *WithdrawalAuthorizationHandler) CreateWithdrawalRequest(c *gin.Context)
 
 // GetWithdrawalRequest retrieves a specific withdrawal request
 func (h *WithdrawalAuthorizationHandler) GetWithdrawalRequest(c *gin.Context) {
-	requestIDStr := c.Param("requestID")
-	requestID, err := uuid.Parse(requestIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+	requestID, valid := parseWithdrawalUUIDParam(c, "requestID")
+	if !valid {
 		return
 	}
 
@@ -101,10 +110,8 @@ func (h *WithdrawalAuthorizationHandler) GetWithdrawalRequest(c *gin.Context) {
 
 // GetPendingWithdrawalRequests retrieves pending withdrawal requests for an enterprise
 func (h *WithdrawalAuthorizationHandler) GetPendingWithdrawalRequests(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseWithdrawalUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -122,10 +129,8 @@ func (h *WithdrawalAuthorizationHandler) GetPendingWithdrawalRequests(c *gin.Con
 
 // ApproveWithdrawal handles withdrawal approval requests
 func (h *WithdrawalAuthorizationHandler) ApproveWithdrawal(c *gin.Context) {
-	requestIDStr := c.Param("requestID")
-	requestID, err := uuid.Parse(requestIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+	requestID, valid := parseWithdrawalUUIDParam(c, "requestID")
+	if !valid {
 		return
 	}
 
@@ -152,10 +157,8 @@ func (h *WithdrawalAuthorizationHandler) ApproveWithdrawal(c *gin.Context) {
 
 // RejectWithdrawal handles withdrawal rejection requests
 func (h *WithdrawalAuthorizationHandler) RejectWithdrawal(c *gin.Context) {
-	requestIDStr := c.Param("requestID")
-	requestID, err := uuid.Parse(requestIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+	requestID, valid := parseWithdrawalUUIDParam(c, "requestID")
+	if !valid {
 		return
 	}
 
@@ -182,10 +185,8 @@ func (h *WithdrawalAuthorizationHandler) RejectWithdrawal(c *gin.Context) {
 
 // CheckAuthorizationStatus checks the authorization status of a withdrawal request
 func (h *WithdrawalAuthorizationHandler) CheckAuthorizationStatus(c *gin.Context) {
-	requestIDStr := c.Param("requestID")
-	requestID, err := uuid.Parse(requestIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+	requestID, valid := parseWithdrawalUUIDParam(c, "requestID")
+	if !valid {
 		return
 	}
 
@@ -200,10 +201,8 @@ func (h *WithdrawalAuthorizationHandler) CheckAuthorizationStatus(c *gin.Context
 
 // CreateTimeLockWithdrawal creates a time-locked withdrawal
 func (h *WithdrawalAuthorizationHandler) CreateTimeLockWithdrawal(c *gin.Context) {
-	requestIDStr := c.Param("requestID")
-	requestID, err := uuid.Parse(requestIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+	requestID, valid := parseWithdrawalUUIDParam(c, "requestID")
+	if !valid {
 		return
 	}
 
@@ -230,14 +229,12 @@ func (h *WithdrawalAuthorizationHandler) CreateTimeLockWithdrawal(c *gin.Context
 
 // ReleaseTimeLockWithdrawal releases a time lock early
 func (h *WithdrawalAuthorizationHandler) ReleaseTimeLockWithdrawal(c *gin.Context) {
-	lockIDStr := c.Param("lockID")
-	lockID, err := uuid.Parse(lockIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lock ID"})
+	lockID, valid := parseWithdrawalUUIDParam(c, "lockID")
+	if !valid {
 		return
 	}
 
-	err = h.authorizationService.ReleaseTimeLockWithdrawal(c.Request.Context(), lockID)
+	err := h.authorizationService.ReleaseTimeLockWithdrawal(c.Request.Context(), lockID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

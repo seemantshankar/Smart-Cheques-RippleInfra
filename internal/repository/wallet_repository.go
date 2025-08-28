@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -268,20 +269,8 @@ func (r *WalletRepository) Delete(id uuid.UUID) error {
 	return nil
 }
 
-// GetAllWallets retrieves all wallets (for monitoring purposes)
-func (r *WalletRepository) GetAllWallets() ([]*models.Wallet, error) {
-	query := `
-		SELECT id, enterprise_id, address, public_key, encrypted_private_key,
-			   encrypted_seed, status, is_whitelisted, network_type, metadata,
-			   last_activity, created_at, updated_at
-		FROM wallets ORDER BY created_at DESC`
-
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all wallets: %w", err)
-	}
-	defer rows.Close()
-
+// scanWallets is a helper method to scan wallet rows from the database
+func (r *WalletRepository) scanWallets(rows *sql.Rows) ([]*models.Wallet, error) {
 	var wallets []*models.Wallet
 	for rows.Next() {
 		wallet := &models.Wallet{}
@@ -305,8 +294,24 @@ func (r *WalletRepository) GetAllWallets() ([]*models.Wallet, error) {
 		}
 		wallets = append(wallets, wallet)
 	}
-
 	return wallets, nil
+}
+
+// GetAllWallets retrieves all wallets (for monitoring purposes)
+func (r *WalletRepository) GetAllWallets() ([]*models.Wallet, error) {
+	query := `
+		SELECT id, enterprise_id, address, public_key, encrypted_private_key,
+			   encrypted_seed, status, is_whitelisted, network_type, metadata,
+			   last_activity, created_at, updated_at
+		FROM wallets ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all wallets: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanWallets(rows)
 }
 
 func (r *WalletRepository) GetWhitelistedWallets() ([]*models.Wallet, error) {
@@ -324,29 +329,5 @@ func (r *WalletRepository) GetWhitelistedWallets() ([]*models.Wallet, error) {
 	}
 	defer rows.Close()
 
-	var wallets []*models.Wallet
-	for rows.Next() {
-		wallet := &models.Wallet{}
-		err := rows.Scan(
-			&wallet.ID,
-			&wallet.EnterpriseID,
-			&wallet.Address,
-			&wallet.PublicKey,
-			&wallet.EncryptedPrivateKey,
-			&wallet.EncryptedSeed,
-			&wallet.Status,
-			&wallet.IsWhitelisted,
-			&wallet.NetworkType,
-			&wallet.Metadata,
-			&wallet.LastActivity,
-			&wallet.CreatedAt,
-			&wallet.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan wallet: %w", err)
-		}
-		wallets = append(wallets, wallet)
-	}
-
-	return wallets, nil
+	return r.scanWallets(rows)
 }

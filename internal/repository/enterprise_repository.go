@@ -2,9 +2,11 @@ package repository
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -24,7 +26,11 @@ func (r *EnterpriseRepository) CreateEnterprise(enterprise *models.Enterprise) e
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("Error rolling back transaction: %v", err)
+		}
+	}()
 
 	// Insert enterprise
 	query := `

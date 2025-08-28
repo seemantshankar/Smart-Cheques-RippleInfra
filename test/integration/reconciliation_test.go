@@ -265,8 +265,11 @@ type ConcurrentResult struct {
 }
 
 // Helper methods
+// nolint:unusedparams
 func (suite *ReconciliationTestSuite) performReconciliation(ctx context.Context, req *services.ReconciliationRequest) (*services.ReconciliationResult, error) {
 	// Simulate reconciliation - in real implementation call actual service
+	_ = ctx // Using blank identifier to acknowledge unused parameter
+
 	enterprise := suite.findEnterpriseByID(req.EnterpriseID)
 	if enterprise == nil {
 		return nil, fmt.Errorf("enterprise not found")

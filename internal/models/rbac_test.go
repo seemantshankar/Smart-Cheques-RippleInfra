@@ -20,7 +20,7 @@ func TestRole_HasPermission(t *testing.T) {
 			expected:   true,
 		},
 		{
-			name:       "finance has create smart cheque permission",
+			name:       "finance has create smart check permission",
 			role:       RoleFinance,
 			permission: PermissionCreateSmartCheque,
 			expected:   true,
@@ -38,7 +38,7 @@ func TestRole_HasPermission(t *testing.T) {
 			expected:   true,
 		},
 		{
-			name:       "compliance does not have create smart cheque permission",
+			name:       "compliance does not have create smart check permission",
 			role:       RoleCompliance,
 			permission: PermissionCreateSmartCheque,
 			expected:   false,

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/smart-payment-infrastructure/internal/config"
 	"github.com/smart-payment-infrastructure/internal/middleware"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -52,8 +53,8 @@ func main() {
 	// Messaging health check
 	r.GET("/health/messaging", middleware.MessagingHealthCheck)
 
-	// Smart Cheque creation endpoint (example)
-	r.POST("/smart-cheques", createSmartCheque)
+	// Smart Check creation endpoint (example)
+	r.POST("/smart-checks", createSmartCheque)
 
 	// Milestone completion endpoint (example)
 	r.POST("/milestones/:id/complete", completeMilestone)
@@ -97,10 +98,10 @@ func createSmartCheque(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement actual Smart Cheque creation logic
+	// TODO: Implement actual Smart Check creation logic
 	chequeID := "sc_" + request.PayerID + "_" + request.PayeeID // Simplified for demo
 
-	// Publish Smart Cheque created event
+	// Publish Smart Check created event
 	event := messaging.NewSmartChequeCreatedEvent(
 		chequeID,
 		request.PayerID,
@@ -109,16 +110,16 @@ func createSmartCheque(c *gin.Context) {
 		request.Currency,
 	)
 	if err := messagingService.PublishEvent(event); err != nil {
-		log.Printf("Failed to publish Smart Cheque created event: %v", err)
+		log.Printf("Failed to publish Smart Check created event: %v", err)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"cheque_id": chequeID,
-		"payer_id":  request.PayerID,
-		"payee_id":  request.PayeeID,
-		"amount":    request.Amount,
-		"currency":  request.Currency,
-		"status":    "created",
+		"check_id": chequeID,
+		"payer_id": request.PayerID,
+		"payee_id": request.PayeeID,
+		"amount":   request.Amount,
+		"currency": request.Currency,
+		"status":   "created",
 	})
 }
 
@@ -134,7 +135,7 @@ func completeMilestone(c *gin.Context) {
 	milestoneID := c.Param("id")
 
 	var request struct {
-		SmartChequeID string  `json:"smart_cheque_id" binding:"required"`
+		SmartChequeID string  `json:"smart_check_id" binding:"required"`
 		Amount        float64 `json:"amount" binding:"required"`
 	}
 
@@ -158,9 +159,9 @@ func completeMilestone(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"milestone_id":    milestoneID,
-		"smart_cheque_id": request.SmartChequeID,
-		"amount":          request.Amount,
-		"status":          "completed",
+		"milestone_id":   milestoneID,
+		"smart_check_id": request.SmartChequeID,
+		"amount":         request.Amount,
+		"status":         "completed",
 	})
 }

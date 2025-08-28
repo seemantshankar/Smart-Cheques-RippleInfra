@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
@@ -44,12 +46,21 @@ func (h *TreasuryHandler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 }
 
+// parseTreasuryUUIDParam parses a UUID parameter from the request context
+func parseTreasuryUUIDParam(c *gin.Context, paramName string) (uuid.UUID, bool) {
+	paramStr := c.Param(paramName)
+	id, err := uuid.Parse(paramStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid %s", paramName)})
+		return uuid.Nil, false
+	}
+	return id, true
+}
+
 // FundEnterprise handles enterprise funding requests
 func (h *TreasuryHandler) FundEnterprise(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -76,10 +87,8 @@ func (h *TreasuryHandler) FundEnterprise(c *gin.Context) {
 
 // WithdrawFunds handles withdrawal requests
 func (h *TreasuryHandler) WithdrawFunds(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -126,10 +135,8 @@ func (h *TreasuryHandler) TransferFunds(c *gin.Context) {
 
 // GetTreasuryBalance returns treasury balance summary
 func (h *TreasuryHandler) GetTreasuryBalance(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -144,10 +151,8 @@ func (h *TreasuryHandler) GetTreasuryBalance(c *gin.Context) {
 
 // GetFundingHistory returns transaction history
 func (h *TreasuryHandler) GetFundingHistory(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -183,10 +188,8 @@ func (h *TreasuryHandler) GetFundingHistory(c *gin.Context) {
 
 // RebalanceLiquidity performs liquidity rebalancing
 func (h *TreasuryHandler) RebalanceLiquidity(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -218,10 +221,8 @@ func (h *TreasuryHandler) CheckLiquidityThresholds(c *gin.Context) {
 
 // GenerateTreasuryReport generates treasury analytics report
 func (h *TreasuryHandler) GenerateTreasuryReport(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseTreasuryUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 

@@ -188,11 +188,11 @@ func (suite *TransactionBatchingIntegrationTestSuite) TearDownTest() {
 	// Only stop monitoring service if it's running
 	// We'll handle this gracefully to avoid "close of closed channel" errors
 	if suite.monitoringService != nil {
+		// Use a function to catch potential panics from closing already closed channels
 		func() {
 			defer func() {
-				if r := recover(); r != nil {
-					// Ignore panic from closing already closed channels
-				}
+				// Intentionally ignore any panic from closing already closed channels
+				_ = recover()
 			}()
 			suite.monitoringService.Stop()
 		}()
@@ -622,15 +622,4 @@ func setupTestDatabase() *database.PostgresDB {
 	// This would setup a test database
 	// For now, return a mock or use existing setup
 	return nil // Would be properly implemented in real scenario
-}
-
-// Helper function to remove a specific call from the ExpectedCalls slice
-func removeCall(calls []*mock.Call, methodName string) []*mock.Call {
-	result := make([]*mock.Call, 0, len(calls))
-	for _, call := range calls {
-		if call.Method != methodName {
-			result = append(result, call)
-		}
-	}
-	return result
 }

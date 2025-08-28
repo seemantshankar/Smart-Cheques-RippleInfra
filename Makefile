@@ -1,4 +1,4 @@
-.PHONY: help build build-docker test clean up down logs deps db-migrate db-seed db-clear
+.PHONY: help build build-docker test clean up down logs deps db-migrate db-seed db-clear lint lint-fix lint-script
 
 # Default target
 help:
@@ -50,15 +50,17 @@ logs:
 test:
 	go test -v ./...
 
-# Run integration tests
-test-integration:
-	@echo "Running integration tests..."
-	@echo "Note: Ensure PostgreSQL is running on localhost:5432"
-	go test -v ./test/integration/...
+# Run linters
+lint:
+	golangci-lint run
 
-# Run unit tests only
-test-unit:
-	go test -v ./internal/... ./pkg/...
+# Run linters and auto-fix issues
+lint-fix:
+	golangci-lint run --fix
+
+# Run linters using the script
+lint-script:
+	./scripts/lint.sh
 
 # Clean up Docker resources
 clean:

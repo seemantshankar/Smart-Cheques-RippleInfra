@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
-	"github.com/stretchr/testify/mock"
 )
 
 // TestBalance represents a balance for testing
@@ -282,5 +283,3 @@ type TestCircuitBreakerServiceInterface interface {
 	ResetCircuitBreaker(ctx context.Context, name string) error
 	GetCircuitBreakerMetrics(ctx context.Context, name string) (*CircuitBreakerMetrics, error)
 }
-
-

@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testNet = "testnet"
+
 // MockWalletRepositoryInterface implements repository interface for testing
 type MockWalletRepositoryInterface struct {
 	mock.Mock
@@ -190,7 +192,6 @@ func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 
 	// Test data
 	enterpriseID := uuid.New()
-	networkType := "testnet"
 
 	enterprise := &models.Enterprise{
 		ID:        enterpriseID,
@@ -206,12 +207,12 @@ func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 
 	// Setup expectations
 	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(enterprise, nil)
-	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, networkType).Return(nil, assert.AnError)
+	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, testNet).Return(nil, assert.AnError)
 	mockXRPLService.On("CreateWallet").Return(xrplWallet, nil)
 	mockWalletRepo.On("Create", mock.AnythingOfType("*models.Wallet")).Return(nil)
 
 	// Execute
-	result, err := service.CreateWalletForEnterprise(enterpriseID, networkType)
+	result, err := service.CreateWalletForEnterprise(enterpriseID, testNet)
 
 	// Assert
 	require.NoError(t, err)
@@ -221,7 +222,7 @@ func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 	assert.Equal(t, "03ABC123", result.PublicKey)
 	assert.Equal(t, models.WalletStatusPending, result.Status)
 	assert.False(t, result.IsWhitelisted)
-	assert.Equal(t, networkType, result.NetworkType)
+	assert.Equal(t, testNet, result.NetworkType)
 
 	// Verify mocks
 	mockEnterpriseRepo.AssertExpectations(t)
@@ -248,13 +249,12 @@ func TestWalletService_CreateWalletForEnterprise_EnterpriseNotFound(t *testing.T
 
 	// Test data
 	enterpriseID := uuid.New()
-	networkType := "testnet"
 
 	// Setup expectations
 	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(nil, assert.AnError)
 
 	// Execute
-	result, err := service.CreateWalletForEnterprise(enterpriseID, networkType)
+	result, err := service.CreateWalletForEnterprise(enterpriseID, testNet)
 
 	// Assert
 	assert.Error(t, err)
@@ -284,7 +284,6 @@ func TestWalletService_CreateWalletForEnterprise_ExistingActiveWallet(t *testing
 
 	// Test data
 	enterpriseID := uuid.New()
-	networkType := "testnet"
 
 	enterprise := &models.Enterprise{
 		ID:        enterpriseID,
@@ -295,15 +294,15 @@ func TestWalletService_CreateWalletForEnterprise_ExistingActiveWallet(t *testing
 		ID:           uuid.New(),
 		EnterpriseID: enterpriseID,
 		Status:       models.WalletStatusActive,
-		NetworkType:  networkType,
+		NetworkType:  testNet,
 	}
 
 	// Setup expectations
 	mockEnterpriseRepo.On("GetEnterpriseByID", enterpriseID).Return(enterprise, nil)
-	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, networkType).Return(existingWallet, nil)
+	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, testNet).Return(existingWallet, nil)
 
 	// Execute
-	result, err := service.CreateWalletForEnterprise(enterpriseID, networkType)
+	result, err := service.CreateWalletForEnterprise(enterpriseID, testNet)
 
 	// Assert
 	assert.Error(t, err)
@@ -340,12 +339,12 @@ func TestWalletService_ActivateWallet(t *testing.T) {
 		ID:           walletID,
 		EnterpriseID: enterpriseID,
 		Status:       models.WalletStatusPending,
-		NetworkType:  "testnet",
+		NetworkType:  testNet,
 	}
 
 	// Setup expectations
 	mockWalletRepo.On("GetByID", walletID).Return(wallet, nil)
-	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, "testnet").Return(nil, assert.AnError)
+	mockWalletRepo.On("GetActiveByEnterpriseAndNetwork", enterpriseID, testNet).Return(nil, assert.AnError)
 	mockWalletRepo.On("Update", mock.AnythingOfType("*models.Wallet")).Return(nil)
 
 	// Execute

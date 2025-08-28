@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/smart-payment-infrastructure/internal/config"
 	"github.com/smart-payment-infrastructure/internal/handlers"
 	"github.com/smart-payment-infrastructure/internal/middleware"

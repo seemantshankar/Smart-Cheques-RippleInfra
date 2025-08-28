@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
@@ -186,4 +187,30 @@ type BalanceRepository interface {
 	UpdateBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, amount string, txType models.AssetTransactionType, referenceID *string) error
 	FreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, reason string) error
 	UnfreezeBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string) error
+}
+
+// ContractRepositoryInterface defines the interface for contract repository operations
+type ContractRepositoryInterface interface {
+	// Contract CRUD operations
+	CreateContract(ctx context.Context, contract *models.Contract) error
+	GetContractByID(ctx context.Context, id string) (*models.Contract, error)
+	UpdateContract(ctx context.Context, contract *models.Contract) error
+	DeleteContract(ctx context.Context, id string) error
+
+	// Contract queries
+	GetContractsByStatus(ctx context.Context, status string, limit, offset int) ([]*models.Contract, error)
+	GetContractsByType(ctx context.Context, contractType string, limit, offset int) ([]*models.Contract, error)
+	GetContractsByParty(ctx context.Context, party string, limit, offset int) ([]*models.Contract, error)
+}
+
+// ContractMilestoneRepositoryInterface defines the interface for contract milestone repository operations
+type ContractMilestoneRepositoryInterface interface {
+	// Milestone CRUD operations
+	CreateMilestone(ctx context.Context, milestone *models.ContractMilestone) error
+	GetMilestoneByID(ctx context.Context, id string) (*models.ContractMilestone, error)
+	UpdateMilestone(ctx context.Context, milestone *models.ContractMilestone) error
+	DeleteMilestone(ctx context.Context, id string) error
+
+	// Milestone queries
+	GetMilestonesByContractID(ctx context.Context, contractID string) ([]*models.ContractMilestone, error)
 }

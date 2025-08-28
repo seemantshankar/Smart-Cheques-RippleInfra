@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
@@ -45,12 +47,21 @@ func (h *MintingBurningHandler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 }
 
+// parseMintingUUIDParam parses a UUID parameter from the request context
+func parseMintingUUIDParam(c *gin.Context, paramName string) (uuid.UUID, bool) {
+	paramStr := c.Param(paramName)
+	id, err := uuid.Parse(paramStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid %s", paramName)})
+		return uuid.Nil, false
+	}
+	return id, true
+}
+
 // MintWrappedAsset handles wrapped asset minting requests
 func (h *MintingBurningHandler) MintWrappedAsset(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -77,10 +88,8 @@ func (h *MintingBurningHandler) MintWrappedAsset(c *gin.Context) {
 
 // ValidateCollateral handles collateral validation requests
 func (h *MintingBurningHandler) ValidateCollateral(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -104,10 +113,8 @@ func (h *MintingBurningHandler) ValidateCollateral(c *gin.Context) {
 
 // GetMintingCapacity returns minting capacity for an enterprise
 func (h *MintingBurningHandler) GetMintingCapacity(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -128,10 +135,8 @@ func (h *MintingBurningHandler) GetMintingCapacity(c *gin.Context) {
 
 // BurnWrappedAsset handles wrapped asset burning requests
 func (h *MintingBurningHandler) BurnWrappedAsset(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -158,10 +163,8 @@ func (h *MintingBurningHandler) BurnWrappedAsset(c *gin.Context) {
 
 // InitiateBurning handles burning initiation with approval workflow
 func (h *MintingBurningHandler) InitiateBurning(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -188,14 +191,12 @@ func (h *MintingBurningHandler) InitiateBurning(c *gin.Context) {
 
 // ProcessBurning handles processing of approved burning requests
 func (h *MintingBurningHandler) ProcessBurning(c *gin.Context) {
-	burningIDStr := c.Param("burningID")
-	burningID, err := uuid.Parse(burningIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid burning ID"})
+	burningID, valid := parseMintingUUIDParam(c, "burningID")
+	if !valid {
 		return
 	}
 
-	err = h.mintingBurningService.ProcessBurning(c.Request.Context(), burningID)
+	err := h.mintingBurningService.ProcessBurning(c.Request.Context(), burningID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -208,10 +209,8 @@ func (h *MintingBurningHandler) ProcessBurning(c *gin.Context) {
 
 // LockCollateral handles collateral locking requests
 func (h *MintingBurningHandler) LockCollateral(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+	enterpriseID, valid := parseMintingUUIDParam(c, "enterpriseID")
+	if !valid {
 		return
 	}
 
@@ -238,14 +237,12 @@ func (h *MintingBurningHandler) LockCollateral(c *gin.Context) {
 
 // ReleaseCollateral handles collateral release requests
 func (h *MintingBurningHandler) ReleaseCollateral(c *gin.Context) {
-	lockIDStr := c.Param("lockID")
-	lockID, err := uuid.Parse(lockIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lock ID"})
+	lockID, valid := parseMintingUUIDParam(c, "lockID")
+	if !valid {
 		return
 	}
 
-	err = h.mintingBurningService.ReleaseCollateral(c.Request.Context(), lockID)
+	err := h.mintingBurningService.ReleaseCollateral(c.Request.Context(), lockID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

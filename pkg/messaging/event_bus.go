@@ -103,11 +103,11 @@ func NewSmartChequeCreatedEvent(chequeID, payerID, payeeID string, amount float6
 		Type:   EventTypeSmartChequeCreated,
 		Source: "orchestration-service",
 		Data: map[string]interface{}{
-			"cheque_id": chequeID,
-			"payer_id":  payerID,
-			"payee_id":  payeeID,
-			"amount":    amount,
-			"currency":  currency,
+			"check_id": chequeID,
+			"payer_id": payerID,
+			"payee_id": payeeID,
+			"amount":   amount,
+			"currency": currency,
 		},
 	}
 }
@@ -117,9 +117,9 @@ func NewMilestoneCompletedEvent(milestoneID, smartChequeID string, amount float6
 		Type:   EventTypeMilestoneCompleted,
 		Source: "orchestration-service",
 		Data: map[string]interface{}{
-			"milestone_id":    milestoneID,
-			"smart_cheque_id": smartChequeID,
-			"amount":          amount,
+			"milestone_id":   milestoneID,
+			"smart_check_id": smartChequeID,
+			"amount":         amount,
 		},
 	}
 }

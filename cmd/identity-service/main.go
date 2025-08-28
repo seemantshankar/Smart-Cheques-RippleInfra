@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
 	"github.com/smart-payment-infrastructure/internal/config"
 	"github.com/smart-payment-infrastructure/internal/handlers"
 	"github.com/smart-payment-infrastructure/internal/middleware"
