@@ -22,10 +22,10 @@ func TestPostgresMilestoneTemplateRepository_CreateTemplate(t *testing.T) {
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
 	template := &models.MilestoneTemplate{
-		ID:              "template-123",
-		Name:            "Standard Delivery Template",
+		ID:              testTemplateID,
+		Name:            testTemplateName,
 		Description:     "Template for standard package delivery milestones",
-		DefaultCategory: "delivery",
+		DefaultCategory: testCategory,
 		DefaultPriority: 3,
 		Variables:       []string{"delivery_address", "expected_date", "carrier"},
 		Version:         "1.0",
@@ -59,12 +59,12 @@ func TestPostgresMilestoneTemplateRepository_GetTemplateByID(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	expectedTemplate := &models.MilestoneTemplate{
 		ID:              templateID,
-		Name:            "Standard Delivery Template",
+		Name:            testTemplateName,
 		Description:     "Template for standard package delivery milestones",
-		DefaultCategory: "delivery",
+		DefaultCategory: testCategory,
 		DefaultPriority: 3,
 		Variables:       []string{"delivery_address", "expected_date", "carrier"},
 		Version:         "1.0",
@@ -132,7 +132,7 @@ func TestPostgresMilestoneTemplateRepository_UpdateTemplate(t *testing.T) {
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
 	template := &models.MilestoneTemplate{
-		ID:              "template-123",
+		ID:              testTemplateID,
 		Name:            "Updated Delivery Template",
 		Description:     "Updated template for package delivery milestones",
 		DefaultCategory: "approval",
@@ -188,7 +188,7 @@ func TestPostgresMilestoneTemplateRepository_DeleteTemplate(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`DELETE FROM milestone_template_versions WHERE template_id = \$1`).
@@ -220,7 +220,7 @@ func TestPostgresMilestoneTemplateRepository_GetTemplates(t *testing.T) {
 		"id", "name", "description", "default_category", "default_priority",
 		"variables", "version", "created_at", "updated_at",
 	}).AddRow(
-		"template-1", "Delivery Template", "Standard delivery", "delivery", 3,
+		"template-1", "Delivery Template", "Standard delivery", testCategory, 3,
 		pq.Array([]string{"address", "date"}), "1.0", time.Now(), time.Now(),
 	).AddRow(
 		"template-2", "Approval Template", "Standard approval", "approval", 5,
@@ -248,7 +248,7 @@ func TestPostgresMilestoneTemplateRepository_InstantiateTemplate(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	variables := map[string]interface{}{
 		"description":           "Package delivery to customer",
 		"verification_criteria": "Delivery confirmation received",
@@ -290,7 +290,7 @@ func TestPostgresMilestoneTemplateRepository_CustomizeTemplate(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	customizations := map[string]interface{}{
 		"name":             "Customized Delivery Template",
 		"description":      "Customized template for express delivery",
@@ -331,7 +331,7 @@ func TestPostgresMilestoneTemplateRepository_GetTemplateVariables(t *testing.T) 
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	expectedVariables := []string{"delivery_address", "expected_date", "carrier", "signature_required"}
 
 	rows := sqlmock.NewRows([]string{"variables"}).
@@ -354,12 +354,12 @@ func TestPostgresMilestoneTemplateRepository_CreateTemplateVersion(t *testing.T)
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	version := &models.MilestoneTemplate{
 		ID:              "version-456",
 		Name:            "Delivery Template v2.0",
 		Description:     "Updated delivery template with new features",
-		DefaultCategory: "delivery",
+		DefaultCategory: testCategory,
 		DefaultPriority: 4,
 		Variables:       []string{"address", "date", "tracking_number"},
 		Version:         "2.0",
@@ -393,7 +393,7 @@ func TestPostgresMilestoneTemplateRepository_GetTemplateVersions(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 
 	rows := sqlmock.NewRows([]string{
 		"id", "version", "name", "description", "default_category",
@@ -427,7 +427,7 @@ func TestPostgresMilestoneTemplateRepository_GetTemplateVersion(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	version := "2.0"
 
 	rows := sqlmock.NewRows([]string{
@@ -458,7 +458,7 @@ func TestPostgresMilestoneTemplateRepository_GetLatestTemplateVersion(t *testing
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 
 	rows := sqlmock.NewRows([]string{
 		"id", "version", "name", "description", "default_category",
@@ -488,7 +488,7 @@ func TestPostgresMilestoneTemplateRepository_CompareTemplateVersions(t *testing.
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	version1 := "1.0"
 	version2 := "2.0"
 
@@ -526,7 +526,7 @@ func TestPostgresMilestoneTemplateRepository_CompareTemplateVersions(t *testing.
 	assert.Equal(t, version2, diff.Version2)
 
 	// Check for expected changes
-	assert.Len(t, diff.Changes, 3) // name, description, default_category, default_priority, variables
+	assert.Len(t, diff.Changes, 5) // name, description, default_category, default_priority, variables (added var2)
 
 	// Check for added variable
 	assert.Contains(t, diff.AddedFields, "var2")
@@ -547,8 +547,8 @@ func TestPostgresMilestoneTemplateRepository_ShareTemplate(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
-	sharedWithUserID := "user-456"
+	templateID := testTemplateID
+	sharedWithUserID := testSharedUserID
 	permissions := []string{"read", "instantiate"}
 
 	mock.ExpectExec(`INSERT INTO milestone_template_shares .+ ON CONFLICT .+ DO UPDATE SET`).
@@ -558,9 +558,7 @@ func TestPostgresMilestoneTemplateRepository_ShareTemplate(t *testing.T) {
 			sharedWithUserID,
 			"system",
 			pq.Array(permissions),
-			sqlmock.AnyArg(),      // shared_at timestamp
-			pq.Array(permissions), // for ON CONFLICT UPDATE
-			sqlmock.AnyArg(),      // shared_at for UPDATE
+			sqlmock.AnyArg(), // shared_at timestamp (reused for UPDATE)
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -576,8 +574,8 @@ func TestPostgresMilestoneTemplateRepository_RevokeTemplateAccess(t *testing.T) 
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
-	userID := "user-456"
+	templateID := testTemplateID
+	userID := testSharedUserID
 
 	mock.ExpectExec(`DELETE FROM milestone_template_shares WHERE template_id = \$1 AND shared_with = \$2`).
 		WithArgs(templateID, userID).
@@ -595,7 +593,7 @@ func TestPostgresMilestoneTemplateRepository_GetSharedTemplates(t *testing.T) {
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	userID := "user-456"
+	userID := testSharedUserID
 	limit, offset := 10, 0
 
 	rows := sqlmock.NewRows([]string{
@@ -630,8 +628,8 @@ func TestPostgresMilestoneTemplateRepository_GetTemplatePermissions(t *testing.T
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
-	userID := "user-456"
+	templateID := testTemplateID
+	userID := testSharedUserID
 	expectedPermissions := []string{"read", "instantiate", "modify"}
 
 	rows := sqlmock.NewRows([]string{"permissions"}).
@@ -654,8 +652,8 @@ func TestPostgresMilestoneTemplateRepository_GetTemplatePermissions_NotFound(t *
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
-	userID := "user-456"
+	templateID := testTemplateID
+	userID := testSharedUserID
 
 	mock.ExpectQuery(`SELECT permissions FROM milestone_template_shares WHERE template_id = \$1 AND shared_with = \$2 AND \(expires_at IS NULL OR expires_at > NOW\(\)\)`).
 		WithArgs(templateID, userID).
@@ -674,7 +672,7 @@ func TestPostgresMilestoneTemplateRepository_GetTemplateShareList(t *testing.T) 
 
 	repo := NewPostgresMilestoneTemplateRepository(db)
 
-	templateID := "template-123"
+	templateID := testTemplateID
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
 
 	rows := sqlmock.NewRows([]string{

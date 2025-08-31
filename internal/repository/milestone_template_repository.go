@@ -120,7 +120,11 @@ func (r *PostgresMilestoneTemplateRepository) DeleteTemplate(ctx context.Context
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			fmt.Printf("Warning: failed to rollback transaction: %v\n", rbErr)
+		}
+	}()
 
 	// Delete template versions
 	_, err = tx.ExecContext(ctx, "DELETE FROM milestone_template_versions WHERE template_id = $1", id)

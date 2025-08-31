@@ -49,7 +49,7 @@ func TestBalanceService_InitializeEnterpriseBalance(t *testing.T) {
 		{
 			name:         "unsupported currency",
 			currencyCode: "INVALID",
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "INVALID").Return(nil, errors.New("not found"))
 			},
 			expectError:   true,
@@ -58,7 +58,7 @@ func TestBalanceService_InitializeEnterpriseBalance(t *testing.T) {
 		{
 			name:         "deactivated currency",
 			currencyCode: "INACTIVE",
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				asset := createTestAsset("INACTIVE", models.AssetTypeStablecoin, false)
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "INACTIVE").Return(asset, nil)
 			},
@@ -306,6 +306,6 @@ func BenchmarkBalanceService_CheckBalanceSufficiency(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		service.CheckBalanceSufficiency(context.Background(), enterpriseID, "USDT", "5000")
+		_, _ = service.CheckBalanceSufficiency(context.Background(), enterpriseID, "USDT", "5000")
 	}
 }

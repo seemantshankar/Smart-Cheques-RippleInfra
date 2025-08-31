@@ -124,7 +124,7 @@ func TestAuthEndpoints_Integration(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		var loginResponse models.UserLoginResponse
-		json.Unmarshal(w.Body.Bytes(), &loginResponse)
+		_ = json.Unmarshal(w.Body.Bytes(), &loginResponse)
 
 		// Use token to access protected endpoint
 		req, _ = http.NewRequest("GET", "/auth/me", nil)

@@ -27,7 +27,7 @@ type TransactionBatchingIntegrationTestSuite struct {
 	queueService      *services.TransactionQueueService
 	monitoringService *services.TransactionMonitoringService
 	xrplService       *services.XRPLService
-	messagingService  *messaging.MessagingService
+	messagingService  *messaging.Service
 
 	// Repositories
 	transactionRepo *mocks.TransactionRepositoryInterface
@@ -52,7 +52,7 @@ func (suite *TransactionBatchingIntegrationTestSuite) SetupSuite() {
 	suite.transactionRepo = new(mocks.TransactionRepositoryInterface)
 
 	// Initialize messaging service
-	messagingService, err := messaging.NewMessagingService("localhost:6379", "", 1)
+	messagingService, err := messaging.NewService("localhost:6379", "", 1)
 	require.NoError(suite.T(), err)
 	suite.messagingService = messagingService
 

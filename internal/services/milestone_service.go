@@ -32,7 +32,7 @@ func (s *milestoneServiceImpl) CreateMilestone(ctx context.Context, m *models.Co
 	return nil
 }
 
-func (s *milestoneServiceImpl) ValidateMilestone(ctx context.Context, m *models.ContractMilestone) error {
+func (s *milestoneServiceImpl) ValidateMilestone(_ context.Context, m *models.ContractMilestone) error {
 	if m == nil {
 		return fmt.Errorf("milestone is nil")
 	}
@@ -47,4 +47,3 @@ func (s *milestoneServiceImpl) ValidateMilestone(ctx context.Context, m *models.
 	}
 	return nil
 }
-

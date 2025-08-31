@@ -147,6 +147,11 @@ type MockXRPLService struct {
 	mock.Mock
 }
 
+func (m *MockXRPLService) Initialize() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockXRPLService) CreateWallet() (*xrpl.WalletInfo, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
@@ -171,6 +176,43 @@ func (m *MockXRPLService) GetAccountInfo(address string) (interface{}, error) {
 func (m *MockXRPLService) HealthCheck() error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *MockXRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestoneSecret)
+	if args.Get(0) == nil {
+		return nil, "", args.Error(2)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)
+}
+
+func (m *MockXRPLService) CompleteSmartChequeMilestone(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string) (*xrpl.TransactionResult, error) {
+	args := m.Called(payeeAddress, ownerAddress, sequence, condition, fulfillment)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
+func (m *MockXRPLService) CancelSmartCheque(accountAddress, ownerAddress string, sequence uint32) (*xrpl.TransactionResult, error) {
+	args := m.Called(accountAddress, ownerAddress, sequence)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
+func (m *MockXRPLService) GetEscrowStatus(ownerAddress string, sequence string) (*xrpl.EscrowInfo, error) {
+	args := m.Called(ownerAddress, sequence)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.EscrowInfo), args.Error(1)
+}
+
+func (m *MockXRPLService) GenerateCondition(secret string) (condition string, fulfillment string, err error) {
+	args := m.Called(secret)
+	return args.String(0), args.String(1), args.Error(2)
 }
 
 func TestWalletService_CreateWalletForEnterprise(t *testing.T) {

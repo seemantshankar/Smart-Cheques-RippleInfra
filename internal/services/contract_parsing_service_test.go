@@ -39,4 +39,3 @@ func TestParseFromMetadata_NoFilenameCreatesObligation(t *testing.T) {
 		t.Fatalf("expected one obligation fallback, got %d", len(c.Obligations))
 	}
 }
-

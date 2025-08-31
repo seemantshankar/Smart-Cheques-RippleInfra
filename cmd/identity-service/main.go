@@ -88,7 +88,7 @@ func main() {
 	auditHandler := handlers.NewAuditHandler(auditService)
 
 	// Initialize messaging service
-	messagingService, err := messaging.NewMessagingService(
+	messagingService, err := messaging.NewService(
 		cfg.Redis.URL,
 		cfg.Redis.Password,
 		cfg.Redis.DB,

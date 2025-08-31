@@ -18,7 +18,7 @@ type TransactionValidationService struct {
 	assetRepo       repository.AssetRepository
 	balanceRepo     repository.BalanceRepository
 	transactionRepo repository.TransactionRepositoryInterface
-	messagingClient *messaging.MessagingService
+	messagingClient *messaging.Service
 }
 
 // NewTransactionValidationService creates a new transaction validation service
@@ -26,7 +26,7 @@ func NewTransactionValidationService(
 	assetRepo repository.AssetRepository,
 	balanceRepo repository.BalanceRepository,
 	transactionRepo repository.TransactionRepositoryInterface,
-	messagingClient *messaging.MessagingService,
+	messagingClient *messaging.Service,
 ) *TransactionValidationService {
 	return &TransactionValidationService{
 		assetRepo:       assetRepo,
@@ -474,14 +474,14 @@ func (s *TransactionValidationService) ProcessValidatedTransaction(ctx context.C
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		_ = s.messagingClient.PublishEvent(event)
 	}
 
 	return transaction, nil
 }
 
 // GetTransactionValidationHistory gets validation history for analysis
-func (s *TransactionValidationService) GetTransactionValidationHistory(ctx context.Context, enterpriseID uuid.UUID, limit int) ([]TransactionValidationSummary, error) {
+func (s *TransactionValidationService) GetTransactionValidationHistory(_ context.Context, _ uuid.UUID, _ int) ([]TransactionValidationSummary, error) {
 	// This would typically query a validation history table
 	// For now, return empty slice as placeholder
 	return []TransactionValidationSummary{}, nil

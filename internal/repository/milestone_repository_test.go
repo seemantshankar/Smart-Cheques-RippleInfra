@@ -14,6 +14,16 @@ import (
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
+// Test constants
+const (
+	testContractID   = "testContractID"
+	testMilestoneID  = "milestone-123"
+	testTemplateID   = "template-123"
+	testSharedUserID = "user-456"
+	testCategory     = "delivery"
+	testTemplateName = "Standard Delivery Template"
+)
+
 func TestPostgresMilestoneRepository_CreateMilestone(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -22,8 +32,8 @@ func TestPostgresMilestoneRepository_CreateMilestone(t *testing.T) {
 	repo := NewPostgresMilestoneRepository(db)
 
 	milestone := &models.ContractMilestone{
-		ID:                   "milestone-123",
-		ContractID:           "contract-123",
+		ID:                   testMilestoneID,
+		ContractID:           testContractID,
 		MilestoneID:          "m1",
 		SequenceNumber:       1,
 		Dependencies:         []string{"dep1", "dep2"},
@@ -79,10 +89,10 @@ func TestPostgresMilestoneRepository_GetMilestoneByID(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	milestoneID := "milestone-123"
+	milestoneID := testMilestoneID
 	expectedMilestone := &models.ContractMilestone{
 		ID:                   milestoneID,
-		ContractID:           "contract-123",
+		ContractID:           testContractID,
 		MilestoneID:          "m1",
 		SequenceNumber:       1,
 		Dependencies:         []string{"dep1", "dep2"},
@@ -174,7 +184,7 @@ func TestPostgresMilestoneRepository_UpdateMilestone(t *testing.T) {
 	repo := NewPostgresMilestoneRepository(db)
 
 	milestone := &models.ContractMilestone{
-		ID:                   "milestone-123",
+		ID:                   testMilestoneID,
 		SequenceNumber:       2,
 		Dependencies:         []string{"dep1", "dep2", "dep3"},
 		Category:             "approval",
@@ -246,7 +256,7 @@ func TestPostgresMilestoneRepository_DeleteMilestone(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	milestoneID := "milestone-123"
+	milestoneID := testMilestoneID
 
 	mock.ExpectExec(`DELETE FROM contract_milestones WHERE id = \$1`).
 		WithArgs(milestoneID).
@@ -264,7 +274,7 @@ func TestPostgresMilestoneRepository_GetMilestonesByContract(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 	limit, offset := 10, 0
 
 	rows := sqlmock.NewRows([]string{
@@ -314,7 +324,7 @@ func TestPostgresMilestoneRepository_GetMilestonesByStatus(t *testing.T) {
 		"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
 		"contingency_plans", "criticality_score", "created_at", "updated_at",
 	}).AddRow(
-		"milestone-completed", "contract-123", "m1", 1, pq.Array([]string{}), "delivery",
+		"milestone-completed", "testContractID", "m1", 1, pq.Array([]string{}), "delivery",
 		3, true, "Completed milestone", "Completed criteria", nil, nil, nil, nil,
 		nil, nil, 100, "medium", pq.Array([]string{}), 50, time.Now(), time.Now(),
 	)
@@ -348,7 +358,7 @@ func TestPostgresMilestoneRepository_GetOverdueMilestones(t *testing.T) {
 		"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
 		"contingency_plans", "criticality_score", "created_at", "updated_at",
 	}).AddRow(
-		"overdue-milestone", "contract-123", "m1", 1, pq.Array([]string{}), "delivery",
+		"overdue-milestone", "testContractID", "m1", 1, pq.Array([]string{}), "delivery",
 		3, true, "Overdue milestone", "Overdue criteria", nil, time.Now().Add(-24*time.Hour),
 		nil, nil, nil, nil, 50, "high", pq.Array([]string{}), 90, time.Now(), time.Now(),
 	)
@@ -373,7 +383,7 @@ func TestPostgresMilestoneRepository_GetCriticalPathMilestones(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 
 	rows := sqlmock.NewRows([]string{
 		"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
@@ -457,7 +467,7 @@ func TestPostgresMilestoneRepository_GetMilestoneCompletionStats(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 
 	rows := sqlmock.NewRows([]string{
 		"total_milestones", "completed_milestones", "pending_milestones", "overdue_milestones", "average_completion",
@@ -548,7 +558,7 @@ func TestPostgresMilestoneRepository_SearchMilestones(t *testing.T) {
 		"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
 		"contingency_plans", "criticality_score", "created_at", "updated_at",
 	}).AddRow(
-		"milestone-search", "contract-123", "m1", 1, pq.Array([]string{}), "delivery",
+		"milestone-search", "testContractID", "m1", 1, pq.Array([]string{}), "delivery",
 		3, true, "Package delivery milestone", "Delivery confirmation", nil, nil, nil, nil,
 		nil, nil, 0, "medium", pq.Array([]string{}), 50, time.Now(), time.Now(),
 	)
@@ -574,7 +584,7 @@ func TestPostgresMilestoneRepository_ValidateDependencyGraph(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 
 	// Mock a simple acyclic graph: A -> B -> C
 	rows := sqlmock.NewRows([]string{"milestone_id", "depends_on_id"}).
@@ -598,7 +608,7 @@ func TestPostgresMilestoneRepository_GetTopologicalOrder(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 
 	// Mock a simple acyclic graph: A -> B -> C
 	rows := sqlmock.NewRows([]string{"milestone_id", "depends_on_id"}).
@@ -630,7 +640,7 @@ func TestPostgresMilestoneRepository_FilterMilestones(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "contract-123"
+	contractID := "testContractID"
 	category := "delivery"
 	priority := 3
 	criticalPath := true

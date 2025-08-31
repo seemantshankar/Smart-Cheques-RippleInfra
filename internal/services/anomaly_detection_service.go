@@ -564,12 +564,12 @@ func (s *AnomalyDetectionService) publishAnomalyEvent(ctx context.Context, score
 }
 
 // Placeholder implementations for other interface methods
-func (s *AnomalyDetectionService) DetectPatternAnomalies(ctx context.Context, enterpriseID uuid.UUID) ([]*PatternAnomaly, error) {
+func (s *AnomalyDetectionService) DetectPatternAnomalies(_ context.Context, _ uuid.UUID) ([]*PatternAnomaly, error) {
 	// In a real implementation, this would analyze patterns across multiple transactions
 	return []*PatternAnomaly{}, nil
 }
 
-func (s *AnomalyDetectionService) PerformBatchAnalysis(ctx context.Context, req *BatchAnalysisRequest) (*BatchAnalysisResult, error) {
+func (s *AnomalyDetectionService) PerformBatchAnalysis(_ context.Context, req *BatchAnalysisRequest) (*BatchAnalysisResult, error) {
 	// In a real implementation, this would process batches of transactions
 	return &BatchAnalysisResult{
 		AnalysisID:      uuid.New(),
@@ -583,7 +583,7 @@ func (s *AnomalyDetectionService) PerformBatchAnalysis(ctx context.Context, req 
 	}, nil
 }
 
-func (s *AnomalyDetectionService) GenerateAnomalyReport(ctx context.Context, req *AnomalyReportRequest) (*AnomalyReport, error) {
+func (s *AnomalyDetectionService) GenerateAnomalyReport(_ context.Context, req *AnomalyReportRequest) (*AnomalyReport, error) {
 	return &AnomalyReport{
 		ID:          uuid.New(),
 		GeneratedAt: time.Now(),
@@ -598,7 +598,7 @@ func (s *AnomalyDetectionService) GenerateAnomalyReport(ctx context.Context, req
 	}, nil
 }
 
-func (s *AnomalyDetectionService) SetAnomalyThresholds(ctx context.Context, req *AnomalyThresholdRequest) (*AnomalyThreshold, error) {
+func (s *AnomalyDetectionService) SetAnomalyThresholds(_ context.Context, req *AnomalyThresholdRequest) (*AnomalyThreshold, error) {
 	threshold := &AnomalyThreshold{
 		ID:             uuid.New(),
 		EnterpriseID:   req.EnterpriseID,
@@ -613,15 +613,15 @@ func (s *AnomalyDetectionService) SetAnomalyThresholds(ctx context.Context, req 
 	return threshold, nil
 }
 
-func (s *AnomalyDetectionService) GetAnomalyThresholds(ctx context.Context, enterpriseID uuid.UUID) ([]*AnomalyThreshold, error) {
+func (s *AnomalyDetectionService) GetAnomalyThresholds(_ context.Context, _ uuid.UUID) ([]*AnomalyThreshold, error) {
 	return []*AnomalyThreshold{}, nil
 }
 
-func (s *AnomalyDetectionService) InvestigateAnomaly(ctx context.Context, anomalyID uuid.UUID) (*AnomalyInvestigation, error) {
+func (s *AnomalyDetectionService) InvestigateAnomaly(_ context.Context, anomalyID uuid.UUID) (*AnomalyInvestigation, error) {
 	return nil, fmt.Errorf("investigation not found for anomaly: %s", anomalyID.String())
 }
 
-func (s *AnomalyDetectionService) SubmitFeedback(ctx context.Context, req *AnomalyFeedbackRequest) error {
+func (s *AnomalyDetectionService) SubmitFeedback(_ context.Context, req *AnomalyFeedbackRequest) error {
 	// In a real implementation, this would store feedback for model improvement
 	return nil
 }

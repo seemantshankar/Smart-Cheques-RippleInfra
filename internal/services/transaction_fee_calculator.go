@@ -164,7 +164,7 @@ func (f *FeeCalculator) CalculateFeeForRetry(originalTransaction *models.Transac
 }
 
 // ValidateFee validates if a fee is reasonable for a transaction
-func (f *FeeCalculator) ValidateFee(transaction *models.Transaction, proposedFee string) error {
+func (f *FeeCalculator) ValidateFee(_ *models.Transaction, proposedFee string) error {
 	fee, err := strconv.ParseInt(proposedFee, 10, 64)
 	if err != nil {
 		return fmt.Errorf("invalid fee format: %w", err)

@@ -121,7 +121,7 @@ func (s *EnterpriseService) GetEnterpriseByID(id uuid.UUID) (*models.Enterprise,
 }
 
 // UpdateKYBStatus updates the KYB status of an enterprise
-func (s *EnterpriseService) UpdateKYBStatus(id uuid.UUID, status models.KYBStatus, comments string) error {
+func (s *EnterpriseService) UpdateKYBStatus(id uuid.UUID, status models.KYBStatus, _ string) error {
 	// Verify enterprise exists
 	enterprise, err := s.enterpriseRepo.GetEnterpriseByID(id)
 	if err != nil {

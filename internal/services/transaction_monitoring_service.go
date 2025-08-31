@@ -14,7 +14,7 @@ import (
 // TransactionMonitoringService provides real-time monitoring and dashboard metrics
 type TransactionMonitoringService struct {
 	transactionRepo  repository.TransactionRepositoryInterface
-	messagingService *messaging.MessagingService
+	messagingService *messaging.Service
 
 	// Real-time metrics
 	metrics      *TransactionMetrics
@@ -132,7 +132,7 @@ type SystemHealth struct {
 // NewTransactionMonitoringService creates a new monitoring service
 func NewTransactionMonitoringService(
 	transactionRepo repository.TransactionRepositoryInterface,
-	messagingService *messaging.MessagingService,
+	messagingService *messaging.Service,
 ) *TransactionMonitoringService {
 	return &TransactionMonitoringService{
 		transactionRepo:  transactionRepo,

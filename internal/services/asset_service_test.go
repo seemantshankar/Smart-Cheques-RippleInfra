@@ -218,7 +218,7 @@ func TestAssetService_RegisterAsset(t *testing.T) {
 				MinimumAmount: "1000",
 				Description:   stringPtr("Test description"),
 			},
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "TEST").Return(nil, errors.New("not found"))
 				assetRepo.On("CreateAsset", mock.Anything, mock.AnythingOfType("*models.SupportedAsset")).Return(nil)
 			},
@@ -238,7 +238,7 @@ func TestAssetService_RegisterAsset(t *testing.T) {
 				DecimalPlaces: 6,
 				MinimumAmount: "1000",
 			},
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				existingAsset := createTestAsset("USDT", models.AssetTypeStablecoin, true)
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "USDT").Return(existingAsset, nil)
 			},
@@ -253,7 +253,7 @@ func TestAssetService_RegisterAsset(t *testing.T) {
 				DecimalPlaces: 6,
 				MinimumAmount: "invalid_amount",
 			},
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "INVALID").Return(nil, errors.New("not found"))
 			},
 			expectedError: "invalid minimum amount format: invalid_amount",
@@ -268,7 +268,7 @@ func TestAssetService_RegisterAsset(t *testing.T) {
 				MinimumAmount: "1000",
 				MaximumAmount: stringPtr("500"),
 			},
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "TEST").Return(nil, errors.New("not found"))
 			},
 			expectedError: "minimum amount cannot be greater than maximum amount",
@@ -395,7 +395,7 @@ func TestAssetService_DeactivateAsset(t *testing.T) {
 		{
 			name:         "asset not found",
 			currencyCode: "NOTFOUND",
-			setupMocks: func(assetRepo *MockAssetRepository, balanceRepo *MockBalanceRepository) {
+			setupMocks: func(assetRepo *MockAssetRepository, _ *MockBalanceRepository) {
 				assetRepo.On("GetAssetByCurrency", mock.Anything, "NOTFOUND").Return(nil, errors.New("not found"))
 			},
 			expectedError: "asset not found",
@@ -642,6 +642,6 @@ func BenchmarkAssetService_ValidateAssetForTransaction(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		service.ValidateAssetForTransaction(context.Background(), "USDT", "10000")
+		_ = service.ValidateAssetForTransaction(context.Background(), "USDT", "10000")
 	}
 }

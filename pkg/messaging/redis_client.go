@@ -98,7 +98,7 @@ func (r *RedisClient) Subscribe(channel string, handler func(*Message) error) er
 	return nil
 }
 
-func (r *RedisClient) EnqueueWithRetry(queue string, message *Message, maxRetries int) error {
+func (r *RedisClient) EnqueueWithRetry(queue string, message *Message, _ int) error {
 	message.Timestamp = time.Now()
 
 	data, err := json.Marshal(message)

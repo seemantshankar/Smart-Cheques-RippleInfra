@@ -1,0 +1,132 @@
+package services
+
+import (
+	"context"
+	"time"
+
+	"github.com/smart-payment-infrastructure/internal/models"
+)
+
+// OracleInterface defines the interface for verification services
+type OracleInterface interface {
+	// Verify evaluates a condition with context and returns the result
+	Verify(ctx context.Context, condition string, contextData interface{}) (*OracleResponse, error)
+
+	// GetProof returns verification evidence for a completed verification
+	GetProof(ctx context.Context, requestID string) ([]byte, error)
+
+	// GetStatus returns the health and availability status of the oracle
+	GetStatus(ctx context.Context) (*OracleStatus, error)
+
+	// Subscribe registers a callback for event-driven verification
+	Subscribe(ctx context.Context, condition string, callback OracleCallback) (string, error)
+
+	// Unsubscribe removes a subscription by ID
+	Unsubscribe(ctx context.Context, subscriptionID string) error
+}
+
+// OracleProviderInterface defines the interface for oracle provider management
+type OracleProviderInterface interface {
+	// RegisterProvider registers a new oracle provider
+	RegisterProvider(ctx context.Context, provider *models.OracleProvider) error
+
+	// GetProvider retrieves an oracle provider by ID
+	GetProvider(ctx context.Context, providerID string) (*models.OracleProvider, error)
+
+	// UpdateProvider updates an existing oracle provider
+	UpdateProvider(ctx context.Context, provider *models.OracleProvider) error
+
+	// DeleteProvider removes an oracle provider
+	DeleteProvider(ctx context.Context, providerID string) error
+
+	// ListProviders lists all oracle providers
+	ListProviders(ctx context.Context, limit, offset int) ([]*models.OracleProvider, error)
+
+	// GetProviderByType retrieves providers by type
+	GetProviderByType(ctx context.Context, providerType models.OracleType) ([]*models.OracleProvider, error)
+
+	// HealthCheck performs a health check on a provider
+	HealthCheck(ctx context.Context, providerID string) (*OracleStatus, error)
+}
+
+// OracleRequestInterface defines the interface for oracle request management
+type OracleRequestInterface interface {
+	// CreateRequest creates a new oracle request
+	CreateRequest(ctx context.Context, request *models.OracleRequest) error
+
+	// GetRequest retrieves an oracle request by ID
+	GetRequest(ctx context.Context, requestID string) (*models.OracleRequest, error)
+
+	// UpdateRequest updates an existing oracle request
+	UpdateRequest(ctx context.Context, request *models.OracleRequest) error
+
+	// DeleteRequest removes an oracle request
+	DeleteRequest(ctx context.Context, requestID string) error
+
+	// ListRequests lists oracle requests with filtering
+	ListRequests(ctx context.Context, filter *OracleRequestFilter, limit, offset int) ([]*models.OracleRequest, error)
+
+	// GetCachedResponse retrieves a cached response if available
+	GetCachedResponse(ctx context.Context, condition string) (*OracleResponse, error)
+
+	// CacheResponse caches a response
+	CacheResponse(ctx context.Context, condition string, response *OracleResponse) error
+}
+
+// OracleResponse represents the response from an oracle verification
+type OracleResponse struct {
+	RequestID  string      `json:"request_id"`
+	Condition  string      `json:"condition"`
+	Result     bool        `json:"result"`
+	Confidence float64     `json:"confidence"`  // confidence score (0.0 - 1.0)
+	Evidence   []byte      `json:"evidence"`    // verification evidence
+	Metadata   interface{} `json:"metadata"`    // additional metadata
+	VerifiedAt time.Time   `json:"verified_at"` // verification timestamp
+	ProofHash  string      `json:"proof_hash"`  // hash of the proof for integrity
+}
+
+// OracleStatus represents the health and availability status of an oracle
+type OracleStatus struct {
+	IsHealthy     bool               `json:"is_healthy"`
+	ResponseTime  time.Duration      `json:"response_time"`
+	LastChecked   time.Time          `json:"last_checked"`
+	ErrorRate     float64            `json:"error_rate"`
+	Capacity      int                `json:"capacity"`      // available capacity
+	Load          int                `json:"load"`          // current load
+	Version       string             `json:"version"`       // oracle version
+	Capabilities  []string           `json:"capabilities"`  // supported capabilities
+	Metrics       OracleMetrics      `json:"metrics"`       // performance metrics
+	Configuration OracleConfigStatus `json:"configuration"` // configuration status
+}
+
+// OracleMetrics represents performance metrics for an oracle
+type OracleMetrics struct {
+	TotalRequests       int64         `json:"total_requests"`
+	SuccessfulRequests  int64         `json:"successful_requests"`
+	FailedRequests      int64         `json:"failed_requests"`
+	AverageResponseTime time.Duration `json:"average_response_time"`
+	MinResponseTime     time.Duration `json:"min_response_time"`
+	MaxResponseTime     time.Duration `json:"max_response_time"`
+	CacheHitRate        float64       `json:"cache_hit_rate"`
+}
+
+// OracleConfigStatus represents the configuration status of an oracle
+type OracleConfigStatus struct {
+	IsValid     bool      `json:"is_valid"`
+	Errors      []string  `json:"errors"`
+	Warnings    []string  `json:"warnings"`
+	LastUpdated time.Time `json:"last_updated"`
+}
+
+// OracleCallback defines the callback function signature for subscriptions
+type OracleCallback func(response *OracleResponse, err error)
+
+// OracleRequestFilter defines filtering options for oracle requests
+type OracleRequestFilter struct {
+	ProviderID    *string               `json:"provider_id,omitempty"`
+	Status        *models.RequestStatus `json:"status,omitempty"`
+	Condition     *string               `json:"condition,omitempty"`
+	DateFrom      *time.Time            `json:"date_from,omitempty"`
+	DateTo        *time.Time            `json:"date_to,omitempty"`
+	MinConfidence *float64              `json:"min_confidence,omitempty"`
+}

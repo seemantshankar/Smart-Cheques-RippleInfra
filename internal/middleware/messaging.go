@@ -9,27 +9,27 @@ import (
 )
 
 // MessagingMiddleware adds messaging service to the Gin context
-func MessagingMiddleware(messagingService *messaging.MessagingService) gin.HandlerFunc {
+func MessagingMiddleware(messagingService *messaging.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("messaging", messagingService)
 		c.Next()
 	}
 }
 
-// GetMessagingService retrieves the messaging service from Gin context
-func GetMessagingService(c *gin.Context) (*messaging.MessagingService, bool) {
+// GetService retrieves the messaging service from Gin context
+func GetService(c *gin.Context) (*messaging.Service, bool) {
 	service, exists := c.Get("messaging")
 	if !exists {
 		return nil, false
 	}
 
-	messagingService, ok := service.(*messaging.MessagingService)
+	messagingService, ok := service.(*messaging.Service)
 	return messagingService, ok
 }
 
 // MessagingHealthCheck provides a health check endpoint for messaging
 func MessagingHealthCheck(c *gin.Context) {
-	messagingService, exists := GetMessagingService(c)
+	messagingService, exists := GetService(c)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "messaging service not available",

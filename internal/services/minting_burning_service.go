@@ -539,7 +539,7 @@ func (s *MintingBurningService) InitiateBurning(ctx context.Context, req *Burnin
 }
 
 // ProcessBurning processes an approved burning request
-func (s *MintingBurningService) ProcessBurning(ctx context.Context, burningID uuid.UUID) error {
+func (s *MintingBurningService) ProcessBurning(_ context.Context, burningID uuid.UUID) error {
 	// In a real implementation, you'd fetch the burning record from database
 	// For now, this is a placeholder
 	fmt.Printf("Processing burning request: %s\n", burningID.String())
@@ -636,7 +636,7 @@ func (s *MintingBurningService) LockCollateral(ctx context.Context, req *Collate
 }
 
 // ReleaseCollateral releases locked collateral
-func (s *MintingBurningService) ReleaseCollateral(ctx context.Context, lockID uuid.UUID) error {
+func (s *MintingBurningService) ReleaseCollateral(_ context.Context, lockID uuid.UUID) error {
 	// In a real implementation, you'd fetch the lock from database and update balances
 	fmt.Printf("Releasing collateral lock: %s\n", lockID.String())
 	return nil
@@ -696,7 +696,7 @@ func (s *MintingBurningService) GetMintingCapacity(ctx context.Context, enterpri
 }
 
 // GetCollateralRatio returns the collateral ratio for a wrapped asset
-func (s *MintingBurningService) GetCollateralRatio(ctx context.Context, enterpriseID uuid.UUID, wrappedAsset string) (*CollateralRatio, error) {
+func (s *MintingBurningService) GetCollateralRatio(_ context.Context, enterpriseID uuid.UUID, wrappedAsset string) (*CollateralRatio, error) {
 	// This would calculate the actual collateral ratio from database records
 	return &CollateralRatio{
 		EnterpriseID:    enterpriseID,

@@ -340,7 +340,7 @@ func (s *BalanceMonitoringService) performBalanceCheck(_ context.Context) {
 }
 
 // SetBalanceThreshold creates a new balance threshold
-func (s *BalanceMonitoringService) SetBalanceThreshold(ctx context.Context, req *BalanceThresholdRequest) (*BalanceThreshold, error) {
+func (s *BalanceMonitoringService) SetBalanceThreshold(_ context.Context, req *BalanceThresholdRequest) (*BalanceThreshold, error) {
 	// Validate threshold value
 	thresholdValue := new(big.Int)
 	if _, ok := thresholdValue.SetString(req.ThresholdValue, 10); !ok {
@@ -367,43 +367,43 @@ func (s *BalanceMonitoringService) SetBalanceThreshold(ctx context.Context, req 
 }
 
 // GetBalanceThresholds retrieves balance thresholds for an enterprise
-func (s *BalanceMonitoringService) GetBalanceThresholds(ctx context.Context, enterpriseID uuid.UUID) ([]*BalanceThreshold, error) {
+func (s *BalanceMonitoringService) GetBalanceThresholds(_ context.Context, enterpriseID uuid.UUID) ([]*BalanceThreshold, error) {
 	// In a real implementation, this would query the database
 	return []*BalanceThreshold{}, nil
 }
 
 // UpdateBalanceThreshold updates an existing balance threshold
-func (s *BalanceMonitoringService) UpdateBalanceThreshold(ctx context.Context, req *UpdateThresholdRequest) (*BalanceThreshold, error) {
+func (s *BalanceMonitoringService) UpdateBalanceThreshold(_ context.Context, req *UpdateThresholdRequest) (*BalanceThreshold, error) {
 	// In a real implementation, this would update the threshold in the database
 	return nil, fmt.Errorf("threshold not found: %s", req.ThresholdID.String())
 }
 
 // DeleteBalanceThreshold deletes a balance threshold
-func (s *BalanceMonitoringService) DeleteBalanceThreshold(ctx context.Context, thresholdID uuid.UUID) error {
+func (s *BalanceMonitoringService) DeleteBalanceThreshold(_ context.Context, _ uuid.UUID) error {
 	// In a real implementation, this would delete the threshold from the database
 	return nil
 }
 
 // GetActiveAlerts retrieves active balance alerts
-func (s *BalanceMonitoringService) GetActiveAlerts(ctx context.Context, enterpriseID *uuid.UUID) ([]*BalanceAlert, error) {
+func (s *BalanceMonitoringService) GetActiveAlerts(_ context.Context, _ *uuid.UUID) ([]*BalanceAlert, error) {
 	// In a real implementation, this would query the database for active alerts
 	return []*BalanceAlert{}, nil
 }
 
 // AcknowledgeAlert acknowledges a balance alert
-func (s *BalanceMonitoringService) AcknowledgeAlert(ctx context.Context, alertID uuid.UUID, acknowledgedBy uuid.UUID) error {
+func (s *BalanceMonitoringService) AcknowledgeAlert(_ context.Context, _ uuid.UUID, _ uuid.UUID) error {
 	// In a real implementation, this would update the alert in the database
 	return nil
 }
 
 // GetAlertHistory retrieves alert history
-func (s *BalanceMonitoringService) GetAlertHistory(ctx context.Context, req *AlertHistoryRequest) ([]*BalanceAlert, error) {
+func (s *BalanceMonitoringService) GetAlertHistory(_ context.Context, req *AlertHistoryRequest) ([]*BalanceAlert, error) {
 	// In a real implementation, this would query the database for alert history
 	return []*BalanceAlert{}, nil
 }
 
 // GetBalanceTrends analyzes balance trends for an enterprise-currency pair
-func (s *BalanceMonitoringService) GetBalanceTrends(ctx context.Context, req *BalanceTrendRequest) (*BalanceTrendAnalysis, error) {
+func (s *BalanceMonitoringService) GetBalanceTrends(_ context.Context, req *BalanceTrendRequest) (*BalanceTrendAnalysis, error) {
 	// In a real implementation, this would analyze historical balance data
 	return &BalanceTrendAnalysis{
 		EnterpriseID:     req.EnterpriseID,
@@ -419,7 +419,7 @@ func (s *BalanceMonitoringService) GetBalanceTrends(ctx context.Context, req *Ba
 }
 
 // DetectBalanceAnomalies detects anomalies in balance patterns
-func (s *BalanceMonitoringService) DetectBalanceAnomalies(ctx context.Context, enterpriseID uuid.UUID) ([]*BalanceAnomaly, error) {
+func (s *BalanceMonitoringService) DetectBalanceAnomalies(_ context.Context, enterpriseID uuid.UUID) ([]*BalanceAnomaly, error) {
 	// In a real implementation, this would analyze balance patterns for anomalies
 	return []*BalanceAnomaly{}, nil
 }

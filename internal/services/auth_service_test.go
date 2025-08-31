@@ -138,7 +138,7 @@ func TestAuthService_LoginUser_Success(t *testing.T) {
 		LastName:  "Doe",
 		Role:      "admin",
 	}
-	user.HashPassword("password123")
+	_ = user.HashPassword("password123")
 
 	req := &models.UserLoginRequest{
 		Email:    "test@example.com",
@@ -199,7 +199,7 @@ func TestAuthService_LoginUser_WrongPassword(t *testing.T) {
 		LastName:  "Doe",
 		Role:      "admin",
 	}
-	user.HashPassword("correctpassword")
+	_ = user.HashPassword("correctpassword")
 
 	req := &models.UserLoginRequest{
 		Email:    "test@example.com",

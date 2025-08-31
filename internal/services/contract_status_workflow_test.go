@@ -26,4 +26,3 @@ func TestInvalidTransition_ActiveToDraft(t *testing.T) {
 		t.Fatalf("expected error for invalid transition active->draft")
 	}
 }
-

@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
+	"github.com/stretchr/testify/mock"
 )
 
 // AssetRepositoryInterface mock
@@ -24,22 +24,18 @@ func (m *AssetRepositoryInterface) GetAssetByCurrency(ctx context.Context, curre
 	}
 	return args.Get(0).(*models.SupportedAsset), args.Error(1)
 }
-
 func (m *AssetRepositoryInterface) CreateAsset(ctx context.Context, asset *models.SupportedAsset) error {
 	args := m.Called(ctx, asset)
 	return args.Error(0)
 }
-
 func (m *AssetRepositoryInterface) CreateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error {
 	args := m.Called(ctx, transaction)
 	return args.Error(0)
 }
-
 func (m *AssetRepositoryInterface) UpdateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error {
 	args := m.Called(ctx, transaction)
 	return args.Error(0)
 }
-
 func (m *AssetRepositoryInterface) GetAssetTransactionsByEnterprise(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*models.AssetTransaction, error) {
 	args := m.Called(ctx, enterpriseID, limit, offset)
 	return args.Get(0).([]*models.AssetTransaction), args.Error(1)
@@ -57,17 +53,14 @@ func (m *BalanceRepositoryInterface) GetBalance(ctx context.Context, enterpriseI
 	}
 	return args.Get(0).(*models.EnterpriseBalance), args.Error(1)
 }
-
 func (m *BalanceRepositoryInterface) UpdateBalance(ctx context.Context, balance *models.EnterpriseBalance) error {
 	args := m.Called(ctx, balance)
 	return args.Error(0)
 }
-
 func (m *BalanceRepositoryInterface) GetEnterpriseBalances(ctx context.Context, enterpriseID uuid.UUID) ([]*models.EnterpriseBalance, error) {
 	args := m.Called(ctx, enterpriseID)
 	return args.Get(0).([]*models.EnterpriseBalance), args.Error(1)
 }
-
 func (m *BalanceRepositoryInterface) CreateEnterpriseBalance(ctx context.Context, balance *models.EnterpriseBalance) error {
 	args := m.Called(ctx, balance)
 	return args.Error(0)
@@ -85,12 +78,10 @@ func (m *XRPLServiceInterface) CreateWallet() (*xrpl.WalletInfo, error) {
 	}
 	return args.Get(0).(*xrpl.WalletInfo), args.Error(1)
 }
-
 func (m *XRPLServiceInterface) ValidateAddress(address string) bool {
 	args := m.Called(address)
 	return args.Bool(0)
 }
-
 func (m *XRPLServiceInterface) GetAccountInfo(address string) (interface{}, error) {
 	args := m.Called(address)
 	if args.Get(0) == nil {
@@ -98,7 +89,6 @@ func (m *XRPLServiceInterface) GetAccountInfo(address string) (interface{}, erro
 	}
 	return args.Get(0), args.Error(1)
 }
-
 func (m *XRPLServiceInterface) HealthCheck() error {
 	args := m.Called()
 	return args.Error(0)
@@ -113,12 +103,10 @@ func (m *UserServiceInterface) GetUser(ctx context.Context, userID uuid.UUID) (*
 	args := m.Called(ctx, userID)
 	return args.Get(0).(*models.User), args.Error(1)
 }
-
 func (m *UserServiceInterface) GetEnterpriseUsers(ctx context.Context, enterpriseID uuid.UUID) ([]*models.User, error) {
 	args := m.Called(ctx, enterpriseID)
 	return args.Get(0).([]*models.User), args.Error(1)
 }
-
 func (m *UserServiceInterface) HasPermission(ctx context.Context, userID uuid.UUID, permission string) (bool, error) {
 	args := m.Called(ctx, userID, permission)
 	return args.Bool(0), args.Error(1)
@@ -133,12 +121,10 @@ func (m *EventBus) PublishEvent(ctx context.Context, event *messaging.Event) err
 	args := m.Called(ctx, event)
 	return args.Error(0)
 }
-
 func (m *EventBus) Subscribe(ctx context.Context, topic string, handler func(*messaging.Event) error) error {
 	args := m.Called(ctx, topic, handler)
 	return args.Error(0)
 }
-
 func (m *EventBus) Close() error {
 	args := m.Called()
 	return args.Error(0)
@@ -154,7 +140,6 @@ func (m *TransactionRepositoryInterface) CreateTransaction(transaction *models.T
 	args := m.Called(transaction)
 	return args.Error(0)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionByID(id string) (*models.Transaction, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
@@ -162,12 +147,10 @@ func (m *TransactionRepositoryInterface) GetTransactionByID(id string) (*models.
 	}
 	return args.Get(0).(*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) UpdateTransaction(transaction *models.Transaction) error {
 	args := m.Called(transaction)
 	return args.Error(0)
 }
-
 func (m *TransactionRepositoryInterface) DeleteTransaction(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
@@ -178,37 +161,30 @@ func (m *TransactionRepositoryInterface) GetTransactionsByStatus(status models.T
 	args := m.Called(status, limit, offset)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionsByBatchID(batchID string) ([]*models.Transaction, error) {
 	args := m.Called(batchID)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionsByEnterpriseID(enterpriseID string, limit, offset int) ([]*models.Transaction, error) {
 	args := m.Called(enterpriseID, limit, offset)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionsByUserID(userID string, limit, offset int) ([]*models.Transaction, error) {
 	args := m.Called(userID, limit, offset)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionsByType(txType models.TransactionType, limit, offset int) ([]*models.Transaction, error) {
 	args := m.Called(txType, limit, offset)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetPendingTransactions(limit int) ([]*models.Transaction, error) {
 	args := m.Called(limit)
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetExpiredTransactions() ([]*models.Transaction, error) {
 	args := m.Called()
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetRetriableTransactions() ([]*models.Transaction, error) {
 	args := m.Called()
 	return args.Get(0).([]*models.Transaction), args.Error(1)
@@ -219,7 +195,6 @@ func (m *TransactionRepositoryInterface) CreateTransactionBatch(batch *models.Tr
 	args := m.Called(batch)
 	return args.Error(0)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionBatchByID(id string) (*models.TransactionBatch, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
@@ -227,22 +202,18 @@ func (m *TransactionRepositoryInterface) GetTransactionBatchByID(id string) (*mo
 	}
 	return args.Get(0).(*models.TransactionBatch), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) UpdateTransactionBatch(batch *models.TransactionBatch) error {
 	args := m.Called(batch)
 	return args.Error(0)
 }
-
 func (m *TransactionRepositoryInterface) DeleteTransactionBatch(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionBatchesByStatus(status models.TransactionStatus, limit, offset int) ([]*models.TransactionBatch, error) {
 	args := m.Called(status, limit, offset)
 	return args.Get(0).([]*models.TransactionBatch), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetPendingBatches(limit int) ([]*models.TransactionBatch, error) {
 	args := m.Called(limit)
 	return args.Get(0).([]*models.TransactionBatch), args.Error(1)
@@ -256,7 +227,6 @@ func (m *TransactionRepositoryInterface) GetTransactionStats() (*models.Transact
 	}
 	return args.Get(0).(*models.TransactionStats), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionStatsByDateRange(start, end time.Time) (*models.TransactionStats, error) {
 	args := m.Called(start, end)
 	if args.Get(0) == nil {
@@ -264,12 +234,10 @@ func (m *TransactionRepositoryInterface) GetTransactionStatsByDateRange(start, e
 	}
 	return args.Get(0).(*models.TransactionStats), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetTransactionCountByStatus() (map[models.TransactionStatus]int64, error) {
 	args := m.Called()
 	return args.Get(0).(map[models.TransactionStatus]int64), args.Error(1)
 }
-
 func (m *TransactionRepositoryInterface) GetAverageProcessingTime() (float64, error) {
 	args := m.Called()
 	return args.Get(0).(float64), args.Error(1)
@@ -284,7 +252,6 @@ func (m *ContractRepositoryInterface) CreateContract(ctx context.Context, contra
 	args := m.Called(ctx, contract)
 	return args.Error(0)
 }
-
 func (m *ContractRepositoryInterface) GetContractByID(ctx context.Context, id string) (*models.Contract, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
@@ -292,27 +259,22 @@ func (m *ContractRepositoryInterface) GetContractByID(ctx context.Context, id st
 	}
 	return args.Get(0).(*models.Contract), args.Error(1)
 }
-
 func (m *ContractRepositoryInterface) UpdateContract(ctx context.Context, contract *models.Contract) error {
 	args := m.Called(ctx, contract)
 	return args.Error(0)
 }
-
 func (m *ContractRepositoryInterface) DeleteContract(ctx context.Context, id string) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
-
 func (m *ContractRepositoryInterface) GetContractsByStatus(ctx context.Context, status string, limit, offset int) ([]*models.Contract, error) {
 	args := m.Called(ctx, status, limit, offset)
 	return args.Get(0).([]*models.Contract), args.Error(1)
 }
-
 func (m *ContractRepositoryInterface) GetContractsByType(ctx context.Context, contractType string, limit, offset int) ([]*models.Contract, error) {
 	args := m.Called(ctx, contractType, limit, offset)
 	return args.Get(0).([]*models.Contract), args.Error(1)
 }
-
 func (m *ContractRepositoryInterface) GetContractsByParty(ctx context.Context, party string, limit, offset int) ([]*models.Contract, error) {
 	args := m.Called(ctx, party, limit, offset)
 	return args.Get(0).([]*models.Contract), args.Error(1)
@@ -327,7 +289,6 @@ func (m *ContractMilestoneRepositoryInterface) CreateMilestone(ctx context.Conte
 	args := m.Called(ctx, milestone)
 	return args.Error(0)
 }
-
 func (m *ContractMilestoneRepositoryInterface) GetMilestoneByID(ctx context.Context, id string) (*models.ContractMilestone, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
@@ -335,18 +296,140 @@ func (m *ContractMilestoneRepositoryInterface) GetMilestoneByID(ctx context.Cont
 	}
 	return args.Get(0).(*models.ContractMilestone), args.Error(1)
 }
-
 func (m *ContractMilestoneRepositoryInterface) UpdateMilestone(ctx context.Context, milestone *models.ContractMilestone) error {
 	args := m.Called(ctx, milestone)
 	return args.Error(0)
 }
-
 func (m *ContractMilestoneRepositoryInterface) DeleteMilestone(ctx context.Context, id string) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
-
 func (m *ContractMilestoneRepositoryInterface) GetMilestonesByContractID(ctx context.Context, contractID string) ([]*models.ContractMilestone, error) {
 	args := m.Called(ctx, contractID)
 	return args.Get(0).([]*models.ContractMilestone), args.Error(1)
+}
+
+// OracleRepositoryInterface mock
+type OracleRepositoryInterface struct {
+	mock.Mock
+}
+
+func (m *OracleRepositoryInterface) CreateOracleProvider(ctx context.Context, provider *models.OracleProvider) error {
+	args := m.Called(ctx, provider)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) GetOracleProviderByID(ctx context.Context, id uuid.UUID) (*models.OracleProvider, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.OracleProvider), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetOracleProviderByType(ctx context.Context, providerType models.OracleType) ([]*models.OracleProvider, error) {
+	args := m.Called(ctx, providerType)
+	return args.Get(0).([]*models.OracleProvider), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) UpdateOracleProvider(ctx context.Context, provider *models.OracleProvider) error {
+	args := m.Called(ctx, provider)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) DeleteOracleProvider(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) ListOracleProviders(ctx context.Context, limit, offset int) ([]*models.OracleProvider, error) {
+	args := m.Called(ctx, limit, offset)
+	return args.Get(0).([]*models.OracleProvider), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetActiveOracleProviders(ctx context.Context) ([]*models.OracleProvider, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]*models.OracleProvider), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) HealthCheckOracleProvider(ctx context.Context, id uuid.UUID) (*models.OracleStatus, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.OracleStatus), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) CreateOracleRequest(ctx context.Context, request *models.OracleRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) GetOracleRequestByID(ctx context.Context, id uuid.UUID) (*models.OracleRequest, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.OracleRequest), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) UpdateOracleRequest(ctx context.Context, request *models.OracleRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) DeleteOracleRequest(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) ListOracleRequests(ctx context.Context, filter *repository.OracleRequestFilter, limit, offset int) ([]*models.OracleRequest, error) {
+	args := m.Called(ctx, filter, limit, offset)
+	return args.Get(0).([]*models.OracleRequest), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetOracleRequestsByStatus(ctx context.Context, status models.RequestStatus, limit, offset int) ([]*models.OracleRequest, error) {
+	args := m.Called(ctx, status, limit, offset)
+	return args.Get(0).([]*models.OracleRequest), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetOracleRequestsByProvider(ctx context.Context, providerID uuid.UUID, limit, offset int) ([]*models.OracleRequest, error) {
+	args := m.Called(ctx, providerID, limit, offset)
+	return args.Get(0).([]*models.OracleRequest), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetCachedResponse(ctx context.Context, condition string) (*models.OracleRequest, error) {
+	args := m.Called(ctx, condition)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.OracleRequest), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) CacheResponse(ctx context.Context, request *models.OracleRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) ClearExpiredCache(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
+func (m *OracleRepositoryInterface) GetOracleMetrics(ctx context.Context, providerID uuid.UUID) (*models.OracleMetrics, error) {
+	args := m.Called(ctx, providerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.OracleMetrics), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetOracleReliabilityScore(ctx context.Context, providerID uuid.UUID) (float64, error) {
+	args := m.Called(ctx, providerID)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *OracleRepositoryInterface) GetRequestStats(ctx context.Context, providerID *uuid.UUID, startDate, endDate *time.Time) (map[models.RequestStatus]int64, error) {
+	args := m.Called(ctx, providerID, startDate, endDate)
+	return args.Get(0).(map[models.RequestStatus]int64), args.Error(1)
 }

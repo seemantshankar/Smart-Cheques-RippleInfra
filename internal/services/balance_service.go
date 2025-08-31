@@ -17,11 +17,11 @@ import (
 type BalanceService struct {
 	balanceRepo     repository.BalanceRepository
 	assetRepo       repository.AssetRepository
-	messagingClient *messaging.MessagingService
+	messagingClient *messaging.Service
 }
 
 // NewBalanceService creates a new balance service instance
-func NewBalanceService(balanceRepo repository.BalanceRepository, assetRepo repository.AssetRepository, messagingClient *messaging.MessagingService) *BalanceService {
+func NewBalanceService(balanceRepo repository.BalanceRepository, assetRepo repository.AssetRepository, messagingClient *messaging.Service) *BalanceService {
 	return &BalanceService{
 		balanceRepo:     balanceRepo,
 		assetRepo:       assetRepo,
@@ -87,7 +87,7 @@ func (s *BalanceService) InitializeEnterpriseBalance(ctx context.Context, enterp
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
-		s.messagingClient.PublishEvent(event)
+		_ = s.messagingClient.PublishEvent(event)
 	}
 
 	return balance, nil

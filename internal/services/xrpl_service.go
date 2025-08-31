@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
@@ -13,6 +14,9 @@ type XRPLService struct {
 	client      *xrpl.Client
 	initialized bool
 }
+
+// Verify that XRPLService implements repository.XRPLServiceInterface
+var _ repository.XRPLServiceInterface = (*XRPLService)(nil)
 
 type XRPLConfig struct {
 	NetworkURL string

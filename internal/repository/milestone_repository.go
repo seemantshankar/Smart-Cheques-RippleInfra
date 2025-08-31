@@ -12,6 +12,15 @@ import (
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
+// Milestone status constants
+const (
+	MilestoneStatusPending    = "pending"
+	MilestoneStatusInProgress = "in_progress"
+	MilestoneStatusCompleted  = "completed"
+	MilestoneStatusFailed     = "failed"
+	MilestoneStatusOnHold     = "on_hold"
+)
+
 // PostgresMilestoneRepository implements MilestoneRepositoryInterface using PostgreSQL
 type PostgresMilestoneRepository struct {
 	db *sql.DB
@@ -186,11 +195,11 @@ func (r *PostgresMilestoneRepository) GetMilestonesByStatus(ctx context.Context,
 	// Status is derived from percentage_complete
 	var condition string
 	switch status {
-	case "pending":
+	case MilestoneStatusPending:
 		condition = "percentage_complete = 0"
-	case "in_progress":
+	case MilestoneStatusInProgress:
 		condition = "percentage_complete > 0 AND percentage_complete < 100"
-	case "completed":
+	case MilestoneStatusCompleted:
 		condition = "percentage_complete = 100"
 	default:
 		return nil, fmt.Errorf("invalid status: %s", status)
@@ -380,7 +389,8 @@ func (r *PostgresMilestoneRepository) ResolveDependencyGraph(ctx context.Context
 		if err := rows.Scan(&milestoneID, &dependsOnID); err != nil {
 			return nil, fmt.Errorf("failed to scan dependency: %w", err)
 		}
-		graph[milestoneID] = append(graph[milestoneID], dependsOnID)
+		// Build reverse graph: dependsOnID -> milestoneID (what depends on this node)
+		graph[dependsOnID] = append(graph[dependsOnID], milestoneID)
 	}
 
 	return graph, rows.Err()
@@ -523,11 +533,11 @@ func (r *PostgresMilestoneRepository) DeleteMilestoneDependency(ctx context.Cont
 func (r *PostgresMilestoneRepository) BatchUpdateMilestoneStatus(ctx context.Context, milestoneIDs []string, status string) error {
 	var percentage float64
 	switch status {
-	case "pending":
+	case MilestoneStatusPending:
 		percentage = 0
-	case "in_progress":
+	case MilestoneStatusInProgress:
 		percentage = 50 // Default to 50% for in-progress
-	case "completed":
+	case MilestoneStatusCompleted:
 		percentage = 100
 	default:
 		return fmt.Errorf("invalid status: %s", status)
@@ -551,7 +561,11 @@ func (r *PostgresMilestoneRepository) BatchUpdateMilestoneProgress(ctx context.C
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			fmt.Printf("Warning: failed to rollback transaction: %v\n", rbErr)
+		}
+	}()
 
 	query := `
 		UPDATE contract_milestones
@@ -581,7 +595,11 @@ func (r *PostgresMilestoneRepository) BatchCreateMilestones(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			fmt.Printf("Warning: failed to rollback transaction: %v\n", rbErr)
+		}
+	}()
 
 	query := `
 		INSERT INTO contract_milestones (
@@ -1210,11 +1228,11 @@ func (r *PostgresMilestoneRepository) FilterMilestones(ctx context.Context, filt
 		// Convert status to percentage completion conditions
 		for _, status := range filter.ExcludeStatuses {
 			switch status {
-			case "pending":
+			case MilestoneStatusPending:
 				whereClause.WriteString(" AND percentage_complete != 0")
-			case "completed":
+			case MilestoneStatusCompleted:
 				whereClause.WriteString(" AND percentage_complete != 100")
-			case "in_progress":
+			case MilestoneStatusInProgress:
 				whereClause.WriteString(" AND NOT (percentage_complete > 0 AND percentage_complete < 100)")
 			}
 		}

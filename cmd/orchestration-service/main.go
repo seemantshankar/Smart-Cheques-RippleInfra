@@ -16,7 +16,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize messaging service
-	messagingService, err := messaging.NewMessagingService(
+	messagingService, err := messaging.NewService(
 		cfg.Redis.URL,
 		cfg.Redis.Password,
 		cfg.Redis.DB,
@@ -76,7 +76,7 @@ func handleMilestoneCompleted(event *messaging.Event) error {
 }
 
 func createSmartCheque(c *gin.Context) {
-	messagingService, exists := middleware.GetMessagingService(c)
+	messagingService, exists := middleware.GetService(c)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "messaging service not available",
@@ -124,7 +124,7 @@ func createSmartCheque(c *gin.Context) {
 }
 
 func completeMilestone(c *gin.Context) {
-	messagingService, exists := middleware.GetMessagingService(c)
+	messagingService, exists := middleware.GetService(c)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "messaging service not available",

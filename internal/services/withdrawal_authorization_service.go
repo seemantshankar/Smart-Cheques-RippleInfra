@@ -618,14 +618,14 @@ func (s *WithdrawalAuthorizationService) processApprovedWithdrawal(ctx context.C
 }
 
 // GetWithdrawalRequest retrieves a withdrawal request by ID
-func (s *WithdrawalAuthorizationService) GetWithdrawalRequest(ctx context.Context, requestID uuid.UUID) (*WithdrawalAuthorization, error) {
+func (s *WithdrawalAuthorizationService) GetWithdrawalRequest(_ context.Context, requestID uuid.UUID) (*WithdrawalAuthorization, error) {
 	// In a real implementation, this would query the database
 	// For now, return a placeholder
 	return nil, fmt.Errorf("withdrawal request not found: %s", requestID.String())
 }
 
 // GetPendingWithdrawalRequests retrieves pending withdrawal requests for an enterprise
-func (s *WithdrawalAuthorizationService) GetPendingWithdrawalRequests(ctx context.Context, enterpriseID uuid.UUID) ([]*WithdrawalAuthorization, error) {
+func (s *WithdrawalAuthorizationService) GetPendingWithdrawalRequests(_ context.Context, _ uuid.UUID) ([]*WithdrawalAuthorization, error) {
 	// In a real implementation, this would query the database for pending requests
 	return []*WithdrawalAuthorization{}, nil
 }
@@ -832,14 +832,14 @@ func (s *WithdrawalAuthorizationService) CreateTimeLockWithdrawal(ctx context.Co
 }
 
 // ReleaseTimeLockWithdrawal releases a time lock early
-func (s *WithdrawalAuthorizationService) ReleaseTimeLockWithdrawal(ctx context.Context, lockID uuid.UUID) error {
+func (s *WithdrawalAuthorizationService) ReleaseTimeLockWithdrawal(_ context.Context, lockID uuid.UUID) error {
 	// In a real implementation, this would update the time lock record in the database
 	fmt.Printf("Releasing time lock: %s\n", lockID.String())
 	return nil
 }
 
 // GetTimeLockStatus gets the status of a time lock
-func (s *WithdrawalAuthorizationService) GetTimeLockStatus(ctx context.Context, lockID uuid.UUID) (*TimeLockStatus, error) {
+func (s *WithdrawalAuthorizationService) GetTimeLockStatus(_ context.Context, lockID uuid.UUID) (*TimeLockStatus, error) {
 	// In a real implementation, this would query the database
 	// For now, return a placeholder
 	return &TimeLockStatus{
@@ -852,7 +852,7 @@ func (s *WithdrawalAuthorizationService) GetTimeLockStatus(ctx context.Context, 
 }
 
 // GetRiskProfile gets the risk profile for an enterprise
-func (s *WithdrawalAuthorizationService) GetRiskProfile(ctx context.Context, enterpriseID uuid.UUID) (*EnterpriseRiskProfile, error) {
+func (s *WithdrawalAuthorizationService) GetRiskProfile(_ context.Context, enterpriseID uuid.UUID) (*EnterpriseRiskProfile, error) {
 	// In a real implementation, this would analyze transaction history and compliance data
 	return &EnterpriseRiskProfile{
 		EnterpriseID:     enterpriseID,
@@ -911,7 +911,7 @@ func (s *WithdrawalAuthorizationService) BulkApproveWithdrawals(ctx context.Cont
 }
 
 // GetAuthorizationHistory gets withdrawal authorization history for an enterprise
-func (s *WithdrawalAuthorizationService) GetAuthorizationHistory(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*WithdrawalAuthorization, error) {
+func (s *WithdrawalAuthorizationService) GetAuthorizationHistory(_ context.Context, _ uuid.UUID, _ int, _ int) ([]*WithdrawalAuthorization, error) {
 	// In a real implementation, this would query the database
 	return []*WithdrawalAuthorization{}, nil
 }

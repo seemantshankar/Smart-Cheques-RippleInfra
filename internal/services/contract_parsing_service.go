@@ -28,7 +28,7 @@ func NewContractParsingService() ContractParsingService {
 //     milestone derived from filename; otherwise we create a generic obligation.
 //
 // This function is small, deterministic, and fully testable.
-func (s *contractParsingServiceImpl) ParseFromMetadata(ctx context.Context, contractID string, meta *models.DocumentMetadata, hints map[string]string) (*models.Contract, error) {
+func (s *contractParsingServiceImpl) ParseFromMetadata(_ context.Context, contractID string, meta *models.DocumentMetadata, _ map[string]string) (*models.Contract, error) {
 	if meta == nil {
 		return nil, fmt.Errorf("metadata required")
 	}
@@ -112,4 +112,3 @@ func indexOf(s, substr string) int {
 	}
 	return -1
 }
-

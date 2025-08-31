@@ -17,7 +17,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize messaging service
-	messagingService, err := messaging.NewMessagingService(
+	messagingService, err := messaging.NewService(
 		cfg.Redis.URL,
 		cfg.Redis.Password,
 		cfg.Redis.DB,

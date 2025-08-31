@@ -51,10 +51,16 @@ type WalletRepositoryInterface interface {
 
 // XRPLServiceInterface defines the interface for XRPL service operations
 type XRPLServiceInterface interface {
+	Initialize() error
 	CreateWallet() (*xrpl.WalletInfo, error)
 	ValidateAddress(address string) bool
 	GetAccountInfo(address string) (interface{}, error)
 	HealthCheck() error
+	CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error)
+	CompleteSmartChequeMilestone(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string) (*xrpl.TransactionResult, error)
+	CancelSmartCheque(accountAddress, ownerAddress string, sequence uint32) (*xrpl.TransactionResult, error)
+	GetEscrowStatus(ownerAddress string, sequence string) (*xrpl.EscrowInfo, error)
+	GenerateCondition(secret string) (condition string, fulfillment string, err error)
 }
 
 // AuditRepositoryInterface defines the interface for audit repository operations
@@ -324,6 +330,26 @@ type TemplateShare struct {
 	Permissions []string   `json:"permissions" db:"-"`
 	SharedAt    time.Time  `json:"shared_at" db:"shared_at"`
 	ExpiresAt   *time.Time `json:"expires_at" db:"expires_at"`
+}
+
+// SmartChequeRepositoryInterface defines the interface for smart check repository operations
+type SmartChequeRepositoryInterface interface {
+	// SmartCheque CRUD operations
+	CreateSmartCheque(ctx context.Context, smartCheque *models.SmartCheque) error
+	GetSmartChequeByID(ctx context.Context, id string) (*models.SmartCheque, error)
+	UpdateSmartCheque(ctx context.Context, smartCheque *models.SmartCheque) error
+	DeleteSmartCheque(ctx context.Context, id string) error
+
+	// SmartCheque queries
+	GetSmartChequesByPayer(ctx context.Context, payerID string, limit, offset int) ([]*models.SmartCheque, error)
+	GetSmartChequesByPayee(ctx context.Context, payeeID string, limit, offset int) ([]*models.SmartCheque, error)
+	GetSmartChequesByStatus(ctx context.Context, status models.SmartChequeStatus, limit, offset int) ([]*models.SmartCheque, error)
+	GetSmartChequesByContract(ctx context.Context, contractID string, limit, offset int) ([]*models.SmartCheque, error)
+	GetSmartChequesByMilestone(ctx context.Context, milestoneID string) (*models.SmartCheque, error)
+
+	// SmartCheque statistics
+	GetSmartChequeCount(ctx context.Context) (int64, error)
+	GetSmartChequeCountByStatus(ctx context.Context) (map[models.SmartChequeStatus]int64, error)
 }
 
 // ContractRepositoryInterface defines the interface for contract repository operations

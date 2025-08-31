@@ -16,7 +16,7 @@ import (
 type TransactionQueueService struct {
 	transactionRepo  repository.TransactionRepositoryInterface
 	xrplService      *XRPLService
-	messagingService *messaging.MessagingService
+	messagingService *messaging.Service
 	batchConfig      models.BatchConfig
 
 	// Queue management
@@ -42,7 +42,7 @@ type TransactionQueueService struct {
 func NewTransactionQueueService(
 	transactionRepo repository.TransactionRepositoryInterface,
 	xrplService *XRPLService,
-	messagingService *messaging.MessagingService,
+	messagingService *messaging.Service,
 	config models.BatchConfig,
 ) *TransactionQueueService {
 	return &TransactionQueueService{

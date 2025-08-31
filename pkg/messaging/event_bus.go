@@ -19,7 +19,7 @@ func NewRedisEventBus(redisClient *RedisClient) *RedisEventBus {
 	}
 }
 
-func (e *RedisEventBus) PublishEvent(ctx context.Context, event *Event) error {
+func (e *RedisEventBus) PublishEvent(_ context.Context, event *Event) error {
 	if event.Timestamp == "" {
 		event.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	}
@@ -36,7 +36,7 @@ func (e *RedisEventBus) PublishEvent(ctx context.Context, event *Event) error {
 	return e.client.Publish(channel, message)
 }
 
-func (e *RedisEventBus) SubscribeToEvent(ctx context.Context, eventType string, handler func(*Event) error) error {
+func (e *RedisEventBus) SubscribeToEvent(_ context.Context, eventType string, handler func(*Event) error) error {
 	channel := fmt.Sprintf("events.%s", eventType)
 
 	messageHandler := func(message *Message) error {

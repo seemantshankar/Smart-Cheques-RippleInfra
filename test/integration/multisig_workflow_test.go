@@ -512,7 +512,7 @@ func (suite *MultiSignatureWorkflowTestSuite) createWithdrawalAuthorizationReque
 
 	// Calculate required approvals based on amount and risk
 	// For testing purposes, we'll use a high risk score for the rejection test
-	var riskScore float64 = 0.0
+	var riskScore float64
 
 	// Check if this is the rejection test by looking at the purpose
 	if req.Purpose == "Withdrawal rejection test" {
@@ -593,6 +593,8 @@ func (suite *MultiSignatureWorkflowTestSuite) processApproval(ctx context.Contex
 		if authRequest.TimeLocked {
 			// For time locked requests, we keep the status as time locked
 			// The actual approval happens when time lock is released
+			// No action needed here, status is already time locked
+			_ = authRequest // Explicitly mark as used to avoid unused variable warning
 		} else {
 			authRequest.Status = services.WithdrawalAuthStatusApproved
 			now := time.Now()

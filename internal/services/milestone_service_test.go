@@ -25,4 +25,3 @@ func TestCreateMilestone_SetsTimestamps(t *testing.T) {
 		t.Fatalf("expected timestamps to be set")
 	}
 }
-

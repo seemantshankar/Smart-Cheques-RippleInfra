@@ -330,7 +330,7 @@ func (s *CircuitBreakerService) UpdateCircuitBreaker(ctx context.Context, req *U
 }
 
 // TripCircuitBreaker manually trips a circuit breaker
-func (s *CircuitBreakerService) TripCircuitBreaker(ctx context.Context, name string, reason string) error {
+func (s *CircuitBreakerService) TripCircuitBreaker(ctx context.Context, name string, _ string) error {
 	cb, err := s.GetCircuitBreaker(ctx, name)
 	if err != nil {
 		return err
@@ -373,7 +373,7 @@ func (s *CircuitBreakerService) GetCircuitBreakerStatus(ctx context.Context) ([]
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	var statuses []*CircuitBreakerStatus
+	statuses := make([]*CircuitBreakerStatus, 0, len(s.circuitBreakers))
 
 	for _, cb := range s.circuitBreakers {
 		cb.mutex.RLock()

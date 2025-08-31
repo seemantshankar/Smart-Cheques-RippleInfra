@@ -25,11 +25,11 @@ const (
 type AssetService struct {
 	assetRepo       repository.AssetRepository
 	balanceRepo     repository.BalanceRepository
-	messagingClient *messaging.MessagingService
+	messagingClient *messaging.Service
 }
 
 // NewAssetService creates a new asset service instance
-func NewAssetService(assetRepo repository.AssetRepository, balanceRepo repository.BalanceRepository, messagingClient *messaging.MessagingService) *AssetService {
+func NewAssetService(assetRepo repository.AssetRepository, balanceRepo repository.BalanceRepository, messagingClient *messaging.Service) *AssetService {
 	return &AssetService{
 		assetRepo:       assetRepo,
 		balanceRepo:     balanceRepo,

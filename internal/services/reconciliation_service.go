@@ -748,20 +748,20 @@ func (s *ReconciliationService) processXRPLAdjustment(_ context.Context, req *Di
 }
 
 // GetDiscrepancies retrieves balance discrepancies
-func (s *ReconciliationService) GetDiscrepancies(ctx context.Context, enterpriseID *uuid.UUID, limit, offset int) ([]*BalanceDiscrepancy, error) {
+func (s *ReconciliationService) GetDiscrepancies(_ context.Context, enterpriseID *uuid.UUID, limit, offset int) ([]*BalanceDiscrepancy, error) {
 	// In a real implementation, this would query the database
 	return []*BalanceDiscrepancy{}, nil
 }
 
 // ScheduleReconciliation creates a scheduled reconciliation
-func (s *ReconciliationService) ScheduleReconciliation(ctx context.Context, schedule *ReconciliationSchedule) error {
+func (s *ReconciliationService) ScheduleReconciliation(_ context.Context, schedule *ReconciliationSchedule) error {
 	// In a real implementation, this would store the schedule and set up a cron job
 	fmt.Printf("Scheduling reconciliation: %s with frequency %s\n", schedule.Name, schedule.Frequency)
 	return nil
 }
 
 // GetReconciliationStatus gets the status of a reconciliation
-func (s *ReconciliationService) GetReconciliationStatus(ctx context.Context, reconciliationID uuid.UUID) (*ReconciliationStatus, error) {
+func (s *ReconciliationService) GetReconciliationStatus(_ context.Context, reconciliationID uuid.UUID) (*ReconciliationStatus, error) {
 	// In a real implementation, this would query the database
 	status := ReconciliationStatusCompleted
 	return &status, nil

@@ -49,7 +49,7 @@ func NewContractStatusWorkflowService() ContractStatusWorkflowService {
 }
 
 // CanTransition checks allowedTransitions for the pair.
-func (s *contractStatusWorkflowServiceImpl) CanTransition(ctx context.Context, from, to string) error {
+func (s *contractStatusWorkflowServiceImpl) CanTransition(_ context.Context, from, to string) error {
 	if from == to {
 		return fmt.Errorf("no-op transition: %s -> %s", from, to)
 	}
@@ -81,4 +81,3 @@ func (s *contractStatusWorkflowServiceImpl) TransitionContract(ctx context.Conte
 	}
 	return nil
 }
-

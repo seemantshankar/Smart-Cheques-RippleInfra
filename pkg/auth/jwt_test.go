@@ -92,8 +92,8 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 	role := testRole
 	id := uuid.New()
 
-	accessTokenDuration := -1 * time.Hour // Expired token
-	refreshTokenDuration := 24 * time.Hour
+	accessTokenDuration := -2 * time.Hour  // Expired token (2 hours ago to ensure it's definitely expired)
+	refreshTokenDuration := -1 * time.Hour // Also expired
 
 	jwtService := NewJWTService(secretKey, accessTokenDuration, refreshTokenDuration)
 

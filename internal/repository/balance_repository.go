@@ -283,29 +283,29 @@ func (r *PostgresBalanceRepository) GetAssetTransaction(ctx context.Context, id 
 }
 
 // GetAssetTransactionsByEnterprise retrieves asset transactions for an enterprise
-func (r *PostgresBalanceRepository) GetAssetTransactionsByEnterprise(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*models.AssetTransaction, error) {
+func (r *PostgresBalanceRepository) GetAssetTransactionsByEnterprise(_ context.Context, _ uuid.UUID, _ int, _ int) ([]*models.AssetTransaction, error) {
 	// Implementation similar to GetAssetTransaction but with WHERE clause for enterprise_id
 	// and LIMIT/OFFSET for pagination - simplified for brevity
 	return nil, fmt.Errorf("not implemented")
 }
 
 // GetAssetTransactionsByCurrency retrieves asset transactions for a currency
-func (r *PostgresBalanceRepository) GetAssetTransactionsByCurrency(ctx context.Context, currencyCode string, limit, offset int) ([]*models.AssetTransaction, error) {
+func (r *PostgresBalanceRepository) GetAssetTransactionsByCurrency(_ context.Context, _ string, _ int, _ int) ([]*models.AssetTransaction, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // GetAssetTransactionsByType retrieves asset transactions by type
-func (r *PostgresBalanceRepository) GetAssetTransactionsByType(ctx context.Context, txType models.AssetTransactionType, limit, offset int) ([]*models.AssetTransaction, error) {
+func (r *PostgresBalanceRepository) GetAssetTransactionsByType(_ context.Context, _ models.AssetTransactionType, _ int, _ int) ([]*models.AssetTransaction, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // UpdateAssetTransaction updates an asset transaction
-func (r *PostgresBalanceRepository) UpdateAssetTransaction(ctx context.Context, transaction *models.AssetTransaction) error {
+func (r *PostgresBalanceRepository) UpdateAssetTransaction(_ context.Context, _ *models.AssetTransaction) error {
 	return fmt.Errorf("not implemented")
 }
 
 // UpdateBalance updates enterprise balance and creates a transaction record
-func (r *PostgresBalanceRepository) UpdateBalance(ctx context.Context, enterpriseID uuid.UUID, currencyCode string, amount string, txType models.AssetTransactionType, referenceID *string) error {
+func (r *PostgresBalanceRepository) UpdateBalance(_ context.Context, _ uuid.UUID, _ string, _ string, _ models.AssetTransactionType, _ *string) error {
 	// This would implement the complex balance update logic with transactions
 	// Simplified for now
 	return fmt.Errorf("not implemented")

@@ -11,7 +11,7 @@ import (
 
 // GetQueueStats returns statistics for all queues
 func GetQueueStats(c *gin.Context) {
-	messagingService, exists := middleware.GetMessagingService(c)
+	messagingService, exists := middleware.GetService(c)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "messaging service not available",
@@ -52,7 +52,7 @@ func GetQueueStats(c *gin.Context) {
 
 // PublishTestEvent publishes a test event for debugging
 func PublishTestEvent(c *gin.Context) {
-	messagingService, exists := middleware.GetMessagingService(c)
+	messagingService, exists := middleware.GetService(c)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "messaging service not available",

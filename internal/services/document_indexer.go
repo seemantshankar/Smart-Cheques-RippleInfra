@@ -69,7 +69,7 @@ func (i *InMemoryDocumentIndexer) Index(ctx context.Context, contractID string, 
 			m = make(map[string]int)
 			i.index[t] = m
 		}
-		m[contractID] += 1
+		m[contractID]++
 	}
 	return nil
 }

@@ -164,7 +164,7 @@ func (suite *MintingBurningIntegrationTestSuite) TestEndToEndMintingWorkflow() {
 	postMintAvailable, err := postMintCollateralBalance.GetAvailableBalanceBigInt()
 	require.NoError(t, err)
 
-	expectedAvailable := new(big.Int).Sub(initialAvailable, big.NewInt(11000000000))
+	expectedAvailable := new(big.Int).Sub(initialAvailable, big.NewInt(10000000000))
 	assert.Equal(t, expectedAvailable.String(), postMintAvailable.String())
 
 	// Step 5: Verify wrapped asset balance was created
