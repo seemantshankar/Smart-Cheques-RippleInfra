@@ -34,7 +34,7 @@ func TestOracleHandler_RegisterProvider_InvalidPayload(t *testing.T) {
 			}
 		}
 	})
-	
+
 	// Since we can't easily create the services, we'll just test that the route exists
 	r.POST("/providers", func(c *gin.Context) {
 		// This is a simplified version just to test the route
@@ -88,7 +88,7 @@ func TestOracleHandler_GetProvider_InvalidID(t *testing.T) {
 			}
 		}
 	})
-	
+
 	// Since we can't easily create the services, we'll just test that the route exists
 	r.GET("/providers/:id", func(c *gin.Context) {
 		// This is a simplified version just to test the route
