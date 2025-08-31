@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -70,6 +71,102 @@ func (m *mockSmartChequeRepository) GetSmartChequeCount(ctx context.Context) (in
 func (m *mockSmartChequeRepository) GetSmartChequeCountByStatus(ctx context.Context) (map[models.SmartChequeStatus]int64, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(map[models.SmartChequeStatus]int64), args.Error(1)
+}
+
+// Add the missing methods for the new interface
+func (m *mockSmartChequeRepository) GetSmartChequeCountByCurrency(ctx context.Context) (map[models.Currency]int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(map[models.Currency]int64), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) GetSmartChequeAmountStatistics(ctx context.Context) (totalAmount, averageAmount, largestAmount, smallestAmount float64, err error) {
+	args := m.Called(ctx)
+	return args.Get(0).(float64), args.Get(1).(float64), args.Get(2).(float64), args.Get(3).(float64), args.Error(4)
+}
+
+func (m *mockSmartChequeRepository) GetSmartChequeTrends(ctx context.Context, days int) (map[string]int64, error) {
+	args := m.Called(ctx, days)
+	return args.Get(0).(map[string]int64), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) GetRecentSmartCheques(ctx context.Context, limit int) ([]*models.SmartCheque, error) {
+	args := m.Called(ctx, limit)
+	return args.Get(0).([]*models.SmartCheque), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) SearchSmartCheques(ctx context.Context, query string, limit, offset int) ([]*models.SmartCheque, error) {
+	args := m.Called(ctx, query, limit, offset)
+	return args.Get(0).([]*models.SmartCheque), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) BatchCreateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error {
+	args := m.Called(ctx, smartCheques)
+	return args.Error(0)
+}
+
+func (m *mockSmartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error {
+	args := m.Called(ctx, smartCheques)
+	return args.Error(0)
+}
+
+func (m *mockSmartChequeRepository) BatchDeleteSmartCheques(ctx context.Context, ids []string) error {
+	args := m.Called(ctx, ids)
+	return args.Error(0)
+}
+
+func (m *mockSmartChequeRepository) BatchUpdateSmartChequeStatus(ctx context.Context, ids []string, status models.SmartChequeStatus) error {
+	args := m.Called(ctx, ids, status)
+	return args.Error(0)
+}
+
+// Additional batch operations for performance optimization
+func (m *mockSmartChequeRepository) BatchGetSmartCheques(ctx context.Context, ids []string) ([]*models.SmartCheque, error) {
+	args := m.Called(ctx, ids)
+	return args.Get(0).([]*models.SmartCheque), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) BatchUpdateSmartChequeStatuses(ctx context.Context, updates map[string]models.SmartChequeStatus) error {
+	args := m.Called(ctx, updates)
+	return args.Error(0)
+}
+
+// Audit trail and compliance tracking
+func (m *mockSmartChequeRepository) GetSmartChequeAuditTrail(ctx context.Context, smartChequeID string, limit, offset int) ([]models.AuditLog, error) {
+	args := m.Called(ctx, smartChequeID, limit, offset)
+	return args.Get(0).([]models.AuditLog), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) GetSmartChequeComplianceReport(ctx context.Context, smartChequeID string) (*repository.SmartChequeComplianceReport, error) {
+	args := m.Called(ctx, smartChequeID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.SmartChequeComplianceReport), args.Error(1)
+}
+
+// Advanced analytics and reporting
+func (m *mockSmartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Context, payerID string) (*repository.SmartChequeAnalytics, error) {
+	args := m.Called(ctx, payerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.SmartChequeAnalytics), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) GetSmartChequeAnalyticsByPayee(ctx context.Context, payeeID string) (*repository.SmartChequeAnalytics, error) {
+	args := m.Called(ctx, payeeID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.SmartChequeAnalytics), args.Error(1)
+}
+
+func (m *mockSmartChequeRepository) GetSmartChequePerformanceMetrics(ctx context.Context, filters *repository.SmartChequeFilter) (*repository.SmartChequePerformanceMetrics, error) {
+	args := m.Called(ctx, filters)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.SmartChequePerformanceMetrics), args.Error(1)
 }
 
 // mockVerificationWorkflowService implements the VerificationWorkflowServiceInterface for testing

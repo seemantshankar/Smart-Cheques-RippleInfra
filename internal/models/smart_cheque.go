@@ -44,6 +44,29 @@ type Milestone struct {
 	OracleConfig       *OracleConfig      `json:"oracle_config,omitempty"`
 	Status             MilestoneStatus    `json:"status"`
 	CompletedAt        *time.Time         `json:"completed_at,omitempty"`
+
+	// Enhanced fields from ContractMilestone
+	ContractID           string         `json:"contract_id,omitempty"`
+	SequenceOrder        int            `json:"sequence_order,omitempty"`
+	SequenceNumber       int            `json:"sequence_number,omitempty"`
+	Dependencies         []string       `json:"dependencies,omitempty"`
+	Category             string         `json:"category,omitempty"`
+	Priority             int            `json:"priority,omitempty"`
+	CriticalPath         bool           `json:"critical_path,omitempty"`
+	TriggerConditions    string         `json:"trigger_conditions,omitempty"`
+	VerificationCriteria string         `json:"verification_criteria,omitempty"`
+	EstimatedStartDate   *time.Time     `json:"estimated_start_date,omitempty"`
+	EstimatedEndDate     *time.Time     `json:"estimated_end_date,omitempty"`
+	ActualStartDate      *time.Time     `json:"actual_start_date,omitempty"`
+	ActualEndDate        *time.Time     `json:"actual_end_date,omitempty"`
+	EstimatedDuration    time.Duration  `json:"estimated_duration,omitempty"`
+	ActualDuration       *time.Duration `json:"actual_duration,omitempty"`
+	PercentageComplete   float64        `json:"percentage_complete,omitempty"`
+	RiskLevel            string         `json:"risk_level,omitempty"`
+	ContingencyPlans     []string       `json:"contingency_plans,omitempty"`
+	CriticalityScore     int            `json:"criticality_score,omitempty"`
+	CreatedAt            time.Time      `json:"created_at,omitempty"`
+	UpdatedAt            time.Time      `json:"updated_at,omitempty"`
 }
 
 type VerificationMethod string

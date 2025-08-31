@@ -162,6 +162,8 @@ func (suite *TransactionBatchingIntegrationTestSuite) SetupTest() {
 	// Additional mocks needed for monitoring service
 	suite.transactionRepo.On("GetTransactionsByStatus", mock.AnythingOfType("models.TransactionStatus"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return([]*models.Transaction{}, nil)
 	suite.transactionRepo.On("GetTransactionBatchesByStatus", mock.AnythingOfType("models.TransactionStatus"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return([]*models.TransactionBatch{}, nil)
+	// Add missing mock for GetTransactionsBySmartChequeID
+	suite.transactionRepo.On("GetTransactionsBySmartChequeID", mock.AnythingOfType("string"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return([]*models.Transaction{}, nil)
 
 	// Set a shorter update interval for testing
 	suite.monitoringService.SetUpdateInterval(1 * time.Second)

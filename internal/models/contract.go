@@ -91,6 +91,7 @@ type ContractMilestone struct {
 	RiskLevel            string         `json:"risk_level" db:"risk_level"`
 	ContingencyPlans     []string       `json:"contingency_plans" db:"-"`
 	CriticalityScore     int            `json:"criticality_score" db:"criticality_score"`
+	Status               string         `json:"status" db:"status"` // Add Status field
 	CreatedAt            time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt            time.Time      `json:"updated_at" db:"updated_at"`
 }

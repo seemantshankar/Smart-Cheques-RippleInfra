@@ -85,6 +85,7 @@ type TransactionRepositoryInterface interface {
 	GetTransactionsByEnterpriseID(enterpriseID string, limit, offset int) ([]*models.Transaction, error)
 	GetTransactionsByUserID(userID string, limit, offset int) ([]*models.Transaction, error)
 	GetTransactionsByType(txType models.TransactionType, limit, offset int) ([]*models.Transaction, error)
+	GetTransactionsBySmartChequeID(smartChequeID string, limit, offset int) ([]*models.Transaction, error)
 	GetPendingTransactions(limit int) ([]*models.Transaction, error)
 	GetExpiredTransactions() ([]*models.Transaction, error)
 	GetRetriableTransactions() ([]*models.Transaction, error)
@@ -101,7 +102,6 @@ type TransactionRepositoryInterface interface {
 	GetTransactionStats() (*models.TransactionStats, error)
 	GetTransactionStatsByDateRange(start, end time.Time) (*models.TransactionStats, error)
 	GetTransactionCountByStatus() (map[models.TransactionStatus]int64, error)
-	GetAverageProcessingTime() (float64, error)
 }
 
 // AssetRepositoryInterface defines the interface for asset repository operations
@@ -350,6 +350,92 @@ type SmartChequeRepositoryInterface interface {
 	// SmartCheque statistics
 	GetSmartChequeCount(ctx context.Context) (int64, error)
 	GetSmartChequeCountByStatus(ctx context.Context) (map[models.SmartChequeStatus]int64, error)
+
+	// SmartCheque analytics and complex queries
+	GetSmartChequeCountByCurrency(ctx context.Context) (map[models.Currency]int64, error)
+	GetSmartChequeAmountStatistics(ctx context.Context) (totalAmount, averageAmount, largestAmount, smallestAmount float64, err error)
+	GetSmartChequeTrends(ctx context.Context, days int) (map[string]int64, error)
+	GetRecentSmartCheques(ctx context.Context, limit int) ([]*models.SmartCheque, error)
+	SearchSmartCheques(ctx context.Context, query string, limit, offset int) ([]*models.SmartCheque, error)
+
+	// SmartCheque batch operations
+	BatchCreateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error
+	BatchUpdateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error
+	BatchDeleteSmartCheques(ctx context.Context, ids []string) error
+	BatchUpdateSmartChequeStatus(ctx context.Context, ids []string, status models.SmartChequeStatus) error
+
+	// Additional batch operations for performance optimization
+	BatchGetSmartCheques(ctx context.Context, ids []string) ([]*models.SmartCheque, error)
+	BatchUpdateSmartChequeStatuses(ctx context.Context, updates map[string]models.SmartChequeStatus) error
+
+	// Audit trail and compliance tracking
+	GetSmartChequeAuditTrail(ctx context.Context, smartChequeID string, limit, offset int) ([]models.AuditLog, error)
+	GetSmartChequeComplianceReport(ctx context.Context, smartChequeID string) (*SmartChequeComplianceReport, error)
+
+	// Advanced analytics and reporting
+	GetSmartChequeAnalyticsByPayer(ctx context.Context, payerID string) (*SmartChequeAnalytics, error)
+	GetSmartChequeAnalyticsByPayee(ctx context.Context, payeeID string) (*SmartChequeAnalytics, error)
+	GetSmartChequePerformanceMetrics(ctx context.Context, filters *SmartChequeFilter) (*SmartChequePerformanceMetrics, error)
+}
+
+// SmartChequeComplianceReport represents a compliance report for a smart cheque
+type SmartChequeComplianceReport struct {
+	SmartChequeID       string                    `json:"smart_cheque_id"`
+	TotalTransactions   int64                     `json:"total_transactions"`
+	CompliantTxCount    int64                     `json:"compliant_tx_count"`
+	NonCompliantTxCount int64                     `json:"non_compliant_tx_count"`
+	ComplianceRate      float64                   `json:"compliance_rate"`
+	LastAuditDate       time.Time                 `json:"last_audit_date"`
+	AuditFindings       []SmartChequeAuditFinding `json:"audit_findings"`
+	RegulatoryStatus    string                    `json:"regulatory_status"`
+}
+
+// SmartChequeAuditFinding represents a finding from an audit
+type SmartChequeAuditFinding struct {
+	ID          string    `json:"id"`
+	Description string    `json:"description"`
+	Severity    string    `json:"severity"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	ResolvedAt  time.Time `json:"resolved_at,omitempty"`
+}
+
+// SmartChequeAnalytics represents detailed analytics for smart cheques
+type SmartChequeAnalytics struct {
+	TotalCount           int64                              `json:"total_count"`
+	CountByStatus        map[models.SmartChequeStatus]int64 `json:"count_by_status"`
+	CountByCurrency      map[models.Currency]int64          `json:"count_by_currency"`
+	AverageAmount        float64                            `json:"average_amount"`
+	TotalAmount          float64                            `json:"total_amount"`
+	LargestAmount        float64                            `json:"largest_amount"`
+	SmallestAmount       float64                            `json:"smallest_amount"`
+	RecentActivity       []*models.SmartCheque              `json:"recent_activity"`
+	StatusTrends         map[string]int64                   `json:"status_trends"`
+	CurrencyDistribution map[models.Currency]float64        `json:"currency_distribution"`
+}
+
+// SmartChequePerformanceMetrics represents performance metrics for smart cheques
+type SmartChequePerformanceMetrics struct {
+	AverageProcessingTime time.Duration `json:"average_processing_time"`
+	SuccessRate           float64       `json:"success_rate"`
+	FailureRate           float64       `json:"failure_rate"`
+	AverageAmount         float64       `json:"average_amount"`
+	TotalVolume           float64       `json:"total_volume"`
+	PeakHourVolume        float64       `json:"peak_hour_volume"`
+}
+
+// SmartChequeFilter represents filter criteria for smart cheque queries
+type SmartChequeFilter struct {
+	PayerID      *string                   `json:"payer_id,omitempty"`
+	PayeeID      *string                   `json:"payee_id,omitempty"`
+	Status       *models.SmartChequeStatus `json:"status,omitempty"`
+	Currency     *models.Currency          `json:"currency,omitempty"`
+	DateFrom     *time.Time                `json:"date_from,omitempty"`
+	DateTo       *time.Time                `json:"date_to,omitempty"`
+	MinAmount    *float64                  `json:"min_amount,omitempty"`
+	MaxAmount    *float64                  `json:"max_amount,omitempty"`
+	ContractHash *string                   `json:"contract_hash,omitempty"`
+	Tags         []string                  `json:"tags,omitempty"`
 }
 
 // ContractRepositoryInterface defines the interface for contract repository operations
