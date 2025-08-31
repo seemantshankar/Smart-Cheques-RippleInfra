@@ -11,16 +11,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 
 	"github.com/smart-payment-infrastructure/internal/handlers"
+	"github.com/smart-payment-infrastructure/internal/middleware"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
 func main() {
+	// Set Gin to release mode in production
+	if os.Getenv("GIN_MODE") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Get database connection string from environment
 	dbURL := os.Getenv("POSTGRES_URL")
 	if dbURL == "" {
@@ -69,26 +75,39 @@ func main() {
 	oracleHandler := handlers.NewOracleHandler(oracleService, verificationService, monitoringService)
 
 	// Create router
-	router := mux.NewRouter()
+	router := gin.New()
+
+	// Add middleware
+	router.Use(middleware.ErrorHandler())
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
 
 	// Register routes
-	router.HandleFunc("/api/v1/oracle/providers", oracleHandler.RegisterProvider).Methods("POST")
-	router.HandleFunc("/api/v1/oracle/providers/{id}", oracleHandler.GetProvider).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/providers/{id}", oracleHandler.UpdateProvider).Methods("PUT")
-	router.HandleFunc("/api/v1/oracle/providers/{id}", oracleHandler.DeleteProvider).Methods("DELETE")
-	router.HandleFunc("/api/v1/oracle/providers", oracleHandler.ListProviders).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/providers/active", oracleHandler.GetActiveProviders).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/providers/type/{type}", oracleHandler.GetProvidersByType).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/providers/{id}/health", oracleHandler.HealthCheck).Methods("GET")
+	v1 := router.Group("/api/v1/oracle")
+	{
+		// Provider management
+		v1.POST("/providers", oracleHandler.RegisterProvider)
+		v1.GET("/providers/:id", oracleHandler.GetProvider)
+		v1.PUT("/providers/:id", oracleHandler.UpdateProvider)
+		v1.DELETE("/providers/:id", oracleHandler.DeleteProvider)
+		v1.GET("/providers", oracleHandler.ListProviders)
+		v1.GET("/providers/active", oracleHandler.GetActiveProviders)
+		v1.GET("/providers/type/:type", oracleHandler.GetProvidersByType)
+		v1.GET("/providers/:id/health", oracleHandler.HealthCheck)
 
-	router.HandleFunc("/api/v1/oracle/requests/{id}", oracleHandler.GetRequest).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/verify", oracleHandler.VerifyMilestone).Methods("POST")
-	router.HandleFunc("/api/v1/oracle/verify/{request_id}", oracleHandler.GetVerificationResult).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/proof/{request_id}", oracleHandler.GetProof).Methods("GET")
+		// Request management
+		v1.GET("/requests/:id", oracleHandler.GetRequest)
 
-	router.HandleFunc("/api/v1/oracle/monitoring/dashboard", oracleHandler.GetDashboardMetrics).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/monitoring/sla", oracleHandler.GetSLAMonitoring).Methods("GET")
-	router.HandleFunc("/api/v1/oracle/monitoring/costs", oracleHandler.GetCostAnalysis).Methods("GET")
+		// Verification endpoints
+		v1.POST("/verify", oracleHandler.VerifyMilestone)
+		v1.GET("/verify/:request_id", oracleHandler.GetVerificationResult)
+		v1.GET("/proof/:request_id", oracleHandler.GetProof)
+
+		// Monitoring endpoints
+		v1.GET("/monitoring/dashboard", oracleHandler.GetDashboardMetrics)
+		v1.GET("/monitoring/sla", oracleHandler.GetSLAMonitoring)
+		v1.GET("/monitoring/costs", oracleHandler.GetCostAnalysis)
+	}
 
 	// Start server
 	port := os.Getenv("PORT")

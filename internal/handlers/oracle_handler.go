@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/services"
@@ -34,10 +32,10 @@ func NewOracleHandler(
 }
 
 // RegisterProvider registers a new oracle provider
-func (h *OracleHandler) RegisterProvider(w http.ResponseWriter, r *http.Request) {
+func (h *OracleHandler) RegisterProvider(c *gin.Context) {
 	var provider models.OracleProvider
-	if err := json.NewDecoder(r.Body).Decode(&provider); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&provider); err != nil {
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid JSON", err))
 		return
 	}
 
@@ -48,53 +46,42 @@ func (h *OracleHandler) RegisterProvider(w http.ResponseWriter, r *http.Request)
 	provider.IsActive = true
 	provider.Reliability = 1.0
 
-	if err := h.oracleService.RegisterProvider(r.Context(), &provider); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to register provider: %v", err), http.StatusInternalServerError)
+	if err := h.oracleService.RegisterProvider(c.Request.Context(), &provider); err != nil {
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to register provider", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(provider); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusCreated, provider)
 }
 
 // GetProvider retrieves an oracle provider by ID
-func (h *OracleHandler) GetProvider(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	providerID, err := uuid.Parse(vars["id"])
+func (h *OracleHandler) GetProvider(c *gin.Context) {
+	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid provider ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
-	provider, err := h.oracleService.GetProvider(r.Context(), providerID)
+	provider, err := h.oracleService.GetProvider(c.Request.Context(), providerID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get provider: %v", err), http.StatusNotFound)
+		c.Error(models.NewAppError(http.StatusNotFound, "Failed to get provider", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(provider); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, provider)
 }
 
 // UpdateProvider updates an existing oracle provider
-func (h *OracleHandler) UpdateProvider(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	providerID, err := uuid.Parse(vars["id"])
+func (h *OracleHandler) UpdateProvider(c *gin.Context) {
+	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid provider ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
 	var provider models.OracleProvider
-	if err := json.NewDecoder(r.Body).Decode(&provider); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&provider); err != nil {
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid JSON", err))
 		return
 	}
 
@@ -102,247 +89,193 @@ func (h *OracleHandler) UpdateProvider(w http.ResponseWriter, r *http.Request) {
 	provider.ID = providerID
 	provider.UpdatedAt = time.Now()
 
-	if err := h.oracleService.UpdateProvider(r.Context(), &provider); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update provider: %v", err), http.StatusInternalServerError)
+	if err := h.oracleService.UpdateProvider(c.Request.Context(), &provider); err != nil {
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to update provider", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(provider); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, provider)
 }
 
 // DeleteProvider deletes an oracle provider
-func (h *OracleHandler) DeleteProvider(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	providerID, err := uuid.Parse(vars["id"])
+func (h *OracleHandler) DeleteProvider(c *gin.Context) {
+	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid provider ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
-	if err := h.oracleService.DeleteProvider(r.Context(), providerID); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to delete provider: %v", err), http.StatusInternalServerError)
+	if err := h.oracleService.DeleteProvider(c.Request.Context(), providerID); err != nil {
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to delete provider", err))
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 // ListProviders lists all oracle providers
-func (h *OracleHandler) ListProviders(w http.ResponseWriter, r *http.Request) {
+func (h *OracleHandler) ListProviders(c *gin.Context) {
 	// Parse query parameters
 	limit := 100
 	offset := 0
 
-	providers, err := h.oracleService.ListProviders(r.Context(), limit, offset)
+	providers, err := h.oracleService.ListProviders(c.Request.Context(), limit, offset)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to list providers: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to list providers", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(providers); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, providers)
 }
 
 // GetActiveProviders retrieves all active oracle providers
-func (h *OracleHandler) GetActiveProviders(w http.ResponseWriter, r *http.Request) {
-	providers, err := h.oracleService.GetActiveProviders(r.Context())
+func (h *OracleHandler) GetActiveProviders(c *gin.Context) {
+	providers, err := h.oracleService.GetActiveProviders(c.Request.Context())
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get active providers: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to get active providers", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(providers); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, providers)
 }
 
 // GetProvidersByType retrieves oracle providers by type
-func (h *OracleHandler) GetProvidersByType(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	providerType := models.OracleType(vars["type"])
+func (h *OracleHandler) GetProvidersByType(c *gin.Context) {
+	providerType := models.OracleType(c.Param("type"))
 
-	providers, err := h.oracleService.GetProvidersByType(r.Context(), providerType)
+	providers, err := h.oracleService.GetProvidersByType(c.Request.Context(), providerType)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get providers by type: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to get providers by type", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(providers); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, providers)
 }
 
 // HealthCheck performs a health check on a provider
-func (h *OracleHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	providerID, err := uuid.Parse(vars["id"])
+func (h *OracleHandler) HealthCheck(c *gin.Context) {
+	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid provider ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
-	status, err := h.oracleService.HealthCheck(r.Context(), providerID)
+	status, err := h.oracleService.HealthCheck(c.Request.Context(), providerID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to perform health check: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to perform health check", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(status); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, status)
 }
 
 // GetRequest retrieves an oracle request by ID
-func (h *OracleHandler) GetRequest(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	requestID, err := uuid.Parse(vars["id"])
+func (h *OracleHandler) GetRequest(c *gin.Context) {
+	requestID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		http.Error(w, "Invalid request ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request ID", err))
 		return
 	}
 
-	request, err := h.oracleService.GetRequest(r.Context(), requestID)
+	request, err := h.oracleService.GetRequest(c.Request.Context(), requestID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get request: %v", err), http.StatusNotFound)
+		c.Error(models.NewAppError(http.StatusNotFound, "Failed to get request", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(request); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, request)
 }
 
 // VerifyMilestone verifies a milestone using oracle providers
-func (h *OracleHandler) VerifyMilestone(w http.ResponseWriter, r *http.Request) {
+func (h *OracleHandler) VerifyMilestone(c *gin.Context) {
 	var req struct {
 		MilestoneID  string               `json:"milestone_id"`
 		Condition    string               `json:"condition"`
 		OracleConfig *models.OracleConfig `json:"oracle_config"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid JSON", err))
 		return
 	}
 
 	if req.MilestoneID == "" || req.Condition == "" || req.OracleConfig == nil {
-		http.Error(w, "Missing required fields: milestone_id, condition, oracle_config", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Missing required fields: milestone_id, condition, oracle_config", nil))
 		return
 	}
 
-	response, err := h.verificationService.VerifyMilestone(r.Context(), req.MilestoneID, req.Condition, req.OracleConfig)
+	response, err := h.verificationService.VerifyMilestone(c.Request.Context(), req.MilestoneID, req.Condition, req.OracleConfig)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to verify milestone: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to verify milestone", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, response)
 }
 
 // GetVerificationResult retrieves the result of a previous verification
-func (h *OracleHandler) GetVerificationResult(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	requestID, err := uuid.Parse(vars["request_id"])
+func (h *OracleHandler) GetVerificationResult(c *gin.Context) {
+	requestID, err := uuid.Parse(c.Param("request_id"))
 	if err != nil {
-		http.Error(w, "Invalid request ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request ID", err))
 		return
 	}
 
-	response, err := h.verificationService.GetVerificationResult(r.Context(), requestID)
+	response, err := h.verificationService.GetVerificationResult(c.Request.Context(), requestID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get verification result: %v", err), http.StatusNotFound)
+		c.Error(models.NewAppError(http.StatusNotFound, "Failed to get verification result", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, response)
 }
 
 // GetProof retrieves verification evidence for a completed verification
-func (h *OracleHandler) GetProof(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	requestID, err := uuid.Parse(vars["request_id"])
+func (h *OracleHandler) GetProof(c *gin.Context) {
+	requestID, err := uuid.Parse(c.Param("request_id"))
 	if err != nil {
-		http.Error(w, "Invalid request ID", http.StatusBadRequest)
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request ID", err))
 		return
 	}
 
-	evidence, err := h.verificationService.GetProof(r.Context(), requestID)
+	evidence, err := h.verificationService.GetProof(c.Request.Context(), requestID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get proof: %v", err), http.StatusNotFound)
+		c.Error(models.NewAppError(http.StatusNotFound, "Failed to get proof", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/octet-stream")
-	if _, err := w.Write(evidence); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to write response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.Data(http.StatusOK, "application/octet-stream", evidence)
 }
 
 // GetDashboardMetrics retrieves metrics for the oracle monitoring dashboard
-func (h *OracleHandler) GetDashboardMetrics(w http.ResponseWriter, r *http.Request) {
-	metrics, err := h.monitoringService.GetDashboardMetrics(r.Context())
+func (h *OracleHandler) GetDashboardMetrics(c *gin.Context) {
+	metrics, err := h.monitoringService.GetDashboardMetrics(c.Request.Context())
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get dashboard metrics: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to get dashboard metrics", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(metrics); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, metrics)
 }
 
 // GetSLAMonitoring retrieves SLA monitoring data for oracle providers
-func (h *OracleHandler) GetSLAMonitoring(w http.ResponseWriter, r *http.Request) {
-	report, err := h.monitoringService.GetSLAMonitoring(r.Context())
+func (h *OracleHandler) GetSLAMonitoring(c *gin.Context) {
+	report, err := h.monitoringService.GetSLAMonitoring(c.Request.Context())
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get SLA monitoring report: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to get SLA monitoring report", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(report); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, report)
 }
 
 // GetCostAnalysis retrieves cost analysis for oracle usage
-func (h *OracleHandler) GetCostAnalysis(w http.ResponseWriter, r *http.Request) {
-	report, err := h.monitoringService.GetCostAnalysis(r.Context())
+func (h *OracleHandler) GetCostAnalysis(c *gin.Context) {
+	report, err := h.monitoringService.GetCostAnalysis(c.Request.Context())
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get cost analysis report: %v", err), http.StatusInternalServerError)
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to get cost analysis report", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(report); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, report)
 }

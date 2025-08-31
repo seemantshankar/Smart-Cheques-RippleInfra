@@ -35,6 +35,39 @@ You are an expert in Go, microservices architecture, and clean backend developme
 - Use **goroutines safely**; guard shared state with channels or sync primitives.
 - **Defer closing resources** and handle them carefully to avoid leaks.
 
+### Gin Web Framework Best Practices:
+- **Router Configuration**:
+  - Use `gin.New()` for complete control or `gin.Default()` for built-in middleware
+  - Organize routes using route groups for better maintainability
+  - Apply middleware at the appropriate level (global, group, or route)
+  
+- **Middleware Implementation**:
+  - Implement middleware using the `gin.HandlerFunc` signature
+  - Use middleware for cross-cutting concerns (logging, authentication, error handling)
+  - Chain middleware in the correct order for optimal performance
+  - Always call `c.Next()` to pass control to the next handler unless intentionally aborting
+  
+- **Error Handling**:
+  - Implement global error handling middleware to capture and format errors consistently
+  - Define custom error types for different categories of errors
+  - Use `c.Error()` to add errors to the Gin context for centralized handling
+  - Return structured JSON responses with consistent error formats
+  - Implement custom recovery middleware to log panics and return appropriate responses
+  
+- **Request/Response Handling**:
+  - Use `c.ShouldBindJSON()` or other binding methods for request validation
+  - Validate request parameters and return appropriate HTTP status codes
+  - Implement unified response structures for both success and error cases
+  - Use appropriate HTTP status codes for different scenarios
+  - Handle context timeouts and cancellations properly
+  
+- **Security Practices**:
+  - Implement proper authentication and authorization middleware
+  - Sanitize input data to prevent injection attacks
+  - Set appropriate security headers
+  - Implement rate limiting to prevent abuse
+  - Use HTTPS in production environments
+
 ### Security and Resilience:
 - Apply **input validation and sanitization** rigorously, especially on inputs from external sources.
 - Use secure defaults for **JWT, cookies**, and configuration settings.
@@ -49,6 +82,8 @@ You are an expert in Go, microservices architecture, and clean backend developme
 - Separate **fast unit tests** from slower integration and E2E tests.
 - Ensure **test coverage** for every exported function, with behavioral checks.
 - Use tools like 'go test -cover' to ensure adequate test coverage.
+- Test middleware functions independently with proper test contexts
+- Create integration tests for route handlers with actual Gin router instances
 
 ### Documentation and Standards:
 - Document public functions and packages with **GoDoc-style comments**.
@@ -80,6 +115,8 @@ You are an expert in Go, microservices architecture, and clean backend developme
 - Use **benchmarks** to track performance regressions and identify bottlenecks.
 - Minimize **allocations** and avoid premature optimization; profile before tuning.
 - Instrument key areas (DB, external calls, heavy computation) to monitor runtime behavior.
+- Optimize route patterns and middleware order for better performance
+- Implement request timeouts to prevent resource exhaustion
 
 ### Concurrency and Goroutines:
 - Ensure safe use of **goroutines**, and guard shared state with channels or sync primitives.

@@ -27,7 +27,13 @@ func main() {
 	}
 	defer messagingService.Close()
 
-	r := gin.Default()
+	r := gin.New()
+
+	// Add global error handling middleware first
+	r.Use(middleware.ErrorHandler())
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
 
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))

@@ -5,10 +5,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/smart-payment-infrastructure/internal/middleware"
 )
 
 func main() {
-	r := gin.Default()
+	r := gin.New()
+
+	// Add global error handling middleware first
+	r.Use(middleware.ErrorHandler())
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {

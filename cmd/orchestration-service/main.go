@@ -37,7 +37,13 @@ func main() {
 		log.Printf("Failed to subscribe to milestone completed events: %v", err)
 	}
 
-	r := gin.Default()
+	r := gin.New()
+
+	// Add global error handling middleware first
+	r.Use(middleware.ErrorHandler())
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
 
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))
@@ -78,9 +84,7 @@ func handleMilestoneCompleted(event *messaging.Event) error {
 func createSmartCheque(c *gin.Context) {
 	messagingService, exists := middleware.GetService(c)
 	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "messaging service not available",
-		})
+		c.Error(middleware.NewAppError(http.StatusInternalServerError, "Messaging service not available", nil))
 		return
 	}
 
@@ -92,9 +96,7 @@ func createSmartCheque(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		c.Error(middleware.NewAppError(http.StatusBadRequest, "Invalid request payload", err))
 		return
 	}
 
@@ -126,9 +128,7 @@ func createSmartCheque(c *gin.Context) {
 func completeMilestone(c *gin.Context) {
 	messagingService, exists := middleware.GetService(c)
 	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "messaging service not available",
-		})
+		c.Error(middleware.NewAppError(http.StatusInternalServerError, "Messaging service not available", nil))
 		return
 	}
 
@@ -140,9 +140,7 @@ func completeMilestone(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		c.Error(middleware.NewAppError(http.StatusBadRequest, "Invalid request payload", err))
 		return
 	}
 

@@ -28,10 +28,7 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.UserRegistrationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request payload",
-			"details": err.Error(),
-		})
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request payload", err))
 		return
 	}
 
@@ -39,13 +36,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case services.ErrUserAlreadyExists:
-			c.JSON(http.StatusConflict, gin.H{
-				"error": "User already exists",
-			})
+			c.Error(models.NewAppError(http.StatusConflict, "User already exists", err))
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to register user",
-			})
+			c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to register user", err))
 		}
 		return
 	}
@@ -66,10 +59,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request payload",
-			"details": err.Error(),
-		})
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request payload", err))
 		return
 	}
 
@@ -77,13 +67,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case services.ErrInvalidCredentials:
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid credentials",
-			})
+			c.Error(models.NewAppError(http.StatusUnauthorized, "Invalid credentials", err))
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to login",
-			})
+			c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to login", err))
 		}
 		return
 	}
@@ -95,10 +81,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req models.TokenRefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request payload",
-			"details": err.Error(),
-		})
+		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid request payload", err))
 		return
 	}
 
@@ -106,13 +89,9 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case services.ErrInvalidRefreshToken:
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid refresh token",
-			})
+			c.Error(models.NewAppError(http.StatusUnauthorized, "Invalid refresh token", err))
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to refresh token",
-			})
+			c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to refresh token", err))
 		}
 		return
 	}
@@ -125,24 +104,18 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Unauthorized",
-		})
+		c.Error(models.NewAppError(http.StatusUnauthorized, "Unauthorized", nil))
 		return
 	}
 
 	uid, ok := userID.(uuid.UUID)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Invalid user ID",
-		})
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Invalid user ID", nil))
 		return
 	}
 
 	if err := h.authService.LogoutUser(uid); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to logout",
-		})
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to logout", err))
 		return
 	}
 
@@ -156,17 +129,13 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	// Get user claims from context (set by auth middleware)
 	claims, exists := c.Get("user_claims")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Unauthorized",
-		})
+		c.Error(models.NewAppError(http.StatusUnauthorized, "Unauthorized", nil))
 		return
 	}
 
 	userClaims, ok := claims.(*auth.JWTClaims)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Invalid user claims",
-		})
+		c.Error(models.NewAppError(http.StatusInternalServerError, "Invalid user claims", nil))
 		return
 	}
 
@@ -185,9 +154,7 @@ func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header required",
-			})
+			c.Error(models.NewAppError(http.StatusUnauthorized, "Authorization header required", nil))
 			c.Abort()
 			return
 		}
@@ -195,9 +162,7 @@ func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 		// Extract token from "Bearer <token>"
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid authorization header format",
-			})
+			c.Error(models.NewAppError(http.StatusUnauthorized, "Invalid authorization header format", nil))
 			c.Abort()
 			return
 		}
@@ -207,17 +172,11 @@ func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 		if err != nil {
 			switch err {
 			case auth.ErrExpiredToken:
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Token has expired",
-				})
+				c.Error(models.NewAppError(http.StatusUnauthorized, "Token has expired", err))
 			case auth.ErrInvalidToken:
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Invalid token",
-				})
+				c.Error(models.NewAppError(http.StatusUnauthorized, "Invalid token", err))
 			default:
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Token validation failed",
-				})
+				c.Error(models.NewAppError(http.StatusUnauthorized, "Token validation failed", err))
 			}
 			c.Abort()
 			return

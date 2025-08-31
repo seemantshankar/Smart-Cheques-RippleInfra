@@ -18,6 +18,15 @@ var (
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
+// AuthServiceInterface defines the interface for AuthService
+type AuthServiceInterface interface {
+	RegisterUser(req *models.UserRegistrationRequest) (*models.User, error)
+	LoginUser(req *models.UserLoginRequest) (*models.UserLoginResponse, error)
+	RefreshToken(req *models.TokenRefreshRequest) (*models.UserLoginResponse, error)
+	LogoutUser(userID uuid.UUID) error
+	ValidateAccessToken(tokenString string) (*auth.JWTClaims, error)
+}
+
 // AuthService handles authentication business logic
 type AuthService struct {
 	userRepo   repository.UserRepositoryInterface
@@ -182,3 +191,6 @@ func (s *AuthService) LogoutUser(userID uuid.UUID) error {
 func (s *AuthService) ValidateAccessToken(tokenString string) (*auth.JWTClaims, error) {
 	return s.jwtService.ValidateAccessToken(tokenString)
 }
+
+// Compile-time check to ensure AuthService implements AuthServiceInterface
+var _ AuthServiceInterface = &AuthService{}

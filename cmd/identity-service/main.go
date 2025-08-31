@@ -104,7 +104,13 @@ func main() {
 		log.Printf("Failed to subscribe to enterprise registered events: %v", err)
 	}
 
-	r := gin.Default()
+	r := gin.New()
+
+	// Add global error handling middleware first
+	r.Use(middleware.ErrorHandler())
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
 
 	// Add messaging middleware
 	r.Use(middleware.MessagingMiddleware(messagingService))
