@@ -1,12 +1,14 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -14,10 +16,11 @@ import (
 
 // TransactionQueueService manages transaction queuing, batching, and processing
 type TransactionQueueService struct {
-	transactionRepo  repository.TransactionRepositoryInterface
-	xrplService      *XRPLService
-	messagingService *messaging.Service
-	batchConfig      models.BatchConfig
+	transactionRepo       repository.TransactionRepositoryInterface
+	xrplService           *XRPLService
+	messagingService      *messaging.Service
+	fraudDetectionService FraudDetectionServiceInterface
+	batchConfig           models.BatchConfig
 
 	// Queue management
 	processingQueue chan *models.Transaction
@@ -43,18 +46,20 @@ func NewTransactionQueueService(
 	transactionRepo repository.TransactionRepositoryInterface,
 	xrplService *XRPLService,
 	messagingService *messaging.Service,
+	fraudDetectionService FraudDetectionServiceInterface,
 	config models.BatchConfig,
 ) *TransactionQueueService {
 	return &TransactionQueueService{
-		transactionRepo:  transactionRepo,
-		xrplService:      xrplService,
-		messagingService: messagingService,
-		batchConfig:      config,
-		processingQueue:  make(chan *models.Transaction, 1000),
-		batchingQueue:    make(chan *models.Transaction, 1000),
-		activeBatches:    make(map[string]*models.TransactionBatch),
-		stopChannel:      make(chan struct{}),
-		stats:            &models.TransactionStats{},
+		transactionRepo:       transactionRepo,
+		xrplService:           xrplService,
+		messagingService:      messagingService,
+		fraudDetectionService: fraudDetectionService,
+		batchConfig:           config,
+		processingQueue:       make(chan *models.Transaction, 1000),
+		batchingQueue:         make(chan *models.Transaction, 1000),
+		activeBatches:         make(map[string]*models.TransactionBatch),
+		stopChannel:           make(chan struct{}),
+		stats:                 &models.TransactionStats{},
 	}
 }
 
@@ -535,6 +540,59 @@ func (s *TransactionQueueService) processTransaction(transaction *models.Transac
 
 	if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
 		log.Printf("Failed to update transaction status to processing: %v", err)
+	}
+
+	// Perform fraud detection analysis
+	if s.fraudDetectionService != nil {
+		// Convert transaction to fraud analysis request
+		enterpriseID, err := uuid.Parse(transaction.EnterpriseID)
+		if err != nil {
+			log.Printf("Invalid enterprise ID for transaction %s: %v", transaction.ID, err)
+			transaction.SetError(fmt.Errorf("invalid enterprise ID: %w", err))
+			if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
+				log.Printf("Failed to update transaction with enterprise ID error: %v", err)
+			}
+			return false
+		}
+
+		fraudRequest := &FraudAnalysisRequest{
+			TransactionID:   transaction.ID,
+			EnterpriseID:    enterpriseID,
+			Amount:          transaction.Amount,
+			CurrencyCode:    transaction.Currency,
+			TransactionType: string(transaction.Type),
+			Destination:     transaction.ToAddress,
+			Timestamp:       time.Now(),
+			Metadata:        transaction.Metadata,
+		}
+
+		fraudResult, err := s.fraudDetectionService.AnalyzeTransaction(context.Background(), fraudRequest)
+		if err != nil {
+			log.Printf("Fraud detection failed for transaction %s: %v", transaction.ID, err)
+			transaction.SetError(fmt.Errorf("fraud detection failed: %w", err))
+			if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
+				log.Printf("Failed to update transaction with fraud detection error: %v", err)
+			}
+			return false
+		}
+
+		// Check if fraud is detected
+		if fraudResult.FraudDetected {
+			log.Printf("Transaction %s flagged as fraud with risk score %.2f: %v",
+				transaction.ID, fraudResult.RiskScore, fraudResult.RiskFactors)
+			transaction.Status = models.TransactionStatusFraud
+			transaction.UpdatedAt = time.Now()
+			if err := s.transactionRepo.UpdateTransaction(transaction); err != nil {
+				log.Printf("Failed to update transaction to fraud status: %v", err)
+			}
+			return false
+		}
+
+		// Log high-risk transactions for monitoring
+		if fraudResult.RiskScore >= 0.6 {
+			log.Printf("High-risk transaction %s detected with risk score %.2f",
+				transaction.ID, fraudResult.RiskScore)
+		}
 	}
 
 	// Calculate fee if not already set

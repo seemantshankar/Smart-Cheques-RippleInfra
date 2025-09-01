@@ -57,6 +57,7 @@ type XRPLServiceInterface interface {
 	GetAccountInfo(address string) (interface{}, error)
 	HealthCheck() error
 	CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error)
+	CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error)
 	CompleteSmartChequeMilestone(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string) (*xrpl.TransactionResult, error)
 	CancelSmartCheque(accountAddress, ownerAddress string, sequence uint32) (*xrpl.TransactionResult, error)
 	GetEscrowStatus(ownerAddress string, sequence string) (*xrpl.EscrowInfo, error)
@@ -543,4 +544,179 @@ type MilestoneTemplateRepositoryInterface interface {
 	GetSharedTemplates(ctx context.Context, userID string, limit, offset int) ([]*models.MilestoneTemplate, error)
 	GetTemplatePermissions(ctx context.Context, templateID, userID string) ([]string, error)
 	GetTemplateShareList(ctx context.Context, templateID string) ([]*TemplateShare, error)
+}
+
+// RegulatoryRuleRepositoryInterface defines the interface for regulatory rule repository operations
+type RegulatoryRuleRepositoryInterface interface {
+	CreateRegulatoryRule(ctx context.Context, rule *models.RegulatoryRule) error
+	GetRegulatoryRule(ctx context.Context, ruleID string) (*models.RegulatoryRule, error)
+	GetActiveRegulatoryRules(ctx context.Context, jurisdiction string) ([]*models.RegulatoryRule, error)
+	GetRegulatoryRulesByCategory(ctx context.Context, jurisdiction, category string) ([]*models.RegulatoryRule, error)
+	UpdateRegulatoryRule(ctx context.Context, rule *models.RegulatoryRule) error
+	DeleteRegulatoryRule(ctx context.Context, ruleID string, deletedBy string) error
+	GetRegulatoryRuleStats(ctx context.Context, jurisdiction string) (map[string]interface{}, error)
+	SearchRegulatoryRules(ctx context.Context, filters map[string]interface{}, limit, offset int) ([]*models.RegulatoryRule, error)
+}
+
+// ComplianceRepositoryInterface defines the interface for compliance repository operations
+type ComplianceRepositoryInterface interface {
+	CreateComplianceStatus(complianceStatus *models.TransactionComplianceStatus) error
+	GetComplianceStatus(transactionID string) (*models.TransactionComplianceStatus, error)
+	UpdateComplianceStatus(complianceStatus *models.TransactionComplianceStatus) error
+	GetComplianceStatusesByStatus(status string, limit, offset int) ([]models.TransactionComplianceStatus, error)
+	GetComplianceStatusesByEnterprise(enterpriseID string, limit, offset int) ([]models.TransactionComplianceStatus, error)
+	GetFlaggedTransactions(limit, offset int) ([]models.TransactionComplianceStatus, error)
+	ReviewComplianceStatus(complianceStatusID string, reviewedBy string, comments string) error
+	GetComplianceStats(enterpriseID *string, since *time.Time) (*models.ComplianceStats, error)
+}
+
+// DisputeRepositoryInterface defines the interface for dispute repository operations
+type DisputeRepositoryInterface interface {
+	// Dispute CRUD operations
+	CreateDispute(ctx context.Context, dispute *models.Dispute) error
+	GetDisputeByID(ctx context.Context, id string) (*models.Dispute, error)
+	UpdateDispute(ctx context.Context, dispute *models.Dispute) error
+	DeleteDispute(ctx context.Context, id string) error
+
+	// Dispute queries
+	GetDisputes(ctx context.Context, filter *models.DisputeFilter, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByInitiator(ctx context.Context, initiatorID string, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByRespondent(ctx context.Context, respondentID string, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByStatus(ctx context.Context, status models.DisputeStatus, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByCategory(ctx context.Context, category models.DisputeCategory, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByPriority(ctx context.Context, priority models.DisputePriority, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesBySmartCheque(ctx context.Context, smartChequeID string, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByMilestone(ctx context.Context, milestoneID string, limit, offset int) ([]*models.Dispute, error)
+	GetDisputesByContract(ctx context.Context, contractID string, limit, offset int) ([]*models.Dispute, error)
+	GetActiveDisputes(ctx context.Context, limit, offset int) ([]*models.Dispute, error)
+	GetOverdueDisputes(ctx context.Context, asOfDate time.Time, limit, offset int) ([]*models.Dispute, error)
+	SearchDisputes(ctx context.Context, query string, limit, offset int) ([]*models.Dispute, error)
+
+	// Dispute statistics and analytics
+	GetDisputeCount(ctx context.Context) (int64, error)
+	GetDisputeCountByStatus(ctx context.Context) (map[models.DisputeStatus]int64, error)
+	GetDisputeCountByCategory(ctx context.Context) (map[models.DisputeCategory]int64, error)
+	GetDisputeCountByPriority(ctx context.Context) (map[models.DisputePriority]int64, error)
+	GetDisputeStats(ctx context.Context) (*models.DisputeStats, error)
+
+	// Evidence operations
+	CreateEvidence(ctx context.Context, evidence *models.DisputeEvidence) error
+	GetEvidenceByID(ctx context.Context, id string) (*models.DisputeEvidence, error)
+	GetEvidenceByDisputeID(ctx context.Context, disputeID string) ([]*models.DisputeEvidence, error)
+	UpdateEvidence(ctx context.Context, evidence *models.DisputeEvidence) error
+	DeleteEvidence(ctx context.Context, id string) error
+
+	// Resolution operations
+	CreateResolution(ctx context.Context, resolution *models.DisputeResolution) error
+	GetResolutionByID(ctx context.Context, id string) (*models.DisputeResolution, error)
+	GetResolutionByDisputeID(ctx context.Context, disputeID string) (*models.DisputeResolution, error)
+	UpdateResolution(ctx context.Context, resolution *models.DisputeResolution) error
+	DeleteResolution(ctx context.Context, id string) error
+
+	// Comment operations
+	CreateComment(ctx context.Context, comment *models.DisputeComment) error
+	GetCommentByID(ctx context.Context, id string) (*models.DisputeComment, error)
+	GetCommentsByDisputeID(ctx context.Context, disputeID string, limit, offset int) ([]*models.DisputeComment, error)
+	UpdateComment(ctx context.Context, comment *models.DisputeComment) error
+	DeleteComment(ctx context.Context, id string) error
+
+	// Audit operations
+	CreateAuditLog(ctx context.Context, auditLog *models.DisputeAuditLog) error
+	GetAuditLogsByDisputeID(ctx context.Context, disputeID string, limit, offset int) ([]*models.DisputeAuditLog, error)
+
+	// Notification operations
+	CreateNotification(ctx context.Context, notification *models.DisputeNotification) error
+	GetNotificationByID(ctx context.Context, id string) (*models.DisputeNotification, error)
+	GetNotificationsByDisputeID(ctx context.Context, disputeID string, limit, offset int) ([]*models.DisputeNotification, error)
+	UpdateNotification(ctx context.Context, notification *models.DisputeNotification) error
+	GetPendingNotifications(ctx context.Context, limit int) ([]*models.DisputeNotification, error)
+}
+
+// CategorizationRuleRepositoryInterface defines methods for categorization rule data operations
+type CategorizationRuleRepositoryInterface interface {
+	CreateRule(ctx context.Context, rule *models.CategorizationRule) error
+	GetRuleByID(ctx context.Context, id string) (*models.CategorizationRule, error)
+	UpdateRule(ctx context.Context, rule *models.CategorizationRule) error
+	DeleteRule(ctx context.Context, id string) error
+	GetRules(ctx context.Context, filter *CategorizationRuleFilter, limit, offset int) ([]*models.CategorizationRule, error)
+	BulkUpdateRuleStatus(ctx context.Context, ruleIDs []string, isActive bool, updatedBy string) error
+	BulkDeleteRules(ctx context.Context, ruleIDs []string) error
+	GetTopPerformingRules(ctx context.Context, category models.DisputeCategory, limit int) ([]*models.CategorizationRule, error)
+	CreateRuleGroup(ctx context.Context, group *models.CategorizationRuleGroup) error
+	GetRuleGroupByID(ctx context.Context, id string) (*models.CategorizationRuleGroup, error)
+	UpdateRuleGroup(ctx context.Context, group *models.CategorizationRuleGroup) error
+	DeleteRuleGroup(ctx context.Context, id string) error
+	GetRuleGroups(ctx context.Context, filter *CategorizationRuleGroupFilter, limit, offset int) ([]*models.CategorizationRuleGroup, error)
+	CreateRulePerformance(ctx context.Context, performance *models.CategorizationRulePerformance) error
+	UpdateRulePerformance(ctx context.Context, performance *models.CategorizationRulePerformance) error
+	GetRulePerformance(ctx context.Context, ruleID string, periodStart, periodEnd time.Time) (*models.CategorizationRulePerformance, error)
+	CreateRuleTemplate(ctx context.Context, template *models.CategorizationRuleTemplate) error
+	GetRuleTemplateByID(ctx context.Context, id string) (*models.CategorizationRuleTemplate, error)
+	UpdateRuleTemplate(ctx context.Context, template *models.CategorizationRuleTemplate) error
+	DeleteRuleTemplate(ctx context.Context, id string) error
+	GetRuleTemplates(ctx context.Context, filter *CategorizationRuleTemplateFilter, limit, offset int) ([]*models.CategorizationRuleTemplate, error)
+	GetRuleUsageStats(ctx context.Context, startDate, endDate time.Time) ([]*RuleUsageStat, error)
+}
+
+// CategorizationMLModelRepositoryInterface defines methods for ML model data operations
+type CategorizationMLModelRepositoryInterface interface {
+	CreateModel(ctx context.Context, model *models.CategorizationMLModel) error
+	GetModelByID(ctx context.Context, id string) (*models.CategorizationMLModel, error)
+	UpdateModel(ctx context.Context, model *models.CategorizationMLModel) error
+	DeleteModel(ctx context.Context, id string) error
+	GetModels(ctx context.Context, filter *MLModelFilter, limit, offset int) ([]*models.CategorizationMLModel, error)
+	GetLatestDeployedModel(ctx context.Context) (*models.CategorizationMLModel, error)
+	GetModelsByStatus(ctx context.Context, status models.MLModelStatus, limit, offset int) ([]*models.CategorizationMLModel, error)
+}
+
+// CategorizationTrainingDataRepositoryInterface defines methods for training data operations
+type CategorizationTrainingDataRepositoryInterface interface {
+	CreateTrainingData(ctx context.Context, data *models.CategorizationTrainingData) error
+	GetTrainingDataByID(ctx context.Context, id string) (*models.CategorizationTrainingData, error)
+	UpdateTrainingData(ctx context.Context, data *models.CategorizationTrainingData) error
+	DeleteTrainingData(ctx context.Context, id string) error
+	GetTrainingData(ctx context.Context, filter *TrainingDataFilter, limit, offset int) ([]*models.CategorizationTrainingData, error)
+	GetValidatedTrainingData(ctx context.Context, limit int) ([]*models.CategorizationTrainingData, error)
+	GetTrainingDataCount(ctx context.Context) (int64, error)
+	GetValidatedTrainingDataCount(ctx context.Context) (int64, error)
+	GetTrainingDataCategoryDistribution(ctx context.Context) (map[string]int64, error)
+	BulkCreateTrainingData(ctx context.Context, data []*models.CategorizationTrainingData) error
+}
+
+// CategorizationPredictionRepositoryInterface defines methods for prediction data operations
+type CategorizationPredictionRepositoryInterface interface {
+	CreatePrediction(ctx context.Context, prediction *models.CategorizationPrediction) error
+	GetPredictionByID(ctx context.Context, id string) (*models.CategorizationPrediction, error)
+	UpdatePrediction(ctx context.Context, prediction *models.CategorizationPrediction) error
+	GetPredictionsByDisputeID(ctx context.Context, disputeID string, limit, offset int) ([]*models.CategorizationPrediction, error)
+	GetPredictionsByModelID(ctx context.Context, modelID string, limit, offset int) ([]*models.CategorizationPrediction, error)
+	GetUnvalidatedPredictions(ctx context.Context, limit, offset int) ([]*models.CategorizationPrediction, error)
+	GetPredictionAccuracy(ctx context.Context, modelID string, startDate, endDate time.Time) (float64, error)
+}
+
+// MLModelMetricsRepositoryInterface defines methods for ML model metrics operations
+type MLModelMetricsRepositoryInterface interface {
+	CreateModelMetrics(ctx context.Context, metrics *models.MLModelMetrics) error
+	GetModelMetrics(ctx context.Context, modelID string, startDate, endDate time.Time) (*models.MLModelMetrics, error)
+	UpdateModelMetrics(ctx context.Context, metrics *models.MLModelMetrics) error
+	GetModelMetricsHistory(ctx context.Context, modelID string, limit, offset int) ([]*models.MLModelMetrics, error)
+	GetLatestModelMetrics(ctx context.Context, modelID string) (*models.MLModelMetrics, error)
+}
+
+// MLModelFilter represents filter criteria for ML model queries
+type MLModelFilter struct {
+	Status       *models.MLModelStatus `json:"status,omitempty"`
+	Algorithm    *string               `json:"algorithm,omitempty"`
+	CreatedBy    *string               `json:"created_by,omitempty"`
+	NameContains *string               `json:"name_contains,omitempty"`
+	MinAccuracy  *float64              `json:"min_accuracy,omitempty"`
+}
+
+// TrainingDataFilter represents filter criteria for training data queries
+type TrainingDataFilter struct {
+	Category      *models.DisputeCategory `json:"category,omitempty"`
+	IsValidated   *bool                   `json:"is_validated,omitempty"`
+	ValidatedBy   *string                 `json:"validated_by,omitempty"`
+	CreatedAfter  *time.Time              `json:"created_after,omitempty"`
+	CreatedBefore *time.Time              `json:"created_before,omitempty"`
 }

@@ -23,6 +23,7 @@ const (
 	TransactionStatusFailed     TransactionStatus = "failed"
 	TransactionStatusCancelled  TransactionStatus = "canceled"
 	TransactionStatusExpired    TransactionStatus = "expired"
+	TransactionStatusFraud      TransactionStatus = "fraud"
 )
 
 // TransactionType represents the type of transaction
@@ -163,6 +164,145 @@ type TransactionStats struct {
 	TotalFeesProcessed     string     `json:"total_fees_processed"`
 	TotalFeeSavings        string     `json:"total_fee_savings"`
 	LastProcessedAt        *time.Time `json:"last_processed_at"`
+}
+
+// TransactionAuditLog represents a transaction-specific audit log entry
+type TransactionAuditLog struct {
+	ID             string                 `json:"id" gorm:"primaryKey"`
+	TransactionID  string                 `json:"transaction_id" gorm:"not null;index"`
+	EventType      string                 `json:"event_type" gorm:"not null"` // created, status_changed, retried, failed, completed
+	PreviousStatus TransactionStatus      `json:"previous_status" gorm:"type:varchar(50)"`
+	NewStatus      TransactionStatus      `json:"new_status" gorm:"type:varchar(50)"`
+	UserID         string                 `json:"user_id" gorm:"not null"`
+	EnterpriseID   string                 `json:"enterprise_id" gorm:"not null"`
+	Details        string                 `json:"details,omitempty" gorm:"type:text"`
+	IPAddress      string                 `json:"ip_address,omitempty"`
+	UserAgent      string                 `json:"user_agent,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata" gorm:"type:jsonb"`
+	CreatedAt      time.Time              `json:"created_at" gorm:"autoCreateTime"`
+}
+
+// TransactionRiskScore represents a risk assessment for a transaction
+type TransactionRiskScore struct {
+	ID                string     `json:"id" gorm:"primaryKey"`
+	TransactionID     string     `json:"transaction_id" gorm:"not null;uniqueIndex"`
+	RiskLevel         string     `json:"risk_level" gorm:"type:varchar(20);not null"` // low, medium, high, critical
+	RiskScore         float64    `json:"risk_score" gorm:"type:decimal(5,4);not null"`
+	RiskFactors       []string   `json:"risk_factors" gorm:"type:jsonb"`
+	AssessmentDetails string     `json:"assessment_details" gorm:"type:text"`
+	AssessedAt        time.Time  `json:"assessed_at" gorm:"autoCreateTime"`
+	AssessedBy        string     `json:"assessed_by" gorm:"not null"`
+	ExpiresAt         *time.Time `json:"expires_at,omitempty"`
+}
+
+// TransactionComplianceStatus represents compliance status for a transaction
+type TransactionComplianceStatus struct {
+	ID            string     `json:"id" gorm:"primaryKey"`
+	TransactionID string     `json:"transaction_id" gorm:"not null;uniqueIndex"`
+	Status        string     `json:"status" gorm:"type:varchar(20);not null"` // pending, approved, rejected, flagged
+	ChecksPassed  []string   `json:"checks_passed" gorm:"type:jsonb"`
+	ChecksFailed  []string   `json:"checks_failed" gorm:"type:jsonb"`
+	Violations    []string   `json:"violations" gorm:"type:jsonb"`
+	ReviewedBy    *string    `json:"reviewed_by,omitempty"`
+	ReviewedAt    *time.Time `json:"reviewed_at,omitempty"`
+	Comments      string     `json:"comments,omitempty" gorm:"type:text"`
+	CreatedAt     time.Time  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt     time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+// TransactionReport represents a transaction monitoring report
+type TransactionReport struct {
+	ID           string                   `json:"id" gorm:"primaryKey"`
+	ReportType   string                   `json:"report_type" gorm:"type:varchar(50);not null"` // daily, weekly, monthly, custom
+	EnterpriseID string                   `json:"enterprise_id" gorm:"not null;index"`
+	PeriodStart  time.Time                `json:"period_start" gorm:"not null"`
+	PeriodEnd    time.Time                `json:"period_end" gorm:"not null"`
+	Summary      TransactionReportSummary `json:"summary" gorm:"type:jsonb"`
+	GeneratedAt  time.Time                `json:"generated_at" gorm:"autoCreateTime"`
+	GeneratedBy  string                   `json:"generated_by" gorm:"not null"`
+}
+
+// TransactionReportSummary contains aggregated data for reports
+type TransactionReportSummary struct {
+	TotalTransactions      int64          `json:"total_transactions"`
+	SuccessfulTransactions int64          `json:"successful_transactions"`
+	FailedTransactions     int64          `json:"failed_transactions"`
+	HighRiskTransactions   int64          `json:"high_risk_transactions"`
+	ComplianceViolations   int64          `json:"compliance_violations"`
+	AverageProcessingTime  float64        `json:"average_processing_time_seconds"`
+	TotalVolume            string         `json:"total_volume"`
+	TotalFees              string         `json:"total_fees"`
+	TopFailureReasons      map[string]int `json:"top_failure_reasons"`
+	RiskDistribution       map[string]int `json:"risk_distribution"`
+}
+
+// ComplianceStats represents compliance statistics
+type ComplianceStats struct {
+	TotalTransactions    int64 `json:"total_transactions"`
+	ApprovedTransactions int64 `json:"approved_transactions"`
+	RejectedTransactions int64 `json:"rejected_transactions"`
+	FlaggedTransactions  int64 `json:"flagged_transactions"`
+	PendingTransactions  int64 `json:"pending_transactions"`
+	ReviewedTransactions int64 `json:"reviewed_transactions"`
+}
+
+// ComplianceReport represents a compliance-focused report
+type ComplianceReport struct {
+	ID                  string          `json:"id" gorm:"primaryKey"`
+	EnterpriseID        string          `json:"enterprise_id" gorm:"not null;index"`
+	PeriodStart         time.Time       `json:"period_start" gorm:"not null"`
+	PeriodEnd           time.Time       `json:"period_end" gorm:"not null"`
+	ComplianceStats     ComplianceStats `json:"compliance_stats" gorm:"type:jsonb"`
+	FlaggedTransactions int             `json:"flagged_transactions"`
+	GeneratedAt         time.Time       `json:"generated_at" gorm:"autoCreateTime"`
+	GeneratedBy         string          `json:"generated_by" gorm:"not null"`
+}
+
+// RiskReport represents a risk-focused report
+type RiskReport struct {
+	ID           string      `json:"id" gorm:"primaryKey"`
+	EnterpriseID string      `json:"enterprise_id" gorm:"not null;index"`
+	PeriodStart  time.Time   `json:"period_start" gorm:"not null"`
+	PeriodEnd    time.Time   `json:"period_end" gorm:"not null"`
+	RiskMetrics  RiskMetrics `json:"risk_metrics" gorm:"type:jsonb"`
+	GeneratedAt  time.Time   `json:"generated_at" gorm:"autoCreateTime"`
+	GeneratedBy  string      `json:"generated_by" gorm:"not null"`
+}
+
+// RiskMetrics contains risk-related metrics
+type RiskMetrics struct {
+	HighRiskTransactions     int      `json:"high_risk_transactions"`
+	CriticalRiskTransactions int      `json:"critical_risk_transactions"`
+	RiskTrend                string   `json:"risk_trend"`
+	TopRiskFactors           []string `json:"top_risk_factors"`
+	MitigationActions        []string `json:"mitigation_actions"`
+}
+
+// TransactionAnalytics represents detailed transaction analytics
+type TransactionAnalytics struct {
+	EnterpriseID string             `json:"enterprise_id"`
+	PeriodStart  time.Time          `json:"period_start"`
+	PeriodEnd    time.Time          `json:"period_end"`
+	Metrics      TransactionMetrics `json:"metrics"`
+	Trends       TransactionTrends  `json:"trends"`
+	GeneratedAt  time.Time          `json:"generated_at"`
+}
+
+// TransactionMetrics contains transaction performance metrics
+type TransactionMetrics struct {
+	TotalVolume            string  `json:"total_volume"`
+	AverageTransactionSize string  `json:"average_transaction_size"`
+	PeakHourVolume         string  `json:"peak_hour_volume"`
+	TransactionVelocity    int     `json:"transaction_velocity"`
+	SuccessRate            float64 `json:"success_rate"`
+	FailureRate            float64 `json:"failure_rate"`
+}
+
+// TransactionTrends contains transaction trend data
+type TransactionTrends struct {
+	VolumeGrowth      float64 `json:"volume_growth"`
+	SuccessRateChange float64 `json:"success_rate_change"`
+	RiskIncrease      float64 `json:"risk_increase"`
 }
 
 // BatchConfig represents configuration for transaction batching

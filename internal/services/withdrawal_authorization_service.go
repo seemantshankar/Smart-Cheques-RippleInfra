@@ -206,17 +206,17 @@ type TimeLockStatus struct {
 }
 
 type WithdrawalRiskScore struct {
-	EnterpriseID   uuid.UUID     `json:"enterprise_id"`
-	Amount         string        `json:"amount"`
-	CurrencyCode   string        `json:"currency_code"`
-	RiskScore      float64       `json:"risk_score"`
-	RiskLevel      RiskLevel     `json:"risk_level"`
-	RiskFactors    []*RiskFactor `json:"risk_factors"`
-	Recommendation string        `json:"recommendation"`
-	CalculatedAt   time.Time     `json:"calculated_at"`
+	EnterpriseID   uuid.UUID               `json:"enterprise_id"`
+	Amount         string                  `json:"amount"`
+	CurrencyCode   string                  `json:"currency_code"`
+	RiskScore      float64                 `json:"risk_score"`
+	RiskLevel      RiskLevel               `json:"risk_level"`
+	RiskFactors    []*WithdrawalRiskFactor `json:"risk_factors"`
+	Recommendation string                  `json:"recommendation"`
+	CalculatedAt   time.Time               `json:"calculated_at"`
 }
 
-type RiskFactor struct {
+type WithdrawalRiskFactor struct {
 	Factor      string  `json:"factor"`
 	Score       float64 `json:"score"`
 	Weight      float64 `json:"weight"`
@@ -675,12 +675,12 @@ func (s *WithdrawalAuthorizationService) CheckAuthorizationStatus(ctx context.Co
 
 // AssessWithdrawalRisk performs risk assessment for a withdrawal request
 func (s *WithdrawalAuthorizationService) AssessWithdrawalRisk(ctx context.Context, req *WithdrawalRiskAssessmentRequest) (*WithdrawalRiskScore, error) {
-	riskFactors := []*RiskFactor{}
+	riskFactors := []*WithdrawalRiskFactor{}
 	totalScore := 0.0
 
 	// Factor 1: Amount size relative to typical transactions
 	amountScore := s.calculateAmountRiskScore(req.Amount, req.EnterpriseID)
-	riskFactors = append(riskFactors, &RiskFactor{
+	riskFactors = append(riskFactors, &WithdrawalRiskFactor{
 		Factor:      "amount_size",
 		Score:       amountScore,
 		Weight:      0.3,
@@ -690,7 +690,7 @@ func (s *WithdrawalAuthorizationService) AssessWithdrawalRisk(ctx context.Contex
 
 	// Factor 2: Time of day (higher risk for off-hours)
 	timeScore := s.calculateTimeRiskScore(req.TimeOfDay)
-	riskFactors = append(riskFactors, &RiskFactor{
+	riskFactors = append(riskFactors, &WithdrawalRiskFactor{
 		Factor:      "time_of_day",
 		Score:       timeScore,
 		Weight:      0.2,
@@ -700,7 +700,7 @@ func (s *WithdrawalAuthorizationService) AssessWithdrawalRisk(ctx context.Contex
 
 	// Factor 3: Destination analysis (new vs known addresses)
 	destinationScore := s.calculateDestinationRiskScore(ctx, req.Destination, req.EnterpriseID)
-	riskFactors = append(riskFactors, &RiskFactor{
+	riskFactors = append(riskFactors, &WithdrawalRiskFactor{
 		Factor:      "destination",
 		Score:       destinationScore,
 		Weight:      0.3,
@@ -710,7 +710,7 @@ func (s *WithdrawalAuthorizationService) AssessWithdrawalRisk(ctx context.Contex
 
 	// Factor 4: Velocity (frequency of recent withdrawals)
 	velocityScore := s.calculateVelocityRiskScore(ctx, req.EnterpriseID)
-	riskFactors = append(riskFactors, &RiskFactor{
+	riskFactors = append(riskFactors, &WithdrawalRiskFactor{
 		Factor:      "velocity",
 		Score:       velocityScore,
 		Weight:      0.2,

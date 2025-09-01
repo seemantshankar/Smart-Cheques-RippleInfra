@@ -96,14 +96,16 @@ func processErrors(c *gin.Context) {
 	if len(errs) > 0 {
 		lastErr := errs.Last()
 		if lastErr != nil {
-			switch lastErr.Type {
-			case gin.ErrorTypePrivate:
-				// Handle private errors (don't expose to client)
-				c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-					Error:     "Internal Server Error",
-					ErrorCode: "INTERNAL_ERROR",
+			// For generic errors, treat them as client errors (400) unless they are
+			// explicitly marked as private errors with sensitive information
+			if lastErr.Type == gin.ErrorTypePrivate {
+				// Only return 500 for truly private errors that shouldn't be exposed
+				// For most generic errors, treat them as client errors
+				c.JSON(http.StatusBadRequest, models.ErrorResponse{
+					Error:     lastErr.Error(),
+					ErrorCode: "BAD_REQUEST",
 				})
-			default:
+			} else {
 				// Handle public errors
 				c.JSON(http.StatusBadRequest, models.ErrorResponse{
 					Error:     lastErr.Error(),

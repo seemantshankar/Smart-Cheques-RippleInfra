@@ -274,6 +274,11 @@ func (m *mockXRPLService) GenerateCondition(secret string) (condition string, fu
 	return args.String(0), args.String(1), args.Error(2)
 }
 
+func (m *mockXRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestones)
+	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)
+}
+
 func TestGenerateSmartChequeFromMilestone(t *testing.T) {
 	// Create mocks
 	mockMilestoneRepo := &mockMilestoneRepository{}

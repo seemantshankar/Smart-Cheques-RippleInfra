@@ -8,13 +8,13 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.7.4
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/mongo-driver v1.12.1
 	golang.org/x/crypto v0.41.0
+	golang.org/x/text v0.28.0
 	gorm.io/gorm v1.30.1
 )
 
@@ -59,7 +59,6 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

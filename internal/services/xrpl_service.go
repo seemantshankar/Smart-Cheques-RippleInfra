@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
@@ -74,7 +75,7 @@ func (s *XRPLService) HealthCheck() error {
 	return s.client.HealthCheck()
 }
 
-// CreateSmartChequeEscrow creates an escrow for a Smart Check
+// CreateSmartChequeEscrow creates an escrow for a Smart Check with basic milestone support
 func (s *XRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error) {
 	if !s.initialized {
 		return nil, "", fmt.Errorf("XRPL service not initialized")
@@ -109,6 +110,82 @@ func (s *XRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string,
 
 	log.Printf("Smart Check escrow created: %s, Amount: %s %s", result.TransactionID, amountStr, currency)
 	return result, fulfillment, nil
+}
+
+// CreateSmartChequeEscrowWithMilestones creates an escrow with milestone-based conditions
+func (s *XRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
+	if !s.initialized {
+		return nil, "", fmt.Errorf("XRPL service not initialized")
+	}
+
+	// Convert amount to drops (for XRP) or appropriate format
+	amountStr := s.formatAmount(amount, currency)
+
+	// Convert milestones to XRPL milestone conditions
+	xrplMilestones := make([]xrpl.MilestoneCondition, len(milestones))
+	for i, milestone := range milestones {
+		xrplMilestones[i] = xrpl.MilestoneCondition{
+			MilestoneID:        milestone.ID,
+			VerificationMethod: string(milestone.VerificationMethod),
+			OracleConfig:       milestone.OracleConfig.Config,
+			Amount:             s.formatAmount(milestone.Amount, currency),
+		}
+	}
+
+	// Set escrow parameters with dynamic timing based on milestones
+	escrow := &xrpl.EscrowCreate{
+		Account:     payerAddress,
+		Destination: payeeAddress,
+		Amount:      amountStr,
+		// Set cancel after based on longest milestone duration
+		CancelAfter: s.calculateCancelAfter(milestones),
+		// Allow finish after 1 hour minimum
+		FinishAfter: s.getLedgerTimeOffset(1 * time.Hour),
+	}
+
+	// Create the escrow with validated milestone conditions
+	result, err := s.client.CreateConditionalEscrowWithValidation(escrow, xrplMilestones)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create validated escrow with milestones: %w", err)
+	}
+
+	// Generate fulfillment for the compound condition
+	compoundSecret := s.client.GenerateCompoundSecret(xrplMilestones)
+	_, fulfillment, err := s.client.GenerateCondition(compoundSecret)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate fulfillment: %w", err)
+	}
+
+	log.Printf("Smart Check escrow with %d validated milestones created: %s, Amount: %s %s", len(milestones), result.TransactionID, amountStr, currency)
+	return result, fulfillment, nil
+}
+
+// calculateCancelAfter calculates the cancel time based on milestone durations
+func (s *XRPLService) calculateCancelAfter(milestones []models.Milestone) uint32 {
+	// Default cancel after 30 days
+	defaultDuration := 30 * 24 * time.Hour
+
+	// If we have milestones with end dates, use the latest one plus buffer
+	var latestEndDate *time.Time
+	for _, milestone := range milestones {
+		if milestone.EstimatedEndDate != nil {
+			if latestEndDate == nil || milestone.EstimatedEndDate.After(*latestEndDate) {
+				latestEndDate = milestone.EstimatedEndDate
+			}
+		}
+	}
+
+	if latestEndDate != nil {
+		// Add 7 days buffer to the latest milestone end date
+		cancelTime := latestEndDate.Add(7 * 24 * time.Hour)
+		if cancelTime.After(time.Now()) {
+			duration := time.Until(cancelTime)
+			return s.getLedgerTimeOffset(duration)
+		}
+	}
+
+	// Fall back to default
+	return s.getLedgerTimeOffset(defaultDuration)
 }
 
 // CompleteSmartChequeMilestone releases funds for a completed milestone

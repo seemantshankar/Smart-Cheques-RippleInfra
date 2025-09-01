@@ -19,6 +19,179 @@ import (
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
+// MockFraudDetectionService is a simple mock implementation for testing
+type MockFraudDetectionService struct{}
+
+func (m *MockFraudDetectionService) AnalyzeTransaction(ctx context.Context, request *services.FraudAnalysisRequest) (*services.FraudAnalysisResult, error) {
+	return &services.FraudAnalysisResult{
+		TransactionID:   request.TransactionID,
+		EnterpriseID:    request.EnterpriseID,
+		RiskScore:       0.1, // Low risk for testing
+		RiskLevel:       models.FraudRiskLevelLow,
+		FraudDetected:   false,
+		AlertGenerated:  false,
+		RiskFactors:     []string{},
+		Recommendations: []string{},
+		Evidence:        make(map[string]interface{}),
+		ProcessingTime:  time.Millisecond,
+	}, nil
+}
+
+func (m *MockFraudDetectionService) GetFraudAlerts(ctx context.Context, filter *services.FraudAlertFilter) ([]*models.FraudAlert, error) {
+	return []*models.FraudAlert{}, nil
+}
+
+func (m *MockFraudDetectionService) GetAlerts(ctx context.Context, filter *services.FraudAlertFilter) ([]*models.FraudAlert, error) {
+	return []*models.FraudAlert{}, nil
+}
+
+func (m *MockFraudDetectionService) AcknowledgeAlert(ctx context.Context, alertID uuid.UUID, userID uuid.UUID) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) ResolveAlert(ctx context.Context, alertID uuid.UUID, resolution string, userID uuid.UUID) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) CreateFraudCase(ctx context.Context, request *services.FraudCaseRequest) (*models.FraudCase, error) {
+	return &models.FraudCase{
+		ID:           uuid.New(),
+		EnterpriseID: request.EnterpriseID,
+		Title:        request.Title,
+		Description:  request.Description,
+		Category:     request.Category,
+		Priority:     request.Priority,
+		Status:       models.FraudCaseStatusOpen,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) CreateCase(ctx context.Context, req *services.FraudCaseRequest) (*models.FraudCase, error) {
+	return &models.FraudCase{
+		ID:           uuid.New(),
+		EnterpriseID: req.EnterpriseID,
+		Title:        req.Title,
+		Description:  req.Description,
+		Category:     req.Category,
+		Priority:     req.Priority,
+		Status:       models.FraudCaseStatusOpen,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) UpdateFraudCase(ctx context.Context, caseID uuid.UUID, update *services.FraudCaseUpdate) (*models.FraudCase, error) {
+	return &models.FraudCase{
+		ID:        caseID,
+		Status:    models.FraudCaseStatusOpen,
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) UpdateCase(ctx context.Context, caseID uuid.UUID, updates *services.FraudCaseUpdate) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) GetFraudCase(ctx context.Context, caseID uuid.UUID) (*models.FraudCase, error) {
+	return &models.FraudCase{
+		ID:        caseID,
+		Status:    models.FraudCaseStatusOpen,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) GetCase(ctx context.Context, caseID uuid.UUID) (*models.FraudCase, error) {
+	return &models.FraudCase{
+		ID:        caseID,
+		Status:    models.FraudCaseStatusOpen,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) CloseCase(ctx context.Context, caseID uuid.UUID, resolution *models.FraudCaseResolution, userID uuid.UUID) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) ListFraudCases(ctx context.Context, enterpriseID *uuid.UUID, limit, offset int) ([]*models.FraudCase, error) {
+	return []*models.FraudCase{}, nil
+}
+
+func (m *MockFraudDetectionService) GetAccountFraudStatus(ctx context.Context, enterpriseID uuid.UUID) (*models.AccountFraudStatus, error) {
+	return &models.AccountFraudStatus{
+		EnterpriseID: enterpriseID,
+		Status:       models.AccountFraudStatusNormal,
+		RiskScore:    0.1,
+		UpdatedAt:    time.Now(),
+	}, nil
+}
+
+func (m *MockFraudDetectionService) UpdateAccountFraudStatus(ctx context.Context, enterpriseID uuid.UUID, status models.AccountFraudStatusType, reason string, userID uuid.UUID) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) AddAccountRestriction(ctx context.Context, enterpriseID uuid.UUID, restriction *models.AccountRestriction) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) RemoveAccountRestriction(ctx context.Context, enterpriseID uuid.UUID, restrictionType models.RestrictionType) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) GenerateFraudReport(ctx context.Context, request *services.FraudReportRequest) (*services.FraudReport, error) {
+	return &services.FraudReport{
+		ReportID:             uuid.New(),
+		GeneratedAt:          time.Now(),
+		ReportPeriod:         services.TimeWindow{},
+		EnterpriseID:         request.EnterpriseID,
+		TotalTransactions:    0,
+		FraudAlerts:          0,
+		FraudCases:           0,
+		ConfirmedFraud:       0,
+		FalsePositives:       0,
+		AverageRiskScore:     0.1,
+		HighRiskTransactions: 0,
+		RiskTrend:            "stable",
+		AlertBySeverity:      make(map[string]int),
+		AlertByType:          make(map[string]int),
+		Recommendations:      []string{},
+	}, nil
+}
+
+func (m *MockFraudDetectionService) GetFraudMetrics(ctx context.Context, enterpriseID *uuid.UUID) (*services.FraudMetrics, error) {
+	return &services.FraudMetrics{
+		EnterpriseID:     *enterpriseID,
+		CurrentRiskScore: 0.1,
+		RiskLevel:        models.FraudRiskLevelLow,
+		ActiveAlerts:     0,
+		OpenCases:        0,
+		RiskTrend:        "stable",
+		TopRiskFactors:   []string{},
+	}, nil
+}
+
+func (m *MockFraudDetectionService) DetectFraudPatterns(ctx context.Context, enterpriseID uuid.UUID) ([]*services.FraudPattern, error) {
+	return []*services.FraudPattern{}, nil
+}
+
+func (m *MockFraudDetectionService) GetActiveRules(ctx context.Context) ([]*models.FraudRule, error) {
+	return []*models.FraudRule{}, nil
+}
+
+func (m *MockFraudDetectionService) CreateRule(ctx context.Context, rule *models.FraudRule) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) UpdateRule(ctx context.Context, rule *models.FraudRule) error {
+	return nil
+}
+
+func (m *MockFraudDetectionService) DeleteRule(ctx context.Context, ruleID uuid.UUID) error {
+	return nil
+}
+
 // TransactionBatchingIntegrationTestSuite tests transaction batching functionality
 type TransactionBatchingIntegrationTestSuite struct {
 	suite.Suite
@@ -31,6 +204,8 @@ type TransactionBatchingIntegrationTestSuite struct {
 
 	// Repositories
 	transactionRepo *mocks.TransactionRepositoryInterface
+	auditRepo       *mocks.AuditRepositoryInterface
+	complianceRepo  *mocks.ComplianceRepositoryInterface
 
 	// Database
 	db *database.PostgresDB
@@ -50,6 +225,8 @@ func (suite *TransactionBatchingIntegrationTestSuite) SetupSuite() {
 
 	// Initialize mock repository
 	suite.transactionRepo = new(mocks.TransactionRepositoryInterface)
+	suite.auditRepo = new(mocks.AuditRepositoryInterface)
+	suite.complianceRepo = new(mocks.ComplianceRepositoryInterface)
 
 	// Initialize messaging service
 	messagingService, err := messaging.NewService("localhost:6379", "", 1)
@@ -70,17 +247,23 @@ func (suite *TransactionBatchingIntegrationTestSuite) SetupSuite() {
 	batchConfig.MinBatchSize = 2
 	batchConfig.MaxWaitTime = 5 * time.Second
 
+	// Create a mock fraud detection service
+	// Create a mock fraud detection service
+	mockFraudDetectionService := &MockFraudDetectionService{}
+
 	suite.queueService = services.NewTransactionQueueService(
 		suite.transactionRepo,
 		suite.xrplService,
 		suite.messagingService,
+		mockFraudDetectionService,
 		batchConfig,
 	)
 
 	// Initialize monitoring service
 	suite.monitoringService = services.NewTransactionMonitoringService(
 		suite.transactionRepo,
-		suite.messagingService,
+		suite.auditRepo,
+		suite.complianceRepo,
 	)
 
 	// Setup test data
@@ -514,13 +697,15 @@ func (suite *TransactionBatchingIntegrationTestSuite) TestMonitoringDashboard() 
 	require.NoError(t, err)
 
 	// Verify dashboard data structure
-	assert.NotNil(t, dashboardData.Metrics)
-	assert.NotNil(t, dashboardData.StatusDistribution)
-	assert.NotNil(t, dashboardData.SystemHealth)
+	assert.NotNil(t, dashboardData["metrics"])
+	assert.NotNil(t, dashboardData["status_distribution"])
+	assert.NotNil(t, dashboardData["system_health"])
 
 	// Verify some metrics are populated
-	assert.False(t, dashboardData.Metrics.LastUpdated.IsZero())
-	assert.Equal(t, "healthy", dashboardData.SystemHealth.OverallStatus)
+	metrics := dashboardData["metrics"].(map[string]interface{})
+	systemHealth := dashboardData["system_health"].(map[string]interface{})
+	assert.False(t, metrics["last_updated"].(time.Time).IsZero())
+	assert.Equal(t, "healthy", systemHealth["overall_status"])
 }
 
 func (suite *TransactionBatchingIntegrationTestSuite) TestPriorityBasedProcessing() {

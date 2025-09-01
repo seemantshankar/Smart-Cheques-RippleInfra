@@ -898,3 +898,102 @@ func (m *AuditRepositoryInterface) GetAuditLogsByEnterprise(enterpriseID uuid.UU
 	args := m.Called(enterpriseID, limit, offset)
 	return args.Get(0).([]models.AuditLog), args.Error(1)
 }
+
+// RegulatoryRuleRepositoryInterface mock
+type RegulatoryRuleRepositoryInterface struct {
+	mock.Mock
+}
+
+func (m *RegulatoryRuleRepositoryInterface) CreateRegulatoryRule(ctx context.Context, rule *models.RegulatoryRule) error {
+	args := m.Called(ctx, rule)
+	return args.Error(0)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) GetRegulatoryRule(ctx context.Context, ruleID string) (*models.RegulatoryRule, error) {
+	args := m.Called(ctx, ruleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RegulatoryRule), args.Error(1)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) GetActiveRegulatoryRules(ctx context.Context, jurisdiction string) ([]*models.RegulatoryRule, error) {
+	args := m.Called(ctx, jurisdiction)
+	return args.Get(0).([]*models.RegulatoryRule), args.Error(1)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) GetRegulatoryRulesByCategory(ctx context.Context, jurisdiction, category string) ([]*models.RegulatoryRule, error) {
+	args := m.Called(ctx, jurisdiction, category)
+	return args.Get(0).([]*models.RegulatoryRule), args.Error(1)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) UpdateRegulatoryRule(ctx context.Context, rule *models.RegulatoryRule) error {
+	args := m.Called(ctx, rule)
+	return args.Error(0)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) DeleteRegulatoryRule(ctx context.Context, ruleID string, deletedBy string) error {
+	args := m.Called(ctx, ruleID, deletedBy)
+	return args.Error(0)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) GetRegulatoryRuleStats(ctx context.Context, jurisdiction string) (map[string]interface{}, error) {
+	args := m.Called(ctx, jurisdiction)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
+}
+
+func (m *RegulatoryRuleRepositoryInterface) SearchRegulatoryRules(ctx context.Context, filters map[string]interface{}, limit, offset int) ([]*models.RegulatoryRule, error) {
+	args := m.Called(ctx, filters, limit, offset)
+	return args.Get(0).([]*models.RegulatoryRule), args.Error(1)
+}
+
+// ComplianceRepositoryInterface mock
+type ComplianceRepositoryInterface struct {
+	mock.Mock
+}
+
+func (m *ComplianceRepositoryInterface) CreateComplianceStatus(complianceStatus *models.TransactionComplianceStatus) error {
+	args := m.Called(complianceStatus)
+	return args.Error(0)
+}
+
+func (m *ComplianceRepositoryInterface) GetComplianceStatus(transactionID string) (*models.TransactionComplianceStatus, error) {
+	args := m.Called(transactionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TransactionComplianceStatus), args.Error(1)
+}
+
+func (m *ComplianceRepositoryInterface) UpdateComplianceStatus(complianceStatus *models.TransactionComplianceStatus) error {
+	args := m.Called(complianceStatus)
+	return args.Error(0)
+}
+
+func (m *ComplianceRepositoryInterface) GetComplianceStatusesByStatus(status string, limit, offset int) ([]models.TransactionComplianceStatus, error) {
+	args := m.Called(status, limit, offset)
+	return args.Get(0).([]models.TransactionComplianceStatus), args.Error(1)
+}
+
+func (m *ComplianceRepositoryInterface) GetComplianceStatusesByEnterprise(enterpriseID string, limit, offset int) ([]models.TransactionComplianceStatus, error) {
+	args := m.Called(enterpriseID, limit, offset)
+	return args.Get(0).([]models.TransactionComplianceStatus), args.Error(1)
+}
+
+func (m *ComplianceRepositoryInterface) GetFlaggedTransactions(limit, offset int) ([]models.TransactionComplianceStatus, error) {
+	args := m.Called(limit, offset)
+	return args.Get(0).([]models.TransactionComplianceStatus), args.Error(1)
+}
+
+func (m *ComplianceRepositoryInterface) ReviewComplianceStatus(complianceStatusID string, reviewedBy string, comments string) error {
+	args := m.Called(complianceStatusID, reviewedBy, comments)
+	return args.Error(0)
+}
+
+func (m *ComplianceRepositoryInterface) GetComplianceStats(enterpriseID *string, since *time.Time) (*models.ComplianceStats, error) {
+	args := m.Called(enterpriseID, since)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ComplianceStats), args.Error(1)
+}

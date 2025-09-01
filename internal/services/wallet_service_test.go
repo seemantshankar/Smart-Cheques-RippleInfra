@@ -215,6 +215,14 @@ func (m *MockXRPLService) GenerateCondition(secret string) (condition string, fu
 	return args.String(0), args.String(1), args.Error(2)
 }
 
+func (m *MockXRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestones)
+	if args.Get(0) == nil {
+		return nil, "", args.Error(2)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)
+}
+
 func TestWalletService_CreateWalletForEnterprise(t *testing.T) {
 	// Setup mocks
 	mockWalletRepo := &MockWalletRepositoryInterface{}

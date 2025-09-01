@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -363,6 +364,13 @@ func (m *mockXRPLServiceXRPL) CreateSmartChequeEscrow(payerAddress, payeeAddress
 	return result, fulfillment, args.Error(2)
 }
 
+func (m *mockXRPLServiceXRPL) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestones)
+	result, _ := args.Get(0).(*xrpl.TransactionResult)
+	fulfillment, _ := args.Get(1).(string)
+	return result, fulfillment, args.Error(2)
+}
+
 func (m *mockXRPLServiceXRPL) CompleteSmartChequeMilestone(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string) (*xrpl.TransactionResult, error) {
 	args := m.Called(payeeAddress, ownerAddress, sequence, condition, fulfillment)
 	result, _ := args.Get(0).(*xrpl.TransactionResult)
@@ -649,7 +657,7 @@ func TestSmartChequeXRPLService_CreateEscrowForSmartCheque(t *testing.T) {
 		LedgerIndex:   12345,
 	}
 
-	mockXRPLService.On("CreateSmartChequeEscrow", payerAddress, payeeAddress, 100.0, "USDT", mock.AnythingOfType("string")).Return(transactionResult, "fulfillment123", nil)
+	mockXRPLService.On("CreateSmartChequeEscrowWithMilestones", payerAddress, payeeAddress, 100.0, "USDT", smartCheque.Milestones).Return(transactionResult, "fulfillment123", nil)
 	mockSmartChequeRepo.On("UpdateSmartCheque", mock.Anything, mock.MatchedBy(func(sc *models.SmartCheque) bool {
 		return sc.EscrowAddress == transactionResult.TransactionID && sc.Status == models.SmartChequeStatusLocked
 	})).Return(nil)
@@ -867,4 +875,329 @@ func TestSmartChequeXRPLService_GetXRPLTransactionHistory(t *testing.T) {
 	assert.Equal(t, expectedTransactions[0].ID, transactions[0].ID)
 	assert.Equal(t, expectedTransactions[0].Type, transactions[0].Type)
 	mockTransactionRepo.AssertExpectations(t)
+}
+
+// TestSmartChequeXRPLService_FullLifecycleIntegration tests the complete Smart Cheque lifecycle with XRPL operations
+func TestSmartChequeXRPLService_FullLifecycleIntegration(t *testing.T) {
+	// Create mocks
+	mockSmartChequeRepo := &mockSmartChequeRepoXRPL{}
+	mockTransactionRepo := &mockTransactionRepoXRPL{}
+	mockXRPLService := &mockXRPLServiceXRPL{}
+	mockMilestoneRepo := &mockMilestoneRepoXRPL{}
+
+	// Create service
+	service := NewSmartChequeXRPLService(
+		mockSmartChequeRepo,
+		mockTransactionRepo,
+		mockXRPLService,
+		mockMilestoneRepo,
+	)
+
+	ctx := context.Background()
+	smartChequeID := uuid.New().String()
+	payerAddress := "rPayerAddress123456789"
+	payeeAddress := "rPayeeAddress123456789"
+	milestoneID1 := uuid.New().String()
+	milestoneID2 := uuid.New().String()
+
+	// Test data - Smart Cheque with multiple milestones
+	smartCheque := &models.SmartCheque{
+		ID:            smartChequeID,
+		PayerID:       uuid.New().String(),
+		PayeeID:       uuid.New().String(),
+		Amount:        1000.0,
+		Currency:      models.CurrencyUSDT,
+		Status:        models.SmartChequeStatusCreated,
+		EscrowAddress: "",
+		Milestones: []models.Milestone{
+			{
+				ID:                 milestoneID1,
+				Description:        "Deliver goods",
+				Amount:             500.0,
+				VerificationMethod: models.VerificationMethodManual,
+				Status:             models.MilestoneStatusPending,
+			},
+			{
+				ID:                 milestoneID2,
+				Description:        "Complete installation",
+				Amount:             500.0,
+				VerificationMethod: models.VerificationMethodOracle,
+				OracleConfig:       &models.OracleConfig{Type: "api", Endpoint: "https://api.example.com/verify"},
+				Status:             models.MilestoneStatusPending,
+			},
+		},
+	}
+
+	// Phase 1: Create Escrow
+	t.Run("Phase 1: Create Escrow", func(t *testing.T) {
+		// Set up mock expectations
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+		mockXRPLService.On("ValidateAddress", payerAddress).Return(true)
+		mockXRPLService.On("ValidateAddress", payeeAddress).Return(true)
+
+		escrowResult := &xrpl.TransactionResult{
+			TransactionID: uuid.New().String(),
+			ResultCode:    "tesSUCCESS",
+			Validated:     true,
+		}
+		mockXRPLService.On("CreateSmartChequeEscrowWithMilestones", payerAddress, payeeAddress, 1000.0, "USDT", smartCheque.Milestones).Return(escrowResult, "fulfillment123", nil)
+
+		mockSmartChequeRepo.On("UpdateSmartCheque", ctx, mock.MatchedBy(func(sc *models.SmartCheque) bool {
+			return sc.EscrowAddress == escrowResult.TransactionID && sc.Status == models.SmartChequeStatusLocked
+		})).Return(nil)
+
+		mockTransactionRepo.On("CreateTransaction", mock.MatchedBy(func(tx *models.Transaction) bool {
+			return tx.Type == models.TransactionTypeEscrowCreate && tx.TransactionHash == escrowResult.TransactionID
+		})).Return(nil)
+
+		// Execute escrow creation
+		err := service.CreateEscrowForSmartCheque(ctx, smartChequeID, payerAddress, payeeAddress)
+
+		// Assert results
+		assert.NoError(t, err)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+		mockTransactionRepo.AssertExpectations(t)
+	})
+
+	// Phase 2: Complete First Milestone
+	t.Run("Phase 2: Complete First Milestone", func(t *testing.T) {
+		// Update Smart Cheque status to locked with escrow
+		smartCheque.Status = models.SmartChequeStatusLocked
+		smartCheque.EscrowAddress = "escrow_tx_123"
+
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+		mockXRPLService.On("GenerateCondition", mock.AnythingOfType("string")).Return("condition123", "fulfillment123", nil)
+
+		finishResult := &xrpl.TransactionResult{
+			TransactionID: uuid.New().String(),
+			ResultCode:    "tesSUCCESS",
+			Validated:     true,
+		}
+		mockXRPLService.On("CompleteSmartChequeMilestone", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(finishResult, nil)
+
+		mockSmartChequeRepo.On("UpdateSmartCheque", ctx, mock.Anything).Return(nil)
+
+		mockTransactionRepo.On("CreateTransaction", mock.MatchedBy(func(tx *models.Transaction) bool {
+			return tx.Type == models.TransactionTypeEscrowFinish
+		})).Return(nil)
+
+		// Execute milestone completion
+		err := service.CompleteMilestonePayment(ctx, smartChequeID, milestoneID1)
+
+		// Assert results
+		assert.NoError(t, err)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+		mockTransactionRepo.AssertExpectations(t)
+	})
+
+	// Phase 3: Complete Second Milestone (Full Completion)
+	t.Run("Phase 3: Complete Second Milestone", func(t *testing.T) {
+		// Update first milestone as completed
+		smartCheque.Milestones[0].Status = models.MilestoneStatusVerified
+		smartCheque.Status = models.SmartChequeStatusInProgress
+
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+		mockXRPLService.On("GenerateCondition", mock.AnythingOfType("string")).Return("condition456", "fulfillment456", nil)
+
+		finishResult := &xrpl.TransactionResult{
+			TransactionID: uuid.New().String(),
+			ResultCode:    "tesSUCCESS",
+			Validated:     true,
+		}
+		mockXRPLService.On("CompleteSmartChequeMilestone", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(finishResult, nil)
+
+		mockSmartChequeRepo.On("UpdateSmartCheque", ctx, mock.Anything).Return(nil)
+
+		mockTransactionRepo.On("CreateTransaction", mock.Anything).Return(nil)
+
+		// Execute final milestone completion
+		err := service.CompleteMilestonePayment(ctx, smartChequeID, milestoneID2)
+
+		// Assert results
+		assert.NoError(t, err)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+		mockTransactionRepo.AssertExpectations(t)
+	})
+
+	// Phase 4: Verify Health Status
+	t.Run("Phase 4: Verify Health Status", func(t *testing.T) {
+		// Update Smart Cheque to completed state
+		smartCheque.Status = models.SmartChequeStatusCompleted
+		smartCheque.Milestones[0].Status = models.MilestoneStatusVerified
+		smartCheque.Milestones[1].Status = models.MilestoneStatusVerified
+
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+
+		escrowInfo := &xrpl.EscrowInfo{
+			Account:     "escrow_tx_123",
+			Destination: payeeAddress,
+			Amount:      "1000000000", // 1000 XRP in drops
+			Flags:       1,            // Finished
+		}
+		mockXRPLService.On("GetEscrowStatus", "escrow_tx_123", "escrow_tx_123").Return(escrowInfo, nil)
+
+		// Execute health check
+		healthStatus, err := service.GetEscrowHealthStatus(ctx, smartChequeID)
+
+		// Assert results
+		assert.NoError(t, err)
+		assert.NotNil(t, healthStatus)
+		assert.Contains(t, []string{"active", "inactive", "ready_for_release"}, healthStatus.Health)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+	})
+}
+
+// TestSmartChequeXRPLService_CancellationWorkflow tests the cancellation workflow with refund calculation
+func TestSmartChequeXRPLService_CancellationWorkflow(t *testing.T) {
+	// Create mocks
+	mockSmartChequeRepo := &mockSmartChequeRepoXRPL{}
+	mockTransactionRepo := &mockTransactionRepoXRPL{}
+	mockXRPLService := &mockXRPLServiceXRPL{}
+	mockMilestoneRepo := &mockMilestoneRepoXRPL{}
+
+	// Create service
+	service := NewSmartChequeXRPLService(
+		mockSmartChequeRepo,
+		mockTransactionRepo,
+		mockXRPLService,
+		mockMilestoneRepo,
+	)
+
+	ctx := context.Background()
+	smartChequeID := uuid.New().String()
+
+	// Test data - Smart Cheque with one completed milestone
+	smartCheque := &models.SmartCheque{
+		ID:            smartChequeID,
+		PayerID:       uuid.New().String(),
+		PayeeID:       uuid.New().String(),
+		Amount:        1000.0,
+		Currency:      models.CurrencyUSDT,
+		Status:        models.SmartChequeStatusInProgress,
+		EscrowAddress: "escrow_tx_123",
+		Milestones: []models.Milestone{
+			{
+				ID:                 uuid.New().String(),
+				Description:        "Partial work completed",
+				Amount:             600.0,
+				VerificationMethod: models.VerificationMethodManual,
+				Status:             models.MilestoneStatusVerified, // Completed
+			},
+			{
+				ID:                 uuid.New().String(),
+				Description:        "Remaining work",
+				Amount:             400.0,
+				VerificationMethod: models.VerificationMethodManual,
+				Status:             models.MilestoneStatusPending, // Not completed
+			},
+		},
+	}
+
+	t.Run("Cancellation with Partial Refund", func(t *testing.T) {
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+
+		cancelResult := &xrpl.TransactionResult{
+			TransactionID: uuid.New().String(),
+			ResultCode:    "tesSUCCESS",
+			Validated:     true,
+		}
+		mockXRPLService.On("CancelSmartCheque", "escrow_tx_123", "escrow_tx_123", uint32(1)).Return(cancelResult, nil)
+
+		mockSmartChequeRepo.On("UpdateSmartCheque", ctx, mock.Anything).Return(nil)
+
+		mockTransactionRepo.On("CreateTransaction", mock.Anything).Return(nil)
+
+		// Execute cancellation with reason
+		err := service.CancelSmartChequeEscrowWithReason(ctx, smartChequeID, CancellationReasonMutualAgreement, "Mutual agreement to cancel")
+
+		// Assert results
+		assert.NoError(t, err)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+		mockTransactionRepo.AssertExpectations(t)
+	})
+
+	t.Run("Partial Refund Validation", func(t *testing.T) {
+		// Test partial refund
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartCheque, nil)
+		mockXRPLService.On("CancelSmartCheque", "escrow_tx_123", "escrow_tx_123", uint32(1)).Return(&xrpl.TransactionResult{
+			TransactionID: uuid.New().String(),
+			ResultCode:    "tesSUCCESS",
+			Validated:     true,
+		}, nil)
+
+		mockSmartChequeRepo.On("UpdateSmartCheque", ctx, mock.Anything).Return(nil)
+		mockTransactionRepo.On("CreateTransaction", mock.Anything).Return(nil)
+
+		// Execute partial refund
+		err := service.PartialRefundEscrow(ctx, smartChequeID, 60.0) // 60% refund
+
+		// Assert results
+		assert.NoError(t, err)
+		mockSmartChequeRepo.AssertExpectations(t)
+		mockXRPLService.AssertExpectations(t)
+	})
+}
+
+// TestSmartChequeXRPLService_ErrorScenarios tests various error scenarios
+func TestSmartChequeXRPLService_ErrorScenarios(t *testing.T) {
+	// Create mocks
+	mockSmartChequeRepo := &mockSmartChequeRepoXRPL{}
+	mockTransactionRepo := &mockTransactionRepoXRPL{}
+	mockXRPLService := &mockXRPLServiceXRPL{}
+	mockMilestoneRepo := &mockMilestoneRepoXRPL{}
+
+	// Create service
+	service := NewSmartChequeXRPLService(
+		mockSmartChequeRepo,
+		mockTransactionRepo,
+		mockXRPLService,
+		mockMilestoneRepo,
+	)
+
+	ctx := context.Background()
+	smartChequeID := uuid.New().String()
+
+	t.Run("Cancel Completed Smart Cheque", func(t *testing.T) {
+		completedSmartCheque := &models.SmartCheque{
+			ID:            smartChequeID,
+			Status:        models.SmartChequeStatusCompleted,
+			EscrowAddress: "escrow_tx_123",
+		}
+
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(completedSmartCheque, nil)
+
+		err := service.CancelSmartChequeEscrow(ctx, smartChequeID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot cancel completed smart cheque")
+		mockSmartChequeRepo.AssertExpectations(t)
+	})
+
+	t.Run("Partial Refund Without Completed Milestones", func(t *testing.T) {
+		smartChequeWithoutCompleted := &models.SmartCheque{
+			ID:            smartChequeID,
+			Status:        models.SmartChequeStatusLocked,
+			EscrowAddress: "escrow_tx_123",
+			Milestones: []models.Milestone{
+				{
+					Status: models.MilestoneStatusPending,
+				},
+			},
+		}
+
+		mockSmartChequeRepo.On("GetSmartChequeByID", ctx, smartChequeID).Return(smartChequeWithoutCompleted, nil)
+
+		err := service.PartialRefundEscrow(ctx, smartChequeID, 50.0)
+
+		assert.Error(t, err)
+		// The error could be either about no completed milestones or validation failure
+		assert.True(t, strings.Contains(err.Error(), "no completed milestones") ||
+			strings.Contains(err.Error(), "partial refund validation failed"))
+		mockSmartChequeRepo.AssertExpectations(t)
+	})
 }
