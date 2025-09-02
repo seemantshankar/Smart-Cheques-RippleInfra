@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -37,7 +38,7 @@ func (r *DisputeRepository) CreateDispute(ctx context.Context, dispute *models.D
 	query := `
 		INSERT INTO disputes (
 			id, title, description, category, priority, status,
-			smart_cheque_id, milestone_id, contract_id, transaction_id,
+			smart_check_id, milestone_id, contract_id, transaction_id,
 			initiator_id, initiator_type, respondent_id, respondent_type,
 			disputed_amount, currency, initiated_at, last_activity_at,
 			tags, metadata, created_by, updated_by, created_at, updated_at
@@ -59,7 +60,7 @@ func (r *DisputeRepository) CreateDispute(ctx context.Context, dispute *models.D
 func (r *DisputeRepository) GetDisputeByID(ctx context.Context, id string) (*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -100,7 +101,7 @@ func (r *DisputeRepository) UpdateDispute(ctx context.Context, dispute *models.D
 	query := `
 		UPDATE disputes SET
 			title = $2, description = $3, category = $4, priority = $5, status = $6,
-			smart_cheque_id = $7, milestone_id = $8, contract_id = $9, transaction_id = $10,
+			smart_check_id = $7, milestone_id = $8, contract_id = $9, transaction_id = $10,
 			initiator_id = $11, initiator_type = $12, respondent_id = $13, respondent_type = $14,
 			disputed_amount = $15, currency = $16, last_activity_at = $17,
 			resolved_at = $18, closed_at = $19, tags = $20, metadata = $21,
@@ -129,7 +130,7 @@ func (r *DisputeRepository) DeleteDispute(ctx context.Context, id string) error 
 func (r *DisputeRepository) GetDisputes(ctx context.Context, filter *models.DisputeFilter, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -168,7 +169,7 @@ func (r *DisputeRepository) GetDisputes(ctx context.Context, filter *models.Disp
 		}
 		if filter.SmartChequeID != nil {
 			argCount++
-			conditions = append(conditions, fmt.Sprintf("smart_cheque_id = $%d", argCount))
+			conditions = append(conditions, fmt.Sprintf("smart_check_id = $%d", argCount))
 			args = append(args, *filter.SmartChequeID)
 		}
 		if filter.MilestoneID != nil {
@@ -236,44 +237,14 @@ func (r *DisputeRepository) GetDisputes(ctx context.Context, filter *models.Disp
 		args = append(args, offset)
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var disputes []*models.Dispute
-	for rows.Next() {
-		dispute := &models.Dispute{}
-		var tags pq.StringArray
-		var metadata map[string]interface{}
-
-		err := rows.Scan(
-			&dispute.ID, &dispute.Title, &dispute.Description, &dispute.Category,
-			&dispute.Priority, &dispute.Status, &dispute.SmartChequeID, &dispute.MilestoneID,
-			&dispute.ContractID, &dispute.TransactionID, &dispute.InitiatorID, &dispute.InitiatorType,
-			&dispute.RespondentID, &dispute.RespondentType, &dispute.DisputedAmount, &dispute.Currency,
-			&dispute.InitiatedAt, &dispute.LastActivityAt, &dispute.ResolvedAt, &dispute.ClosedAt,
-			&tags, &metadata, &dispute.CreatedBy, &dispute.UpdatedBy,
-			&dispute.CreatedAt, &dispute.UpdatedAt)
-
-		if err != nil {
-			return nil, err
-		}
-
-		dispute.Tags = []string(tags)
-		dispute.Metadata = metadata
-		disputes = append(disputes, dispute)
-	}
-
-	return disputes, rows.Err()
+	return r.executeDisputeQuery(ctx, query, args...)
 }
 
 // GetDisputesByInitiator retrieves disputes by initiator ID
 func (r *DisputeRepository) GetDisputesByInitiator(ctx context.Context, initiatorID string, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -294,7 +265,7 @@ func (r *DisputeRepository) GetDisputesByInitiator(ctx context.Context, initiato
 func (r *DisputeRepository) GetDisputesByRespondent(ctx context.Context, respondentID string, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -315,7 +286,7 @@ func (r *DisputeRepository) GetDisputesByRespondent(ctx context.Context, respond
 func (r *DisputeRepository) GetDisputesByStatus(ctx context.Context, status models.DisputeStatus, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -336,7 +307,7 @@ func (r *DisputeRepository) GetDisputesByStatus(ctx context.Context, status mode
 func (r *DisputeRepository) GetDisputesByCategory(ctx context.Context, category models.DisputeCategory, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -357,7 +328,7 @@ func (r *DisputeRepository) GetDisputesByCategory(ctx context.Context, category 
 func (r *DisputeRepository) GetDisputesByPriority(ctx context.Context, priority models.DisputePriority, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -374,16 +345,16 @@ func (r *DisputeRepository) GetDisputesByPriority(ctx context.Context, priority 
 	return r.executeDisputeQuery(ctx, query, priority)
 }
 
-// GetDisputesBySmartCheque retrieves disputes by smart cheque ID
+// GetDisputesBySmartCheque retrieves disputes by smart check ID
 func (r *DisputeRepository) GetDisputesBySmartCheque(ctx context.Context, smartChequeID string, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
 			   created_at, updated_at
-		FROM disputes WHERE smart_cheque_id = $1 ORDER BY created_at DESC`
+		FROM disputes WHERE smart_check_id = $1 ORDER BY created_at DESC`
 
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
@@ -399,7 +370,7 @@ func (r *DisputeRepository) GetDisputesBySmartCheque(ctx context.Context, smartC
 func (r *DisputeRepository) GetDisputesByMilestone(ctx context.Context, milestoneID string, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -420,7 +391,7 @@ func (r *DisputeRepository) GetDisputesByMilestone(ctx context.Context, mileston
 func (r *DisputeRepository) GetDisputesByContract(ctx context.Context, contractID string, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -441,7 +412,7 @@ func (r *DisputeRepository) GetDisputesByContract(ctx context.Context, contractI
 func (r *DisputeRepository) GetActiveDisputes(ctx context.Context, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -463,7 +434,7 @@ func (r *DisputeRepository) GetActiveDisputes(ctx context.Context, limit, offset
 func (r *DisputeRepository) GetOverdueDisputes(ctx context.Context, asOfDate time.Time, limit, offset int) ([]*models.Dispute, error) {
 	query := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,
@@ -485,7 +456,7 @@ func (r *DisputeRepository) GetOverdueDisputes(ctx context.Context, asOfDate tim
 func (r *DisputeRepository) SearchDisputes(ctx context.Context, query string, limit, offset int) ([]*models.Dispute, error) {
 	sqlQuery := `
 		SELECT id, title, description, category, priority, status,
-			   smart_cheque_id, milestone_id, contract_id, transaction_id,
+			   smart_check_id, milestone_id, contract_id, transaction_id,
 			   initiator_id, initiator_type, respondent_id, respondent_type,
 			   disputed_amount, currency, initiated_at, last_activity_at,
 			   resolved_at, closed_at, tags, metadata, created_by, updated_by,

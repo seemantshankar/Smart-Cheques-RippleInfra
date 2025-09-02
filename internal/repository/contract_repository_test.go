@@ -2,22 +2,36 @@ package repository
 
 import (
 	"context"
-	"regexp"
+	"database/sql"
+	"fmt"
+	"os"
 	"testing"
 	"time"
-
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/lib/pq"
 
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
 func TestCreateContract(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	// Use real database for integration testing
+	// In container environment, connect to postgres service
+	dbHost := os.Getenv("TEST_DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+
+	connStr := fmt.Sprintf("postgres://user:password@%s:5432/smart_payment?sslmode=disable", dbHost)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		t.Fatalf("error creating sqlmock: %v", err)
+		t.Fatalf("error connecting to test database: %v", err)
 	}
 	defer db.Close()
+
+	// Test connection
+	if err := db.Ping(); err != nil {
+		t.Logf("Database ping failed: %v", err)
+		t.Skip("Test database not available, skipping integration test")
+		return
+	}
 
 	repo := NewPostgresContractRepository(db)
 
@@ -32,43 +46,72 @@ func TestCreateContract(t *testing.T) {
 		UpdatedAt:    now,
 	}
 
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO contracts (
-			id, parties, status, contract_type, version, parent_contract_id,
-			expiration_date, renewal_terms, created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6,
-			$7, $8, $9, $10
-		)`)).
-		WithArgs(c.ID, pq.Array(c.Parties), c.Status, c.ContractType, c.Version, nil, c.ExpirationDate, c.RenewalTerms, c.CreatedAt, c.UpdatedAt).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	// Clean up any existing test data
+	db.Exec("DELETE FROM contracts WHERE id = $1", c.ID)
 
 	if err := repo.CreateContract(context.Background(), c); err != nil {
 		t.Fatalf("CreateContract error: %v", err)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+
+	// Verify the contract was created
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM contracts WHERE id = $1", c.ID).Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to verify contract creation: %v", err)
 	}
+	if count != 1 {
+		t.Fatalf("Expected 1 contract, got %d", count)
+	}
+
+	// Clean up
+	db.Exec("DELETE FROM contracts WHERE id = $1", c.ID)
 }
 
 func TestGetContractByID(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	// Use real database for integration testing
+	// In container environment, connect to postgres service
+	dbHost := os.Getenv("TEST_DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+
+	connStr := fmt.Sprintf("postgres://user:password@%s:5432/smart_payment?sslmode=disable", dbHost)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		t.Fatalf("error creating sqlmock: %v", err)
+		t.Fatalf("error connecting to test database: %v", err)
 	}
 	defer db.Close()
 
+	// Test connection
+	if err := db.Ping(); err != nil {
+		t.Logf("Database ping failed: %v", err)
+		t.Skip("Test database not available, skipping integration test")
+		return
+	}
+
 	repo := NewPostgresContractRepository(db)
 
-	rows := sqlmock.NewRows([]string{"id", "parties", "status", "contract_type", "version", "parent_contract_id", "expiration_date", "renewal_terms", "created_at", "updated_at"}).
-		AddRow("11111111-1111-1111-1111-111111111111", pq.Array([]string{"A", "B"}), "draft", "service_agreement", "v1", nil, nil, "", time.Now(), time.Now())
+	// Create a test contract first
+	now := time.Now()
+	testContract := &models.Contract{
+		ID:           "11111111-1111-1111-1111-111111111111",
+		Parties:      []string{"A", "B"},
+		Status:       "draft",
+		ContractType: "service_agreement",
+		Version:      "v1",
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, parties, status, contract_type, version, parent_contract_id,
-		       expiration_date, renewal_terms, created_at, updated_at
-		FROM contracts
-		WHERE id = $1`)).
-		WithArgs("11111111-1111-1111-1111-111111111111").
-		WillReturnRows(rows)
+	// Clean up any existing test data
+	db.Exec("DELETE FROM contracts WHERE id = $1", testContract.ID)
 
+	// Create the contract
+	if err := repo.CreateContract(context.Background(), testContract); err != nil {
+		t.Fatalf("Failed to create test contract: %v", err)
+	}
+
+	// Now test getting it by ID
 	c, err := repo.GetContractByID(context.Background(), "11111111-1111-1111-1111-111111111111")
 	if err != nil {
 		t.Fatalf("GetContractByID error: %v", err)
@@ -76,17 +119,32 @@ func TestGetContractByID(t *testing.T) {
 	if c == nil || c.ID == "" || len(c.Parties) != 2 {
 		t.Fatalf("unexpected contract result: %+v", c)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
-	}
+
+	// Clean up
+	db.Exec("DELETE FROM contracts WHERE id = $1", testContract.ID)
 }
 
 func TestUpdateAndDeleteContract(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	// Use real database for integration testing
+	// In container environment, connect to postgres service
+	dbHost := os.Getenv("TEST_DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+
+	connStr := fmt.Sprintf("postgres://user:password@%s:5432/smart_payment?sslmode=disable", dbHost)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		t.Fatalf("error creating sqlmock: %v", err)
+		t.Fatalf("error connecting to test database: %v", err)
 	}
 	defer db.Close()
+
+	// Test connection
+	if err := db.Ping(); err != nil {
+		t.Logf("Database ping failed: %v", err)
+		t.Skip("Test database not available, skipping integration test")
+		return
+	}
 
 	repo := NewPostgresContractRepository(db)
 	now := time.Now()
@@ -99,25 +157,41 @@ func TestUpdateAndDeleteContract(t *testing.T) {
 		UpdatedAt:    now,
 	}
 
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE contracts SET
-			parties = $2, status = $3, contract_type = $4, version = $5,
-			parent_contract_id = $6, expiration_date = $7, renewal_terms = $8, updated_at = $9
-		WHERE id = $1`)).
-		WithArgs(c.ID, pq.Array(c.Parties), c.Status, c.ContractType, c.Version, nil, c.ExpirationDate, c.RenewalTerms, c.UpdatedAt).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	// Clean up any existing test data
+	db.Exec("DELETE FROM contracts WHERE id = $1", c.ID)
 
+	// Create the contract first
+	if err := repo.CreateContract(context.Background(), c); err != nil {
+		t.Fatalf("Failed to create test contract: %v", err)
+	}
+
+	// Test update
 	if err := repo.UpdateContract(context.Background(), c); err != nil {
 		t.Fatalf("UpdateContract error: %v", err)
 	}
 
-	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM contracts WHERE id = $1`)).
-		WithArgs(c.ID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	// Verify update
+	var updatedStatus string
+	err = db.QueryRow("SELECT status FROM contracts WHERE id = $1", c.ID).Scan(&updatedStatus)
+	if err != nil {
+		t.Fatalf("Failed to verify contract update: %v", err)
+	}
+	if updatedStatus != "active" {
+		t.Fatalf("Expected status 'active', got '%s'", updatedStatus)
+	}
 
+	// Test delete
 	if err := repo.DeleteContract(context.Background(), c.ID); err != nil {
 		t.Fatalf("DeleteContract error: %v", err)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet expectations: %v", err)
+
+	// Verify deletion
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM contracts WHERE id = $1", c.ID).Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to verify contract deletion: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("Expected 0 contracts after deletion, got %d", count)
 	}
 }

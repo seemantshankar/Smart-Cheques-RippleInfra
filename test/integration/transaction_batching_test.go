@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -228,8 +229,18 @@ func (suite *TransactionBatchingIntegrationTestSuite) SetupSuite() {
 	suite.auditRepo = new(mocks.AuditRepositoryInterface)
 	suite.complianceRepo = new(mocks.ComplianceRepositoryInterface)
 
-	// Initialize messaging service
-	messagingService, err := messaging.NewService("localhost:6379", "", 1)
+	// Initialize messaging service using environment variables
+	redisHost := os.Getenv("TEST_REDIS_HOST")
+	if redisHost == "" {
+		redisHost = "localhost"
+	}
+	redisPort := os.Getenv("TEST_REDIS_PORT")
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+	
+	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort)
+	messagingService, err := messaging.NewService(redisAddr, "", 1)
 	require.NoError(suite.T(), err)
 	suite.messagingService = messagingService
 

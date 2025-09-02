@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 )
@@ -243,11 +244,11 @@ func (s *ComplianceViolationDetectionService) needsEscalation(
 
 // escalateViolation escalates a compliance violation
 func (s *ComplianceViolationDetectionService) escalateViolation(
-	ctx context.Context,
+	_ context.Context,
 	status models.TransactionComplianceStatus,
 ) error {
-	// Create escalation alert
-	alert := &models.ComplianceViolationAlert{
+	// Create escalation alert (TODO: implement escalation logic)
+	_ = &models.ComplianceViolationAlert{
 		ID:              uuid.New().String(),
 		ViolationID:     "escalation",
 		TransactionID:   status.TransactionID,
@@ -262,8 +263,8 @@ func (s *ComplianceViolationDetectionService) escalateViolation(
 		UpdatedAt:       time.Now(),
 	}
 
-	expiresAt := time.Now().Add(12 * time.Hour)
-	alert.ExpiresAt = &expiresAt
+	// expiresAt := time.Now().Add(12 * time.Hour)
+	// alert.ExpiresAt = &expiresAt  // TODO: uncomment when alert is implemented
 
 	// Log escalation event
 	auditLog := &models.AuditLog{

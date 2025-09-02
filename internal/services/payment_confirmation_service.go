@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
@@ -201,7 +202,7 @@ func (s *PaymentConfirmationService) MonitorTransactionConfirmations(ctx context
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Context cancelled, stopping confirmation monitoring")
+			log.Printf("Context canceled, stopping confirmation monitoring")
 			return ctx.Err()
 		case <-ticker.C:
 			if err := s.checkAllConfirmations(ctx); err != nil {

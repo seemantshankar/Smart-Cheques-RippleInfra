@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
@@ -777,7 +778,7 @@ func (s *PaymentMonitoringService) initializeDefaultThresholds() {
 }
 
 func (s *PaymentMonitoringService) getPaymentOverview(ctx context.Context) (*PaymentOverview, error) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -800,7 +801,7 @@ func (s *PaymentMonitoringService) getPaymentOverview(ctx context.Context) (*Pay
 }
 
 func (s *PaymentMonitoringService) getRecentActivities(ctx context.Context, limit int) ([]*PaymentActivity, error) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()

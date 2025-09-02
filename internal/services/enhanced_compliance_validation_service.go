@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 )
@@ -160,7 +161,7 @@ func (s *EnhancedComplianceValidationService) performBasicComplianceChecks(trans
 
 	// Update status based on violations
 	if len(result.Violations) > 0 {
-		result.Status = "flagged"
+		result.Status = StatusFlagged
 		result.ComplianceScore = 0.8
 	}
 
@@ -215,7 +216,7 @@ func (s *EnhancedComplianceValidationService) performEnhancedComplianceChecks(tr
 
 	// Update status based on violations
 	if len(result.Violations) > 0 {
-		result.Status = "flagged"
+		result.Status = StatusFlagged
 		result.ComplianceScore = 0.7
 	}
 
@@ -322,7 +323,7 @@ func (s *EnhancedComplianceValidationService) mergeComplianceResults(
 
 	// Determine overall status
 	if len(result.Violations) == 0 {
-		result.Status = "approved"
+		result.Status = StatusApproved
 		result.IsCompliant = true
 	} else {
 		// Check for critical violations
@@ -338,7 +339,7 @@ func (s *EnhancedComplianceValidationService) mergeComplianceResults(
 			result.Status = "rejected"
 			result.IsCompliant = false
 		} else if result.ComplianceScore < 0.8 || len(result.Violations) > 0 {
-			result.Status = "flagged"
+			result.Status = StatusFlagged
 			result.IsCompliant = false
 		}
 	}

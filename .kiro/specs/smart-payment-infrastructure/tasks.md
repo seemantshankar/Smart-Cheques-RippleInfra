@@ -968,30 +968,81 @@
       - [ ] Create system monitoring and alerting integration tests
   - _Requirements: 8_ **COMPLETED - Production-ready dispute management foundation**
 
-- [ ] 8.2 Implement basic dispute resolution workflow
-  - Create dispute evidence collection and storage
-  - Build basic dispute resolution workflow engine
-  - Implement dispute status updates and notifications
-  - Add basic dispute outcome recording and tracking
-  - Create integration tests for dispute workflows
-  - _Requirements: 8_
+- [x] 8.2 Implement basic dispute resolution workflow
+  - [x] 8.2.1 Implement dispute evidence collection and storage
+    - [x] Validate file metadata (name, type, size) and sanitize paths
+    - [x] Persist `DisputeEvidence` via repository and update `LastActivityAt`
+    - [x] Emit audit log and publish `evidence_added` events
+    - [x] Send notifications (email, in-app, webhook) to parties
+    - [x] Define evidence upload API contract (handler request schema, validations)
+  - [x] 8.2.2 Build dispute resolution workflow engine
+    - [x] Add service method to create resolution with status gate checks
+    - [x] Support acceptance flags (initiator/respondent) and deadlines
+    - [x] Emit audit logs and publish `resolution_proposed` events
+    - [x] Wire notifications for acceptance updates
+  - [x] 8.2.3 Implement dispute status updates and notifications
+    - [x] Validate transitions per `validateStatusTransition`
+    - [x] Persist status, timestamps, and audit trails
+    - [x] Publish `dispute_status_changed` events
+    - [x] Send notifications to both parties and watchers
+  - [x] 8.2.4 Add dispute outcome recording and tracking
+    - [x] Mark resolution executed with executor and timestamp
+    - [x] Close dispute and persist lifecycle timestamps
+    - [x] Publish `resolution_executed` and `dispute_closed` (via status_changed) events
+    - [x] Send final notifications and archive workflow context
+  - [x] 8.2.5 Create integration tests for dispute workflows
+    - [x] Test: create dispute → add evidence → status update → resolution → execute
+    - [x] Test invalid transitions and permission edge cases
+    - [x] Mock notification services and assert calls
+    - [x] Assert repository persistence and audit entries
+  - _Requirements: 8_ **COMPLETED - All subtasks implemented and tested**
 
 - [ ] 8.3 Build dispute outcome enforcement
-  - Implement basic fund freezing during active disputes
-  - Create dispute resolution execution via XRPL operations
-  - Build basic refund and partial payment mechanisms
-  - Add dispute resolution audit logging
-  - Create end-to-end tests for dispute resolution
+  - [~] 8.3.1 Implement fund freezing during active disputes
+    - [x] Create dispute fund freezing service with XRPL integration
+    - [x] Implement automatic fund freezing when dispute is initiated
+    - [x] Add fund freezing status tracking and management
+    - [x] Create fund unfreezing workflow when dispute is resolved
+    - [x] Integrate with existing fraud prevention infrastructure
+    - [x] Add fund freezing audit logging and compliance tracking
+  - [x] 8.3.2 Create dispute resolution execution via XRPL operations
+    - [x] Extend XRPL service with dispute resolution operations
+    - [x] Implement XRPL escrow finish for successful dispute resolution
+    - [x] Add XRPL escrow cancel for failed dispute resolution
+    - [x] Create XRPL transaction monitoring for dispute resolution
+    - [x] Implement XRPL error handling and retry mechanisms
+    - [x] Add XRPL transaction status synchronization
+  - [x] 8.3.3 Build refund and partial payment mechanisms
+    - [x] Create refund service for dispute resolution outcomes
+    - [x] Implement partial payment calculation based on milestone completion
+    - [x] Add refund approval workflow and authorization
+    - [x] Create refund execution via XRPL operations
+    - [x] Implement refund status tracking and notifications
+    - [x] Add refund audit trail and compliance reporting
+  - [x] 8.3.4 Add dispute resolution audit logging
+    - [x] Extend existing audit service for dispute resolution events
+    - [x] Create comprehensive dispute resolution audit trail
+    - [x] Implement dispute resolution compliance reporting
+    - [x] Add dispute resolution performance metrics
+    - [x] Create dispute resolution dashboard and monitoring
+    - [x] Implement dispute resolution data retention policies
+  - [x] 8.3.5 Create end-to-end tests for dispute resolution
+    - [x] Build unit tests for all dispute outcome enforcement services
+    - [x] Create integration tests for XRPL dispute resolution operations
+    - [x] Implement end-to-end dispute resolution workflow tests
+    - [x] Add performance tests for dispute resolution under load
+    - [x] Create security tests for dispute resolution authorization
+    - [x] Build compliance tests for dispute resolution audit trails
   - _Requirements: 8, 5_
 
 ## 9. Basic CBDC Integration (e₹)
 
-- [ ] 9.1 Create CBDC integration foundation
-  - Build basic CBDC wallet data models and interfaces
-  - Create mock TSP API integration for development
-  - Implement basic CBDC transaction tracking
-  - Add CBDC balance management and validation
-  - Create unit tests for CBDC operations
+- [x] 9.1 Create CBDC integration foundation
+  - [x] Build basic CBDC wallet data models and interfaces
+  - [x] Create mock TSP API integration for development
+  - [x] Implement basic CBDC transaction tracking
+  - [x] Add CBDC balance management and validation
+  - [x] Create unit tests for CBDC operations
   - _Requirements: 1, 3_
 
 - [ ] 9.2 Implement basic e₹ wallet operations

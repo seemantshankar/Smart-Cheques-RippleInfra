@@ -11,12 +11,26 @@ help:
 	@echo "  down      - Stop all services"
 	@echo "  logs      - View logs from all services"
 	@echo "  test      - Run all tests"
+	@echo "  test-container - Run all tests in container (with database access)"
+	@echo "  test-container-specific - Run specific tests in container (set TEST_PATH)"
 	@echo "  clean     - Clean up Docker resources"
 	@echo "  deps      - Download Go dependencies"
 	@echo "  health    - Check health of all services"
 	@echo "  db-migrate - Run database migrations"
 	@echo "  db-seed   - Seed development data"
 	@echo "  db-clear  - Clear development data"
+	@echo ""
+	@echo "Local Database Commands:"
+	@echo "  local-dev        - Quick local development setup"
+	@echo "  db-local-start   - Start local databases only"
+	@echo "  db-local-stop    - Stop local databases"
+	@echo "  db-local-restart - Restart local databases"
+	@echo "  db-local-reset   - Reset local databases (fresh start)"
+	@echo "  db-local-migrate - Run migrations on local database"
+	@echo "  db-local-migrate-manual - Run migrations manually (bypasses migration tool)"
+	@echo "  db-local-status  - Check local database status"
+	@echo "  db-local-logs    - Show local database logs"
+	@echo "  db-local-connect - Connect to local PostgreSQL"
 
 # Build all Go binaries
 build:
@@ -32,23 +46,33 @@ build:
 
 # Build all Docker images
 build-docker:
-	docker-compose build
+	docker compose build
 
 # Start all services
 up:
-	docker-compose up -d
+	docker compose up -d
 
 # Stop all services
 down:
-	docker-compose down
+	docker compose down
 
 # View logs
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Run tests
 test:
 	go test -v ./...
+
+# Run tests in container (with database access)
+test-container:
+	@echo "Running tests in container with database access..."
+	@./scripts/run-tests-in-container.sh all
+
+# Run specific tests in container
+test-container-specific:
+	@echo "Running specific tests in container..."
+	@./scripts/run-tests-in-container.sh specific $(TEST_PATH)
 
 # Run linters
 lint:
@@ -94,12 +118,12 @@ dev-up: deps build-docker up
 
 # Quick restart of a specific service
 restart-%:
-	docker-compose restart $*
+	docker compose restart $*
 
 # Build and restart a specific service
 rebuild-%:
-	docker-compose build $*
-	docker-compose up -d $*
+	docker compose build $*
+	docker compose up -d $*
 
 # Database management commands
 db-migrate:
@@ -121,3 +145,46 @@ db-version:
 db-rollback:
 	@echo "Rolling back migrations..."
 	@go run ./cmd/db-migrate -action=down
+
+# Local database management (using local-db.sh script)
+db-local-start:
+	@echo "Starting local databases..."
+	@./scripts/local-db.sh start
+
+db-local-stop:
+	@echo "Stopping local databases..."
+	@./scripts/local-db.sh stop
+
+db-local-restart:
+	@echo "Restarting local databases..."
+	@./scripts/local-db.sh restart
+
+db-local-reset:
+	@echo "Resetting local databases..."
+	@./scripts/local-db.sh reset
+
+db-local-migrate:
+	@echo "Running migrations on local database..."
+	@./scripts/local-db.sh migrate
+
+db-local-migrate-manual:
+	@echo "Running migrations manually..."
+	@./scripts/run-migrations-manually.sh run
+
+db-local-status:
+	@echo "Checking local database status..."
+	@./scripts/local-db.sh status
+
+db-local-logs:
+	@echo "Showing local database logs..."
+	@./scripts/local-db.sh logs
+
+db-local-connect:
+	@echo "Connecting to local PostgreSQL..."
+	@./scripts/local-db.sh connect
+
+# Quick local development setup
+local-dev: db-local-start
+	@echo "Local databases started!"
+	@echo "Run 'make db-local-migrate' to apply migrations"
+	@echo "Run 'make db-local-status' to check status"

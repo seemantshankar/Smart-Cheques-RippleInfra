@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smart-payment-infrastructure/internal/models"
-	"github.com/smart-payment-infrastructure/internal/repository/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/internal/repository/mocks"
 )
 
 func TestComplianceWorkflowIntegration(t *testing.T) {

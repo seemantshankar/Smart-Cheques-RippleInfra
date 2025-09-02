@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
@@ -286,7 +287,7 @@ func (h *PaymentExecutionHandler) CancelPaymentExecution(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Payment execution cancelled successfully",
+		"message": "Payment execution canceled successfully",
 	})
 }
 
@@ -334,7 +335,7 @@ func (h *PaymentExecutionHandler) UpdatePaymentExecutionStatus(c *gin.Context) {
 // GeneratePaymentFulfillment generates the condition and fulfillment for payment release
 func (h *PaymentExecutionHandler) GeneratePaymentFulfillment(c *gin.Context) {
 	var req struct {
-		SmartChequeID string `json:"smart_cheque_id" validate:"required"`
+		SmartChequeID string `json:"smart_check_id" validate:"required"`
 		MilestoneID   string `json:"milestone_id" validate:"required"`
 	}
 
@@ -364,7 +365,7 @@ func (h *PaymentExecutionHandler) GeneratePaymentFulfillment(c *gin.Context) {
 // ValidatePaymentCondition validates that a payment condition can be fulfilled
 func (h *PaymentExecutionHandler) ValidatePaymentCondition(c *gin.Context) {
 	var req struct {
-		SmartChequeID string `json:"smart_cheque_id" validate:"required"`
+		SmartChequeID string `json:"smart_check_id" validate:"required"`
 		MilestoneID   string `json:"milestone_id" validate:"required"`
 		Condition     string `json:"condition" validate:"required"`
 		Fulfillment   string `json:"fulfillment" validate:"required"`

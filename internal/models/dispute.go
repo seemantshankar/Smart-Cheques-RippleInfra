@@ -13,7 +13,7 @@ const (
 	DisputeStatusEscalated   DisputeStatus = "escalated"
 	DisputeStatusResolved    DisputeStatus = "resolved"
 	DisputeStatusClosed      DisputeStatus = "closed"
-	DisputeStatusCancelled   DisputeStatus = "cancelled"
+	DisputeStatusCancelled   DisputeStatus = "canceled"
 )
 
 // DisputeCategory represents the type of dispute
@@ -59,7 +59,7 @@ type Dispute struct {
 	Status      DisputeStatus   `json:"status" db:"status" validate:"required"`
 
 	// Related entities
-	SmartChequeID *string `json:"smart_cheque_id,omitempty" db:"smart_cheque_id"`
+	SmartChequeID *string `json:"smart_check_id,omitempty" db:"smart_check_id"`
 	MilestoneID   *string `json:"milestone_id,omitempty" db:"milestone_id"`
 	ContractID    *string `json:"contract_id,omitempty" db:"contract_id"`
 	TransactionID *string `json:"transaction_id,omitempty" db:"transaction_id"`
@@ -177,7 +177,7 @@ type DisputeFilter struct {
 	Category        *DisputeCategory `json:"category,omitempty"`
 	Priority        *DisputePriority `json:"priority,omitempty"`
 	Status          *DisputeStatus   `json:"status,omitempty"`
-	SmartChequeID   *string          `json:"smart_cheque_id,omitempty"`
+	SmartChequeID   *string          `json:"smart_check_id,omitempty"`
 	MilestoneID     *string          `json:"milestone_id,omitempty"`
 	ContractID      *string          `json:"contract_id,omitempty"`
 	DateFrom        *time.Time       `json:"date_from,omitempty"`

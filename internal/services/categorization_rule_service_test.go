@@ -7,10 +7,11 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	"github.com/smart-payment-infrastructure/internal/models"
-	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/smart-payment-infrastructure/internal/models"
+	"github.com/smart-payment-infrastructure/internal/repository"
 )
 
 type CategorizationRuleServiceTestSuite struct {

@@ -274,7 +274,7 @@ func TestPostgresMilestoneRepository_GetMilestonesByContract(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 	limit, offset := 10, 0
 
 	rows := sqlmock.NewRows([]string{
@@ -383,7 +383,7 @@ func TestPostgresMilestoneRepository_GetCriticalPathMilestones(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 
 	rows := sqlmock.NewRows([]string{
 		"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
@@ -467,7 +467,7 @@ func TestPostgresMilestoneRepository_GetMilestoneCompletionStats(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 
 	rows := sqlmock.NewRows([]string{
 		"total_milestones", "completed_milestones", "pending_milestones", "overdue_milestones", "average_completion",
@@ -584,7 +584,7 @@ func TestPostgresMilestoneRepository_ValidateDependencyGraph(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 
 	// Mock a simple acyclic graph: A -> B -> C
 	rows := sqlmock.NewRows([]string{"milestone_id", "depends_on_id"}).
@@ -608,7 +608,7 @@ func TestPostgresMilestoneRepository_GetTopologicalOrder(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 
 	// Mock a simple acyclic graph: A -> B -> C
 	rows := sqlmock.NewRows([]string{"milestone_id", "depends_on_id"}).
@@ -640,7 +640,7 @@ func TestPostgresMilestoneRepository_FilterMilestones(t *testing.T) {
 
 	repo := NewPostgresMilestoneRepository(db)
 
-	contractID := "testContractID"
+	contractID := testContractID
 	category := "delivery"
 	priority := 3
 	criticalPath := true

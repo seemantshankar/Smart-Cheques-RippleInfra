@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -129,7 +130,7 @@ type PaymentExecutionStep struct {
 
 // PaymentFulfillment contains the condition and fulfillment for payment release
 type PaymentFulfillment struct {
-	SmartChequeID string    `json:"smart_cheque_id"`
+	SmartChequeID string    `json:"smart_check_id"`
 	MilestoneID   string    `json:"milestone_id"`
 	Condition     string    `json:"condition"`
 	Fulfillment   string    `json:"fulfillment"`
@@ -191,7 +192,7 @@ const (
 	PaymentExecutionStatusConfirming PaymentExecutionStatusType = "confirming"
 	PaymentExecutionStatusCompleted  PaymentExecutionStatusType = "completed"
 	PaymentExecutionStatusFailed     PaymentExecutionStatusType = "failed"
-	PaymentExecutionStatusCancelled  PaymentExecutionStatusType = "cancelled"
+	PaymentExecutionStatusCancelled  PaymentExecutionStatusType = "canceled"
 	PaymentExecutionStatusRetry      PaymentExecutionStatusType = "retry"
 )
 
@@ -319,11 +320,11 @@ func (s *PaymentExecutionService) executeXRPLEscrowFinish(ctx context.Context, a
 	// Get the SmartCheque to find escrow details
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, auth.SmartChequeID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	if smartCheque.EscrowAddress == "" {
-		return nil, fmt.Errorf("smart cheque has no escrow address")
+		return nil, fmt.Errorf("smart check has no escrow address")
 	}
 
 	// Use the escrow address as both payee and owner for the escrow finish
@@ -351,7 +352,7 @@ func (s *PaymentExecutionService) GeneratePaymentFulfillment(ctx context.Context
 	// Validate that the SmartCheque exists
 	_, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	// Generate condition and fulfillment based on milestone verification
@@ -382,7 +383,7 @@ func (s *PaymentExecutionService) ValidatePaymentCondition(ctx context.Context, 
 	// Get the SmartCheque and milestone
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	// Find the milestone
@@ -395,7 +396,7 @@ func (s *PaymentExecutionService) ValidatePaymentCondition(ctx context.Context, 
 	}
 
 	if milestone == nil {
-		return fmt.Errorf("milestone not found in smart cheque")
+		return fmt.Errorf("milestone not found in smart check")
 	}
 
 	// Validate milestone is completed
@@ -552,7 +553,7 @@ func (s *PaymentExecutionService) CancelPaymentExecution(ctx context.Context, ex
 
 	execution.Status = PaymentExecutionStatusCancelled
 	execution.UpdatedAt = time.Now()
-	execution.LastError = "Execution cancelled by user"
+	execution.LastError = "Execution canceled by user"
 
 	// Publish cancellation event
 	s.publishPaymentExecutionEvent(ctx, "payment.execution.cancelled", execution, nil)

@@ -35,7 +35,7 @@ func NewOracleHandler(
 func (h *OracleHandler) RegisterProvider(c *gin.Context) {
 	var provider models.OracleProvider
 	if err := c.ShouldBindJSON(&provider); err != nil {
-		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid JSON", err))
+		_ = c.Error(models.NewAppError(http.StatusBadRequest, "Invalid JSON", err))
 		return
 	}
 
@@ -47,7 +47,7 @@ func (h *OracleHandler) RegisterProvider(c *gin.Context) {
 	provider.Reliability = 1.0
 
 	if err := h.oracleService.RegisterProvider(c.Request.Context(), &provider); err != nil {
-		c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to register provider", err))
+		_ = c.Error(models.NewAppError(http.StatusInternalServerError, "Failed to register provider", err))
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *OracleHandler) RegisterProvider(c *gin.Context) {
 func (h *OracleHandler) GetProvider(c *gin.Context) {
 	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
+		_ = c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *OracleHandler) GetProvider(c *gin.Context) {
 func (h *OracleHandler) UpdateProvider(c *gin.Context) {
 	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
+		_ = c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *OracleHandler) UpdateProvider(c *gin.Context) {
 func (h *OracleHandler) DeleteProvider(c *gin.Context) {
 	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
+		_ = c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *OracleHandler) GetProvidersByType(c *gin.Context) {
 func (h *OracleHandler) HealthCheck(c *gin.Context) {
 	providerID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
+		_ = c.Error(models.NewAppError(http.StatusBadRequest, "Invalid provider ID", err))
 		return
 	}
 

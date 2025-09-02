@@ -3,9 +3,12 @@ package services
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
 func TestNewXRPLService(t *testing.T) {
@@ -515,4 +518,91 @@ func TestXRPLService_EscrowIntegrationFlow(t *testing.T) {
 	t.Logf("  Payee: %s", payeeWallet.Address)
 	t.Logf("  Escrow Creation TX: %s", escrowResult.TransactionID)
 	t.Logf("  Milestone Completion TX: %s", completionResult.TransactionID)
+}
+
+func TestXRPLService_DisputeResolution(t *testing.T) {
+	service := &XRPLService{
+		initialized: true,
+	}
+
+	// Test dispute resolution outcome creation
+	outcome := &DisputeResolutionOutcome{
+		DisputeID:      "test-dispute-123",
+		ResolutionType: "refund",
+		OriginalAmount: 1000.0,
+		Currency:       "USDT",
+		Reason:         "Dispute resolved in favor of payer",
+		ExecutedBy:     "test-user",
+		ExecutedAt:     time.Now(),
+	}
+
+	assert.Equal(t, "test-dispute-123", outcome.DisputeID)
+	assert.Equal(t, "refund", outcome.ResolutionType)
+	assert.Equal(t, 1000.0, outcome.OriginalAmount)
+
+	// Test dispute resolution status
+	status := &DisputeResolutionStatus{
+		TransactionID: "test-tx-123",
+		Status:        "pending",
+		LastChecked:   time.Now(),
+		RetryCount:    0,
+	}
+
+	assert.Equal(t, "test-tx-123", status.TransactionID)
+	assert.Equal(t, "pending", status.Status)
+	assert.Equal(t, 0, status.RetryCount)
+
+	// Test dispute resolution transaction
+	txn := &DisputeResolutionTransaction{
+		TransactionID: "test-tx-123",
+		DisputeID:     "test-dispute-123",
+		Type:          "refund",
+		Amount:        1000.0,
+		Currency:      "USDT",
+		Status:        "confirmed",
+		ExecutedAt:    time.Now(),
+		BlockHeight:   12345,
+	}
+
+	assert.Equal(t, "test-tx-123", txn.TransactionID)
+	assert.Equal(t, "test-dispute-123", txn.DisputeID)
+	assert.Equal(t, "refund", txn.Type)
+	assert.Equal(t, 1000.0, txn.Amount)
+	assert.Equal(t, uint64(12345), txn.BlockHeight)
+
+	// Test service initialization
+	assert.True(t, service.initialized)
+}
+
+func TestXRPLService_DisputeResolutionTypes(t *testing.T) {
+	// Test that all resolution types are supported
+	resolutionTypes := []string{"refund", "partial_payment", "full_payment", "cancel"}
+
+	for _, resolutionType := range resolutionTypes {
+		outcome := &DisputeResolutionOutcome{
+			DisputeID:      "test-dispute",
+			ResolutionType: resolutionType,
+			OriginalAmount: 1000.0,
+			Currency:       "USDT",
+			Reason:         "Test",
+			ExecutedBy:     "test-user",
+			ExecutedAt:     time.Now(),
+		}
+
+		escrowInfo := &xrpl.EscrowInfo{
+			Account:     "test-account",
+			Destination: "test-destination",
+			Amount:      "1000",
+			Sequence:    123,
+		}
+
+		// Test with uninitialized service (should fail)
+		uninitializedService := &XRPLService{
+			initialized: false,
+		}
+
+		_, err := uninitializedService.ExecuteDisputeResolution("test-dispute", resolutionType, escrowInfo, outcome)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "XRPL service not initialized")
+	}
 }

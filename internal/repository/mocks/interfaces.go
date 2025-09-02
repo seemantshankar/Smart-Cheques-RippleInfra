@@ -13,9 +13,9 @@ import (
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
-// SmartChequeComplianceReport represents a compliance report for a smart cheque
+// SmartChequeComplianceReport represents a compliance report for a smart check
 type SmartChequeComplianceReport struct {
-	SmartChequeID       string                    `json:"smart_cheque_id"`
+	SmartChequeID       string                    `json:"smart_check_id"`
 	TotalTransactions   int64                     `json:"total_transactions"`
 	CompliantTxCount    int64                     `json:"compliant_tx_count"`
 	NonCompliantTxCount int64                     `json:"non_compliant_tx_count"`
@@ -35,7 +35,7 @@ type SmartChequeAuditFinding struct {
 	ResolvedAt  time.Time `json:"resolved_at,omitempty"`
 }
 
-// SmartChequeAnalytics represents detailed analytics for smart cheques
+// SmartChequeAnalytics represents detailed analytics for smart checks
 type SmartChequeAnalytics struct {
 	TotalCount           int64                              `json:"total_count"`
 	CountByStatus        map[models.SmartChequeStatus]int64 `json:"count_by_status"`
@@ -49,7 +49,7 @@ type SmartChequeAnalytics struct {
 	CurrencyDistribution map[models.Currency]float64        `json:"currency_distribution"`
 }
 
-// SmartChequePerformanceMetrics represents performance metrics for smart cheques
+// SmartChequePerformanceMetrics represents performance metrics for smart checks
 type SmartChequePerformanceMetrics struct {
 	AverageProcessingTime time.Duration `json:"average_processing_time"`
 	SuccessRate           float64       `json:"success_rate"`
@@ -59,7 +59,7 @@ type SmartChequePerformanceMetrics struct {
 	PeakHourVolume        float64       `json:"peak_hour_volume"`
 }
 
-// SmartChequeFilter represents filter criteria for smart cheque queries
+// SmartChequeFilter represents filter criteria for smart check queries
 type SmartChequeFilter struct {
 	PayerID      *string                   `json:"payer_id,omitempty"`
 	PayeeID      *string                   `json:"payee_id,omitempty"`

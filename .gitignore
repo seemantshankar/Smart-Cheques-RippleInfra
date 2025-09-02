@@ -4,6 +4,14 @@
 *.dll
 *.so
 *.dylib
+# Executable binaries (Go builds)
+main
+api-gateway
+identity-service
+asset-gateway
+oracle-service
+xrpl-service
+orchestration-service
 
 # Test binary, built with `go test -c`
 *.test
@@ -28,6 +36,13 @@ go.work
 *.swp
 *.swo
 *~
+
+# Backup files
+*.bak
+*.bak2
+*.orig
+*.tmp
+*.temp
 
 # OS generated files
 .DS_Store

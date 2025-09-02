@@ -12,15 +12,15 @@ import (
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
-// SmartChequeXRPLServiceInterface defines the interface for Smart Cheque XRPL integration operations
+// SmartChequeXRPLServiceInterface defines the interface for Smart Check XRPL integration operations
 type SmartChequeXRPLServiceInterface interface {
-	// CreateEscrowForSmartCheque creates an XRPL escrow for a Smart Cheque
+	// CreateEscrowForSmartCheque creates an XRPL escrow for a Smart Check
 	CreateEscrowForSmartCheque(ctx context.Context, smartChequeID string, payerWalletAddress, payeeWalletAddress string) error
 
 	// CompleteMilestonePayment completes a milestone payment by finishing the XRPL escrow
 	CompleteMilestonePayment(ctx context.Context, smartChequeID, milestoneID string) error
 
-	// CancelSmartChequeEscrow cancels the XRPL escrow for a Smart Cheque
+	// CancelSmartChequeEscrow cancels the XRPL escrow for a Smart Check
 	CancelSmartChequeEscrow(ctx context.Context, smartChequeID string) error
 
 	// CancelSmartChequeEscrowWithReason cancels escrow with specific reason and optional notes
@@ -29,16 +29,16 @@ type SmartChequeXRPLServiceInterface interface {
 	// PartialRefundEscrow performs a partial refund based on completed milestones
 	PartialRefundEscrow(ctx context.Context, smartChequeID string, refundPercentage float64) error
 
-	// SyncEscrowStatus syncs the XRPL escrow status with the Smart Cheque status
+	// SyncEscrowStatus syncs the XRPL escrow status with the Smart Check status
 	SyncEscrowStatus(ctx context.Context, smartChequeID string) error
 
-	// MonitorEscrowStatus continuously monitors escrow status and updates Smart Cheque accordingly
+	// MonitorEscrowStatus continuously monitors escrow status and updates Smart Check accordingly
 	MonitorEscrowStatus(ctx context.Context, smartChequeID string, interval time.Duration) error
 
 	// GetEscrowHealthStatus provides comprehensive health status of the escrow
 	GetEscrowHealthStatus(ctx context.Context, smartChequeID string) (*EscrowHealthStatus, error)
 
-	// GetXRPLTransactionHistory retrieves XRPL transaction history for a Smart Cheque
+	// GetXRPLTransactionHistory retrieves XRPL transaction history for a Smart Check
 	GetXRPLTransactionHistory(ctx context.Context, smartChequeID string) ([]*models.Transaction, error)
 }
 
@@ -50,7 +50,7 @@ type smartChequeXRPLService struct {
 	milestoneRepo   repository.MilestoneRepositoryInterface
 }
 
-// NewSmartChequeXRPLService creates a new Smart Cheque XRPL service
+// NewSmartChequeXRPLService creates a new Smart Check XRPL service
 func NewSmartChequeXRPLService(
 	smartChequeRepo repository.SmartChequeRepositoryInterface,
 	transactionRepo repository.TransactionRepositoryInterface,
@@ -65,15 +65,15 @@ func NewSmartChequeXRPLService(
 	}
 }
 
-// CreateEscrowForSmartCheque creates an XRPL escrow for a Smart Cheque
+// CreateEscrowForSmartCheque creates an XRPL escrow for a Smart Check
 func (s *smartChequeXRPLService) CreateEscrowForSmartCheque(ctx context.Context, smartChequeID string, payerWalletAddress, payeeWalletAddress string) error {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	// Validate wallet addresses
@@ -96,13 +96,13 @@ func (s *smartChequeXRPLService) CreateEscrowForSmartCheque(ctx context.Context,
 		return fmt.Errorf("failed to create XRPL escrow: %w", err)
 	}
 
-	// Update the Smart Cheque with escrow information
+	// Update the Smart Check with escrow information
 	smartCheque.EscrowAddress = result.TransactionID
 	smartCheque.Status = models.SmartChequeStatusLocked
 	smartCheque.UpdatedAt = time.Now()
 
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque with escrow info: %w", err)
+		return fmt.Errorf("failed to update smart check with escrow info: %w", err)
 	}
 
 	// Create a transaction record for tracking
@@ -129,27 +129,27 @@ func (s *smartChequeXRPLService) CreateEscrowForSmartCheque(ctx context.Context,
 		log.Printf("Warning: Failed to save transaction record: %v", err)
 	}
 
-	log.Printf("Created XRPL escrow for Smart Cheque %s with transaction ID %s", smartChequeID, result.TransactionID)
+	log.Printf("Created XRPL escrow for Smart Check %s with transaction ID %s", smartChequeID, result.TransactionID)
 	return nil
 }
 
 // CompleteMilestonePayment completes a milestone payment by finishing the XRPL escrow
 func (s *smartChequeXRPLService) CompleteMilestonePayment(ctx context.Context, smartChequeID, milestoneID string) error {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	// Check if escrow address exists
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque has no escrow address")
+		return fmt.Errorf("smart check has no escrow address")
 	}
 
-	// Find the milestone in the smart cheque
+	// Find the milestone in the smart check
 	var milestone *models.Milestone
 	for _, m := range smartCheque.Milestones {
 		if m.ID == milestoneID {
@@ -159,7 +159,7 @@ func (s *smartChequeXRPLService) CompleteMilestonePayment(ctx context.Context, s
 	}
 
 	if milestone == nil {
-		return fmt.Errorf("milestone not found in smart cheque: %s", milestoneID)
+		return fmt.Errorf("milestone not found in smart check: %s", milestoneID)
 	}
 
 	// For now, we'll use a simple approach to complete the milestone
@@ -193,7 +193,7 @@ func (s *smartChequeXRPLService) CompleteMilestonePayment(ctx context.Context, s
 	milestone.CompletedAt = &now
 	milestone.UpdatedAt = now
 
-	// Update Smart Cheque status if all milestones are completed
+	// Update Smart Check status if all milestones are completed
 	allCompleted := true
 	for i, m := range smartCheque.Milestones {
 		if m.ID == milestoneID {
@@ -211,7 +211,7 @@ func (s *smartChequeXRPLService) CompleteMilestonePayment(ctx context.Context, s
 
 	smartCheque.UpdatedAt = time.Now()
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque: %w", err)
+		return fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	// Create a transaction record for tracking
@@ -238,33 +238,33 @@ func (s *smartChequeXRPLService) CompleteMilestonePayment(ctx context.Context, s
 		log.Printf("Warning: Failed to save transaction record: %v", err)
 	}
 
-	log.Printf("Completed milestone payment for Smart Cheque %s, milestone %s with transaction ID %s",
+	log.Printf("Completed milestone payment for Smart Check %s, milestone %s with transaction ID %s",
 		smartChequeID, milestoneID, result.TransactionID)
 	return nil
 }
 
-// CancelSmartChequeEscrow cancels the XRPL escrow for a Smart Cheque with refund calculation
+// CancelSmartChequeEscrow cancels the XRPL escrow for a Smart Check with refund calculation
 func (s *smartChequeXRPLService) CancelSmartChequeEscrow(ctx context.Context, smartChequeID string) error {
 	return s.CancelSmartChequeEscrowWithReason(ctx, smartChequeID, CancellationReasonMutualAgreement, "")
 }
 
 // CancelSmartChequeEscrowWithReason cancels escrow with specific reason and optional notes
 func (s *smartChequeXRPLService) CancelSmartChequeEscrowWithReason(ctx context.Context, smartChequeID, reason, notes string) error {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	// Check if escrow address exists
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque has no escrow address")
+		return fmt.Errorf("smart check has no escrow address")
 	}
 
-	// Validate escrow can be cancelled
+	// Validate escrow can be canceled
 	if err := s.validateEscrowCancellation(smartCheque); err != nil {
 		return fmt.Errorf("escrow cancellation validation failed: %w", err)
 	}
@@ -282,13 +282,13 @@ func (s *smartChequeXRPLService) CancelSmartChequeEscrowWithReason(ctx context.C
 		return fmt.Errorf("failed to cancel XRPL escrow: %w", err)
 	}
 
-	// Update Smart Cheque status based on cancellation reason
+	// Update Smart Check status based on cancellation reason
 	newStatus := s.determineStatusAfterCancellation(smartCheque, reason)
 	smartCheque.Status = newStatus
 	smartCheque.UpdatedAt = time.Now()
 
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque: %w", err)
+		return fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	// Create transaction records for cancellation and refund
@@ -296,20 +296,20 @@ func (s *smartChequeXRPLService) CancelSmartChequeEscrowWithReason(ctx context.C
 		log.Printf("Warning: Failed to create cancellation transaction records: %v", err)
 	}
 
-	log.Printf("Cancelled XRPL escrow for Smart Cheque %s with reason '%s', refund amount: %f, transaction ID: %s",
+	log.Printf("Canceled XRPL escrow for Smart Check %s with reason '%s', refund amount: %f, transaction ID: %s",
 		smartChequeID, reason, refundAmount, result.TransactionID)
 	return nil
 }
 
 // PartialRefundEscrow performs a partial refund based on completed milestones
 func (s *smartChequeXRPLService) PartialRefundEscrow(ctx context.Context, smartChequeID string, refundPercentage float64) error {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	// Validate partial refund is possible
@@ -334,12 +334,12 @@ func (s *smartChequeXRPLService) PartialRefundEscrow(ctx context.Context, smartC
 		return fmt.Errorf("failed to perform partial refund: %w", err)
 	}
 
-	// Update Smart Cheque status
+	// Update Smart Check status
 	smartCheque.Status = models.SmartChequeStatusDisputed
 	smartCheque.UpdatedAt = time.Now()
 
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque: %w", err)
+		return fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	// Create partial refund transaction record
@@ -347,21 +347,21 @@ func (s *smartChequeXRPLService) PartialRefundEscrow(ctx context.Context, smartC
 		log.Printf("Warning: Failed to create partial refund transaction record: %v", err)
 	}
 
-	log.Printf("Performed partial refund for Smart Cheque %s: %f%% (%f %s), transaction ID: %s",
+	log.Printf("Performed partial refund for Smart Check %s: %f%% (%f %s), transaction ID: %s",
 		smartChequeID, refundPercentage, refundAmount, smartCheque.Currency, result.TransactionID)
 	return nil
 }
 
-// validateEscrowCancellation validates if escrow can be cancelled
+// validateEscrowCancellation validates if escrow can be canceled
 func (s *smartChequeXRPLService) validateEscrowCancellation(smartCheque *models.SmartCheque) error {
 	// Check current status
 	if smartCheque.Status == models.SmartChequeStatusCompleted {
-		return fmt.Errorf("cannot cancel completed smart cheque")
+		return fmt.Errorf("cannot cancel completed smart check")
 	}
 
 	// Check if escrow has expired
 	// In a real implementation, this would check the escrow's cancel_after time
-	// For now, we'll allow cancellation if the Smart Cheque is in appropriate states
+	// For now, we'll allow cancellation if the Smart Check is in appropriate states
 
 	validStatuses := []models.SmartChequeStatus{
 		models.SmartChequeStatusLocked,
@@ -375,7 +375,7 @@ func (s *smartChequeXRPLService) validateEscrowCancellation(smartCheque *models.
 		}
 	}
 
-	return fmt.Errorf("smart cheque status %s does not allow cancellation", smartCheque.Status)
+	return fmt.Errorf("smart check status %s does not allow cancellation", smartCheque.Status)
 }
 
 // validatePartialRefund validates if partial refund is possible
@@ -385,7 +385,7 @@ func (s *smartChequeXRPLService) validatePartialRefund(smartCheque *models.Smart
 	}
 
 	if smartCheque.Status == models.SmartChequeStatusCompleted {
-		return fmt.Errorf("cannot perform partial refund on completed smart cheque")
+		return fmt.Errorf("cannot perform partial refund on completed smart check")
 	}
 
 	// Check if some milestones are completed to justify partial refund
@@ -463,7 +463,7 @@ const (
 
 // createCancellationTransactions creates transaction records for cancellation
 func (s *smartChequeXRPLService) createCancellationTransactions(ctx context.Context, smartCheque *models.SmartCheque, txHash string, refundAmount float64, reason, notes string) error {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -497,7 +497,7 @@ func (s *smartChequeXRPLService) createCancellationTransactions(ctx context.Cont
 
 // createPartialRefundTransaction creates transaction record for partial refund
 func (s *smartChequeXRPLService) createPartialRefundTransaction(ctx context.Context, smartCheque *models.SmartCheque, txHash string, refundAmount, refundPercentage float64) error {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -530,56 +530,56 @@ func (s *smartChequeXRPLService) createPartialRefundTransaction(ctx context.Cont
 	return s.transactionRepo.CreateTransaction(refundTx)
 }
 
-// SyncEscrowStatus syncs the XRPL escrow status with the Smart Cheque status
+// SyncEscrowStatus syncs the XRPL escrow status with the Smart Check status
 func (s *smartChequeXRPLService) SyncEscrowStatus(ctx context.Context, smartChequeID string) error {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	// Check if escrow address exists
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque has no escrow address")
+		return fmt.Errorf("smart check has no escrow address")
 	}
 
 	// Get escrow status from XRPL using the transaction hash as sequence
 	escrowInfo, err := s.xrplService.GetEscrowStatus(smartCheque.EscrowAddress, smartCheque.EscrowAddress)
 	if err != nil {
-		log.Printf("Warning: Failed to get XRPL escrow status for Smart Cheque %s: %v", smartChequeID, err)
+		log.Printf("Warning: Failed to get XRPL escrow status for Smart Check %s: %v", smartChequeID, err)
 		// Don't return error here, just log and continue with available data
 		return nil
 	}
 
-	// Update Smart Cheque status based on XRPL escrow status
+	// Update Smart Check status based on XRPL escrow status
 	if err := s.updateSmartChequeFromEscrowStatus(ctx, smartCheque, escrowInfo); err != nil {
-		return fmt.Errorf("failed to update smart cheque from escrow status: %w", err)
+		return fmt.Errorf("failed to update smart check from escrow status: %w", err)
 	}
 
-	log.Printf("Successfully synced escrow status for Smart Cheque %s", smartChequeID)
+	log.Printf("Successfully synced escrow status for Smart Check %s", smartChequeID)
 	return nil
 }
 
-// updateSmartChequeFromEscrowStatus updates the Smart Cheque status based on XRPL escrow status
+// updateSmartChequeFromEscrowStatus updates the Smart Check status based on XRPL escrow status
 func (s *smartChequeXRPLService) updateSmartChequeFromEscrowStatus(ctx context.Context, smartCheque *models.SmartCheque, escrowInfo *xrpl.EscrowInfo) error {
 	// Determine the current escrow state based on available information
 	// In a real implementation, this would involve checking:
 	// - If escrow exists in ledger
 	// - If condition is fulfilled
-	// - If escrow has been finished or cancelled
+	// - If escrow has been finished or canceled
 	// - Current balance and flags
 
 	// For now, we'll use a simplified state determination
 	// This would be enhanced with actual XRPL ledger queries in production
 
-	// Check if escrow is still active (not finished or cancelled)
+	// Check if escrow is still active (not finished or canceled)
 	isActive := escrowInfo.Flags == 0 // Simplified check
 
 	if !isActive {
-		// Escrow is no longer active - check if it was completed or cancelled
+		// Escrow is no longer active - check if it was completed or canceled
 		if smartCheque.Status == models.SmartChequeStatusLocked {
 			// Assume completion if we have verified milestones
 			allMilestonesVerified := true
@@ -592,39 +592,39 @@ func (s *smartChequeXRPLService) updateSmartChequeFromEscrowStatus(ctx context.C
 
 			if allMilestonesVerified {
 				smartCheque.Status = models.SmartChequeStatusCompleted
-				log.Printf("Updated Smart Cheque %s status to completed based on escrow status", smartCheque.ID)
+				log.Printf("Updated Smart Check %s status to completed based on escrow status", smartCheque.ID)
 			} else {
 				smartCheque.Status = models.SmartChequeStatusDisputed
-				log.Printf("Updated Smart Cheque %s status to disputed - escrow finished but milestones not verified", smartCheque.ID)
+				log.Printf("Updated Smart Check %s status to disputed - escrow finished but milestones not verified", smartCheque.ID)
 			}
 		}
 	}
 
 	smartCheque.UpdatedAt = time.Now()
 
-	// Save the updated Smart Cheque
+	// Save the updated Smart Check
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque: %w", err)
+		return fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	return nil
 }
 
-// MonitorEscrowStatus continuously monitors escrow status and updates Smart Cheque accordingly
+// MonitorEscrowStatus continuously monitors escrow status and updates Smart Check accordingly
 func (s *smartChequeXRPLService) MonitorEscrowStatus(ctx context.Context, smartChequeID string, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	log.Printf("Starting escrow monitoring for Smart Cheque %s with interval %v", smartChequeID, interval)
+	log.Printf("Starting escrow monitoring for Smart Check %s with interval %v", smartChequeID, interval)
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Stopping escrow monitoring for Smart Cheque %s", smartChequeID)
+			log.Printf("Stopping escrow monitoring for Smart Check %s", smartChequeID)
 			return ctx.Err()
 		case <-ticker.C:
 			if err := s.SyncEscrowStatus(ctx, smartChequeID); err != nil {
-				log.Printf("Error syncing escrow status for Smart Cheque %s: %v", smartChequeID, err)
+				log.Printf("Error syncing escrow status for Smart Check %s: %v", smartChequeID, err)
 				// Continue monitoring despite errors
 			}
 		}
@@ -633,13 +633,13 @@ func (s *smartChequeXRPLService) MonitorEscrowStatus(ctx context.Context, smartC
 
 // GetEscrowHealthStatus provides comprehensive health status of the escrow
 func (s *smartChequeXRPLService) GetEscrowHealthStatus(ctx context.Context, smartChequeID string) (*EscrowHealthStatus, error) {
-	// Get the Smart Cheque
+	// Get the Smart Check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return nil, fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return nil, fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 
 	status := &EscrowHealthStatus{
@@ -651,7 +651,7 @@ func (s *smartChequeXRPLService) GetEscrowHealthStatus(ctx context.Context, smar
 	// Check if escrow address exists
 	if smartCheque.EscrowAddress == "" {
 		status.Health = "no_escrow"
-		status.Message = "Smart Cheque has no escrow address"
+		status.Message = "Smart Check has no escrow address"
 		return status, nil
 	}
 
@@ -673,7 +673,7 @@ func (s *smartChequeXRPLService) GetEscrowHealthStatus(ctx context.Context, smar
 
 // EscrowHealthStatus represents the health status of an escrow
 type EscrowHealthStatus struct {
-	SmartChequeID string           `json:"smart_cheque_id"`
+	SmartChequeID string           `json:"smart_check_id"`
 	Status        string           `json:"status"`
 	Health        string           `json:"health"`
 	Message       string           `json:"message"`
@@ -734,7 +734,7 @@ func (s *smartChequeXRPLService) generateHealthMessage(health string, smartChequ
 	case "inactive":
 		return "Escrow is no longer active"
 	case "expired":
-		return "Escrow has expired and can be cancelled"
+		return "Escrow has expired and can be canceled"
 	case "sync_error":
 		return "Unable to sync with XRPL ledger"
 	default:
@@ -742,9 +742,9 @@ func (s *smartChequeXRPLService) generateHealthMessage(health string, smartChequ
 	}
 }
 
-// GetXRPLTransactionHistory retrieves XRPL transaction history for a Smart Cheque
+// GetXRPLTransactionHistory retrieves XRPL transaction history for a Smart Check
 func (s *smartChequeXRPLService) GetXRPLTransactionHistory(ctx context.Context, smartChequeID string) ([]*models.Transaction, error) {
-	// Query transactions associated with this Smart Cheque
+	// Query transactions associated with this Smart Check
 	transactions, err := s.transactionRepo.GetTransactionsBySmartChequeID(smartChequeID, 100, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transaction history: %w", err)
@@ -776,27 +776,27 @@ func NewEscrowMonitoringService(
 	}
 }
 
-// StartMonitoringForSmartCheque starts monitoring for a specific Smart Cheque
+// StartMonitoringForSmartCheque starts monitoring for a specific Smart Check
 func (m *EscrowMonitoringService) StartMonitoringForSmartCheque(ctx context.Context, smartChequeID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	// Check if already monitoring
 	if _, exists := m.activeMonitors[smartChequeID]; exists {
-		log.Printf("Already monitoring Smart Cheque %s", smartChequeID)
+		log.Printf("Already monitoring Smart Check %s", smartChequeID)
 		return nil
 	}
 
-	// Verify Smart Cheque exists and has escrow
+	// Verify Smart Check exists and has escrow
 	smartCheque, err := m.smartChequeRepo.GetSmartChequeByID(ctx, smartChequeID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", smartChequeID)
+		return fmt.Errorf("smart check not found: %s", smartChequeID)
 	}
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque has no escrow address: %s", smartChequeID)
+		return fmt.Errorf("smart check has no escrow address: %s", smartChequeID)
 	}
 
 	// Create monitoring context
@@ -813,33 +813,33 @@ func (m *EscrowMonitoringService) StartMonitoringForSmartCheque(ctx context.Cont
 			m.mu.Unlock()
 		}()
 
-		log.Printf("Started monitoring escrow for Smart Cheque %s", smartChequeID)
+		log.Printf("Started monitoring escrow for Smart Check %s", smartChequeID)
 		err := m.smartChequeXRPLService.MonitorEscrowStatus(monitorCtx, smartChequeID, m.monitoringInterval)
 		if err != nil && err != context.Canceled {
-			log.Printf("Error monitoring escrow for Smart Cheque %s: %v", smartChequeID, err)
+			log.Printf("Error monitoring escrow for Smart Check %s: %v", smartChequeID, err)
 		}
 	}()
 
 	return nil
 }
 
-// StopMonitoringForSmartCheque stops monitoring for a specific Smart Cheque
+// StopMonitoringForSmartCheque stops monitoring for a specific Smart Check
 func (m *EscrowMonitoringService) StopMonitoringForSmartCheque(smartChequeID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	cancel, exists := m.activeMonitors[smartChequeID]
 	if !exists {
-		return fmt.Errorf("no active monitoring found for Smart Cheque %s", smartChequeID)
+		return fmt.Errorf("no active monitoring found for Smart Check %s", smartChequeID)
 	}
 
 	cancel()
 	delete(m.activeMonitors, smartChequeID)
-	log.Printf("Stopped monitoring escrow for Smart Cheque %s", smartChequeID)
+	log.Printf("Stopped monitoring escrow for Smart Check %s", smartChequeID)
 	return nil
 }
 
-// GetMonitoredSmartCheques returns list of currently monitored Smart Cheques
+// GetMonitoredSmartCheques returns list of currently monitored Smart Checks
 func (m *EscrowMonitoringService) GetMonitoredSmartCheques() []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -852,19 +852,19 @@ func (m *EscrowMonitoringService) GetMonitoredSmartCheques() []string {
 	return monitored
 }
 
-// StartMonitoringAllActiveEscrows starts monitoring for all active Smart Cheques with escrows
+// StartMonitoringAllActiveEscrows starts monitoring for all active Smart Checks with escrows
 func (m *EscrowMonitoringService) StartMonitoringAllActiveEscrows(ctx context.Context) error {
-	// Get all Smart Cheques with escrow addresses
+	// Get all Smart Checks with escrow addresses
 	smartCheques, err := m.smartChequeRepo.GetSmartChequesByStatus(ctx, models.SmartChequeStatusLocked, 1000, 0)
 	if err != nil {
-		return fmt.Errorf("failed to get active smart cheques: %w", err)
+		return fmt.Errorf("failed to get active smart checks: %w", err)
 	}
 
 	startedCount := 0
 	for _, smartCheque := range smartCheques {
 		if smartCheque.EscrowAddress != "" {
 			if err := m.StartMonitoringForSmartCheque(ctx, smartCheque.ID); err != nil {
-				log.Printf("Failed to start monitoring for Smart Cheque %s: %v", smartCheque.ID, err)
+				log.Printf("Failed to start monitoring for Smart Check %s: %v", smartCheque.ID, err)
 			} else {
 				startedCount++
 			}
@@ -897,7 +897,7 @@ func (m *EscrowMonitoringService) GetMonitoringStats(ctx context.Context) (*Moni
 	activeCount := len(m.activeMonitors)
 	m.mu.RUnlock()
 
-	// Get total Smart Cheques with escrows
+	// Get total Smart Checks with escrows
 	totalEscrows := 0
 	statuses := []models.SmartChequeStatus{
 		models.SmartChequeStatusLocked,

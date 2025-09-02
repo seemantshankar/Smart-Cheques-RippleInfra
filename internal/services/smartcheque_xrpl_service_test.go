@@ -676,7 +676,7 @@ func TestSmartChequeXRPLService_CreateEscrowForSmartCheque(t *testing.T) {
 	mockTransactionRepo.AssertExpectations(t)
 }
 
-// TestSmartChequeXRPLService_CreateEscrowForSmartCheque_SmartChequeNotFound tests the case when smart cheque is not found
+// TestSmartChequeXRPLService_CreateEscrowForSmartCheque_SmartChequeNotFound tests the case when smart check is not found
 func TestSmartChequeXRPLService_CreateEscrowForSmartCheque_SmartChequeNotFound(t *testing.T) {
 	// Create mocks
 	mockSmartChequeRepo := &mockSmartChequeRepoXRPL{}
@@ -705,7 +705,7 @@ func TestSmartChequeXRPLService_CreateEscrowForSmartCheque_SmartChequeNotFound(t
 
 	// Assert results
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "smart cheque not found")
+	assert.Contains(t, err.Error(), "smart check not found")
 	mockSmartChequeRepo.AssertExpectations(t)
 }
 
@@ -877,7 +877,7 @@ func TestSmartChequeXRPLService_GetXRPLTransactionHistory(t *testing.T) {
 	mockTransactionRepo.AssertExpectations(t)
 }
 
-// TestSmartChequeXRPLService_FullLifecycleIntegration tests the complete Smart Cheque lifecycle with XRPL operations
+// TestSmartChequeXRPLService_FullLifecycleIntegration tests the complete Smart Check lifecycle with XRPL operations
 func TestSmartChequeXRPLService_FullLifecycleIntegration(t *testing.T) {
 	// Create mocks
 	mockSmartChequeRepo := &mockSmartChequeRepoXRPL{}
@@ -900,7 +900,7 @@ func TestSmartChequeXRPLService_FullLifecycleIntegration(t *testing.T) {
 	milestoneID1 := uuid.New().String()
 	milestoneID2 := uuid.New().String()
 
-	// Test data - Smart Cheque with multiple milestones
+	// Test data - Smart Check with multiple milestones
 	smartCheque := &models.SmartCheque{
 		ID:            smartChequeID,
 		PayerID:       uuid.New().String(),
@@ -962,7 +962,7 @@ func TestSmartChequeXRPLService_FullLifecycleIntegration(t *testing.T) {
 
 	// Phase 2: Complete First Milestone
 	t.Run("Phase 2: Complete First Milestone", func(t *testing.T) {
-		// Update Smart Cheque status to locked with escrow
+		// Update Smart Check status to locked with escrow
 		smartCheque.Status = models.SmartChequeStatusLocked
 		smartCheque.EscrowAddress = "escrow_tx_123"
 
@@ -1024,7 +1024,7 @@ func TestSmartChequeXRPLService_FullLifecycleIntegration(t *testing.T) {
 
 	// Phase 4: Verify Health Status
 	t.Run("Phase 4: Verify Health Status", func(t *testing.T) {
-		// Update Smart Cheque to completed state
+		// Update Smart Check to completed state
 		smartCheque.Status = models.SmartChequeStatusCompleted
 		smartCheque.Milestones[0].Status = models.MilestoneStatusVerified
 		smartCheque.Milestones[1].Status = models.MilestoneStatusVerified
@@ -1070,7 +1070,7 @@ func TestSmartChequeXRPLService_CancellationWorkflow(t *testing.T) {
 	ctx := context.Background()
 	smartChequeID := uuid.New().String()
 
-	// Test data - Smart Cheque with one completed milestone
+	// Test data - Smart Check with one completed milestone
 	smartCheque := &models.SmartCheque{
 		ID:            smartChequeID,
 		PayerID:       uuid.New().String(),
@@ -1162,7 +1162,7 @@ func TestSmartChequeXRPLService_ErrorScenarios(t *testing.T) {
 	ctx := context.Background()
 	smartChequeID := uuid.New().String()
 
-	t.Run("Cancel Completed Smart Cheque", func(t *testing.T) {
+	t.Run("Cancel Completed Smart Check", func(t *testing.T) {
 		completedSmartCheque := &models.SmartCheque{
 			ID:            smartChequeID,
 			Status:        models.SmartChequeStatusCompleted,
@@ -1174,7 +1174,7 @@ func TestSmartChequeXRPLService_ErrorScenarios(t *testing.T) {
 		err := service.CancelSmartChequeEscrow(ctx, smartChequeID)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot cancel completed smart cheque")
+		assert.Contains(t, err.Error(), "cannot cancel completed smart check")
 		mockSmartChequeRepo.AssertExpectations(t)
 	})
 

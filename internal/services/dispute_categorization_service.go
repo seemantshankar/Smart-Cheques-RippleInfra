@@ -307,7 +307,7 @@ func (ca *ContentAnalyzer) analyzeSentiment(content string) float64 {
 		urgencyCount := 0
 		for _, word := range words {
 			word = strings.ToLower(strings.Trim(word, ".,!?;:\"'()[]{}"))
-			if word == "urgent" || word == "critical" || word == "immediate" || word == "blocking" {
+			if word == UrgencyUrgent || word == UrgencyCritical || word == UrgencyImmediate || word == UrgencyBlocking {
 				urgencyCount++
 			}
 		}
@@ -320,7 +320,7 @@ func (ca *ContentAnalyzer) analyzeSentiment(content string) float64 {
 			positiveCount := 0
 			for _, word := range words {
 				word = strings.ToLower(strings.Trim(word, ".,!?;:\"'()[]{}"))
-				if word == "satisfactory" || word == "completed" || word == "successful" {
+				if word == SentimentSatisfactory || word == SentimentCompleted || word == SentimentSuccessful {
 					positiveCount++
 				}
 			}
@@ -661,11 +661,11 @@ func (s *DisputeCategorizationService) calculatePriorityWithAnalysis(dispute *mo
 		}
 	}
 
-	// Stakeholder impact analysis: key accounts, regulatory impact, linked milestones/cheques with amount
+	// Stakeholder impact analysis: key accounts, regulatory impact, linked milestones/checks with amount
 	hasKeyImpact := false
 	for _, tag := range dispute.Tags {
 		lower := strings.ToLower(tag)
-		if lower == "key_account" || lower == "vip" || lower == "regulatory" {
+		if lower == PriorityKeyAccount || lower == PriorityVIP || lower == PriorityRegulatory {
 			hasKeyImpact = true
 			break
 		}
@@ -800,7 +800,7 @@ func (s *DisputeCategorizationService) calculateRiskBasedPriority(dispute *model
 	}
 	score += recurrence
 
-	// Linkage factor: linked milestone or smart cheque, boost for larger amounts
+	// Linkage factor: linked milestone or smart check, boost for larger amounts
 	if dispute.SmartChequeID != nil || dispute.MilestoneID != nil {
 		linkBoost := 0.10
 		if dispute.DisputedAmount != nil && *dispute.DisputedAmount > 10000 {
@@ -808,7 +808,7 @@ func (s *DisputeCategorizationService) calculateRiskBasedPriority(dispute *model
 		}
 		score += linkBoost
 		if matchedRules != nil {
-			*matchedRules = append(*matchedRules, "Linked to milestone/smart cheque")
+			*matchedRules = append(*matchedRules, "Linked to milestone/smart check")
 		}
 	}
 
@@ -911,6 +911,7 @@ func (s *DisputeCategorizationService) RecomputeAndApplyPriority(ctx context.Con
 }
 
 // buildEnhancedCategorizationReason builds a comprehensive reason string
+// TODO: Use this function when implementing enhanced categorization reporting
 func (s *DisputeCategorizationService) buildEnhancedCategorizationReason(result *CategorizationResult, analysis *ContentAnalysisResult) string {
 	reason := fmt.Sprintf("Automatically categorized as %s priority %s dispute",
 		result.SuggestedPriority, result.SuggestedCategory)
@@ -1598,6 +1599,7 @@ func (s *DisputeCategorizationService) suggestResolutionMethod(dispute *models.D
 	return bestMethod
 }
 
+// TODO: Use this function when implementing categorization reporting
 func (s *DisputeCategorizationService) buildCategorizationReason(result *CategorizationResult) string {
 	reason := fmt.Sprintf("Automatically categorized as %s priority %s dispute",
 		result.SuggestedPriority, result.SuggestedCategory)

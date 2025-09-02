@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -694,52 +695,7 @@ func (r *OracleRepository) ListOracleRequests(ctx context.Context, filter *Oracl
 	}
 	defer rows.Close()
 
-	var requests []*models.OracleRequest
-
-	for rows.Next() {
-		var request models.OracleRequest
-		var contextDataBytes, metadataBytes []byte
-
-		err := rows.Scan(
-			&request.ID,
-			&request.ProviderID,
-			&request.Condition,
-			&contextDataBytes,
-			&request.Status,
-			&request.Result,
-			&request.Confidence,
-			&request.Evidence,
-			&metadataBytes,
-			&request.VerifiedAt,
-			&request.ProofHash,
-			&request.RetryCount,
-			&request.ErrorMessage,
-			&request.CreatedAt,
-			&request.UpdatedAt,
-			&request.CachedUntil,
-		)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan oracle request: %w", err)
-		}
-
-		// Unmarshal JSON fields
-		if err := json.Unmarshal(contextDataBytes, &request.ContextData); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal context data: %w", err)
-		}
-
-		if err := json.Unmarshal(metadataBytes, &request.Metadata); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
-		}
-
-		requests = append(requests, &request)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating oracle requests: %w", err)
-	}
-
-	return requests, nil
+	return r.scanOracleRequests(rows)
 }
 
 // GetOracleRequestsByStatus retrieves oracle requests by status

@@ -205,22 +205,22 @@ func TestSmartChequeService_GetAuditTrail(t *testing.T) {
 	auditLogs := []models.AuditLog{
 		{
 			ID:         uuid.New(),
-			Action:     "smart_cheque_created",
-			Resource:   "smart_cheque",
+			Action:     "smart_check_created",
+			Resource:   "smart_check",
 			ResourceID: stringPtr("test-id"),
-			Details:    "Smart cheque created",
+			Details:    "Smart check created",
 			CreatedAt:  time.Now(),
 		},
 		{
 			ID:         uuid.New(),
-			Action:     "smart_cheque_updated",
-			Resource:   "smart_cheque",
+			Action:     "smart_check_updated",
+			Resource:   "smart_check",
 			ResourceID: stringPtr("test-id"),
-			Details:    "Smart cheque updated",
+			Details:    "Smart check updated",
 			CreatedAt:  time.Now(),
 		},
 	}
-	mockAuditRepo.On("GetAuditLogs", (*uuid.UUID)(nil), (*uuid.UUID)(nil), "", "smart_cheque", 10, 0).Return(auditLogs, nil)
+	mockAuditRepo.On("GetAuditLogs", (*uuid.UUID)(nil), (*uuid.UUID)(nil), "", "smart_check", 10, 0).Return(auditLogs, nil)
 
 	// Call the method under test
 	trail, err := service.GetAuditTrail(ctx, "test-id", 10, 0)

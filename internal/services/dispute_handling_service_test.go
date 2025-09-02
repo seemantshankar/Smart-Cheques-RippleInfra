@@ -521,7 +521,7 @@ func TestDisputeHandlingService_HoldMilestoneFunds(t *testing.T) {
 		UpdatedAt:            now,
 	}
 
-	// Create test smart cheque
+	// Create test smart check
 	smartCheque := &models.SmartCheque{
 		ID:            "sc-test-milestone-1",
 		PayerID:       "payer-1",
@@ -633,14 +633,14 @@ func TestDisputeHandlingService_HoldMilestoneFunds_SmartChequeNotFound(t *testin
 
 	// Set up mock expectations
 	mockMilestoneRepo.On("GetMilestoneByID", mock.Anything, "test-milestone-1").Return(milestone, nil)
-	mockSmartChequeRepo.On("GetSmartChequesByMilestone", mock.Anything, "test-milestone-1").Return((*models.SmartCheque)(nil), fmt.Errorf("smart cheque not found"))
+	mockSmartChequeRepo.On("GetSmartChequesByMilestone", mock.Anything, "test-milestone-1").Return((*models.SmartCheque)(nil), fmt.Errorf("smart check not found"))
 
 	// Execute the method
 	err := service.HoldMilestoneFunds(context.Background(), "test-milestone-1")
 
 	// Assert results
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get smart cheque")
+	assert.Contains(t, err.Error(), "failed to get smart check")
 }
 
 func TestDisputeHandlingService_ExecuteDisputeResolution(t *testing.T) {

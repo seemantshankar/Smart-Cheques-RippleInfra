@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -119,86 +118,47 @@ func (h *ReconciliationHandler) GetReconciliationStatus(c *gin.Context) {
 
 // GetDiscrepancies gets all discrepancies with optional enterprise filter
 func (h *ReconciliationHandler) GetDiscrepancies(c *gin.Context) {
-	// Parse optional enterprise ID filter
-	var enterpriseID *uuid.UUID
-	enterpriseIDStr := c.Query("enterprise_id")
-	if enterpriseIDStr != "" {
-		id, err := uuid.Parse(enterpriseIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
-			return
-		}
-		enterpriseID = &id
+	enterpriseID, params, err := ParseOptionalEnterpriseIDAndPagination(c, "enterprise_id")
+	if err != nil {
+		HandleEnterpriseIDError(c, err)
+		return
 	}
 
-	// Parse pagination parameters
-	limitStr := c.DefaultQuery("limit", "50")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 || limit > 1000 {
-		limit = 50
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	discrepancies, err := h.reconciliationService.GetDiscrepancies(c.Request.Context(), enterpriseID, limit, offset)
+	discrepancies, err := h.reconciliationService.GetDiscrepancies(c.Request.Context(), enterpriseID, params.Limit, params.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"discrepancies": discrepancies,
-		"pagination": gin.H{
-			"limit":  limit,
-			"offset": offset,
-			"count":  len(discrepancies),
-		},
-	})
+	response := CreatePaginationResponse(discrepancies, params.Limit, params.Offset)
+	response["pagination"].(gin.H)["count"] = len(discrepancies)
+	response["discrepancies"] = discrepancies
+	delete(response, "data")
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetEnterpriseDiscrepancies gets discrepancies for a specific enterprise
 func (h *ReconciliationHandler) GetEnterpriseDiscrepancies(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
+	enterpriseID, params, err := ParseEnterpriseIDAndPagination(c, "enterpriseID")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+		HandleEnterpriseIDError(c, err)
 		return
 	}
 
-	// Parse pagination parameters
-	limitStr := c.DefaultQuery("limit", "50")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 || limit > 1000 {
-		limit = 50
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	discrepancies, err := h.reconciliationService.GetDiscrepancies(c.Request.Context(), &enterpriseID, limit, offset)
+	discrepancies, err := h.reconciliationService.GetDiscrepancies(c.Request.Context(), &enterpriseID, params.Limit, params.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"enterprise_id": enterpriseID,
-		"discrepancies": discrepancies,
-		"pagination": gin.H{
-			"limit":  limit,
-			"offset": offset,
-			"count":  len(discrepancies),
-		},
-	})
+	response := CreatePaginationResponse(discrepancies, params.Limit, params.Offset)
+	response["pagination"].(gin.H)["count"] = len(discrepancies)
+	response["enterprise_id"] = enterpriseID
+	response["discrepancies"] = discrepancies
+	delete(response, "data")
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ResolveDiscrepancy handles discrepancy resolution
@@ -270,86 +230,47 @@ func (h *ReconciliationHandler) GenerateReconciliationReport(c *gin.Context) {
 
 // GetReconciliationHistory gets global reconciliation history
 func (h *ReconciliationHandler) GetReconciliationHistory(c *gin.Context) {
-	// Parse optional enterprise ID filter
-	var enterpriseID *uuid.UUID
-	enterpriseIDStr := c.Query("enterprise_id")
-	if enterpriseIDStr != "" {
-		id, err := uuid.Parse(enterpriseIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
-			return
-		}
-		enterpriseID = &id
+	enterpriseID, params, err := ParseOptionalEnterpriseIDAndPagination(c, "enterprise_id")
+	if err != nil {
+		HandleEnterpriseIDError(c, err)
+		return
 	}
 
-	// Parse pagination parameters
-	limitStr := c.DefaultQuery("limit", "50")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 || limit > 1000 {
-		limit = 50
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	history, err := h.reconciliationService.GetReconciliationHistory(c.Request.Context(), enterpriseID, limit, offset)
+	history, err := h.reconciliationService.GetReconciliationHistory(c.Request.Context(), enterpriseID, params.Limit, params.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"history": history,
-		"pagination": gin.H{
-			"limit":  limit,
-			"offset": offset,
-			"count":  len(history),
-		},
-	})
+	response := CreatePaginationResponse(history, params.Limit, params.Offset)
+	response["pagination"].(gin.H)["count"] = len(history)
+	response["history"] = history
+	delete(response, "data")
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetEnterpriseReconciliationHistory gets reconciliation history for a specific enterprise
 func (h *ReconciliationHandler) GetEnterpriseReconciliationHistory(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
+	enterpriseID, params, err := ParseEnterpriseIDAndPagination(c, "enterpriseID")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+		HandleEnterpriseIDError(c, err)
 		return
 	}
 
-	// Parse pagination parameters
-	limitStr := c.DefaultQuery("limit", "50")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 || limit > 1000 {
-		limit = 50
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	history, err := h.reconciliationService.GetReconciliationHistory(c.Request.Context(), &enterpriseID, limit, offset)
+	history, err := h.reconciliationService.GetReconciliationHistory(c.Request.Context(), &enterpriseID, params.Limit, params.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"enterprise_id": enterpriseID,
-		"history":       history,
-		"pagination": gin.H{
-			"limit":  limit,
-			"offset": offset,
-			"count":  len(history),
-		},
-	})
+	response := CreatePaginationResponse(history, params.Limit, params.Offset)
+	response["pagination"].(gin.H)["count"] = len(history)
+	response["enterprise_id"] = enterpriseID
+	response["history"] = history
+	delete(response, "data")
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetReconciliationMetrics gets reconciliation metrics for a period

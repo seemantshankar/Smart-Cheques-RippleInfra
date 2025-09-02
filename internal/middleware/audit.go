@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/smart-payment-infrastructure/internal/common"
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/services"
 	"github.com/smart-payment-infrastructure/pkg/auth"
@@ -126,13 +127,13 @@ func logAuditAction(c *gin.Context, auditService *services.AuditService, statusC
 // getActionFromMethod maps HTTP methods to audit actions
 func getActionFromMethod(method string) string {
 	switch method {
-	case "GET":
+	case common.HTTPMethodGET:
 		return "read"
-	case "POST":
+	case common.HTTPMethodPOST:
 		return "create"
-	case "PUT", "PATCH":
+	case common.HTTPMethodPUT, common.HTTPMethodPATCH:
 		return "update"
-	case "DELETE":
+	case common.HTTPMethodDELETE:
 		return "delete"
 	default:
 		return method

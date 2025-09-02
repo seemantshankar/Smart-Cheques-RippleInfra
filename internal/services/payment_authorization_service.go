@@ -103,7 +103,7 @@ type PaymentAuthorizationConfig struct {
 
 // Request and response types
 type PaymentAuthorizationRequest struct {
-	SmartChequeID     string    `json:"smart_cheque_id" validate:"required"`
+	SmartChequeID     string    `json:"smart_check_id" validate:"required"`
 	MilestoneID       string    `json:"milestone_id" validate:"required"`
 	EnterpriseID      uuid.UUID `json:"enterprise_id" validate:"required"`
 	InitiatedByUserID uuid.UUID `json:"initiated_by_user_id" validate:"required"`
@@ -137,7 +137,7 @@ type TimeLockPaymentRequest struct {
 
 type PaymentRiskAssessmentRequest struct {
 	EnterpriseID  uuid.UUID `json:"enterprise_id" validate:"required"`
-	SmartChequeID string    `json:"smart_cheque_id" validate:"required"`
+	SmartChequeID string    `json:"smart_check_id" validate:"required"`
 	Amount        string    `json:"amount" validate:"required"`
 	Currency      string    `json:"currency" validate:"required"`
 	TimeOfDay     time.Time `json:"time_of_day"`
@@ -152,7 +152,7 @@ type BulkPaymentApprovalRequest struct {
 // Response types
 type PaymentAuthorization struct {
 	ID                uuid.UUID          `json:"id"`
-	SmartChequeID     string             `json:"smart_cheque_id"`
+	SmartChequeID     string             `json:"smart_check_id"`
 	MilestoneID       string             `json:"milestone_id"`
 	EnterpriseID      uuid.UUID          `json:"enterprise_id"`
 	InitiatedByUserID uuid.UUID          `json:"initiated_by_user_id"`
@@ -258,7 +258,7 @@ const (
 	PaymentAuthStatusTimeLocked PaymentAuthStatus = "time_locked"
 	PaymentAuthStatusProcessing PaymentAuthStatus = "processing"
 	PaymentAuthStatusCompleted  PaymentAuthStatus = "completed"
-	PaymentAuthStatusCancelled  PaymentAuthStatus = "cancelled"
+	PaymentAuthStatusCancelled  PaymentAuthStatus = "canceled"
 	PaymentAuthStatusExpired    PaymentAuthStatus = "expired"
 )
 
@@ -570,7 +570,7 @@ func (s *PaymentAuthorizationService) InitiatePaymentFromMilestone(ctx context.C
 // Helper methods
 
 func (s *PaymentAuthorizationService) validatePaymentAuthorizationRequest(ctx context.Context, req *PaymentAuthorizationRequest) error {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -578,7 +578,7 @@ func (s *PaymentAuthorizationService) validatePaymentAuthorizationRequest(ctx co
 	}
 
 	if req.SmartChequeID == "" {
-		return fmt.Errorf("smart cheque ID is required")
+		return fmt.Errorf("smart check ID is required")
 	}
 	if req.MilestoneID == "" {
 		return fmt.Errorf("milestone ID is required")
@@ -662,14 +662,14 @@ func (s *PaymentAuthorizationService) publishPaymentAuthorizationEvent(ctx conte
 		Source:    "payment-authorization-service",
 		Timestamp: time.Now().Format(time.RFC3339),
 		Data: map[string]interface{}{
-			"request_id":      auth.ID,
-			"smart_cheque_id": auth.SmartChequeID,
-			"milestone_id":    auth.MilestoneID,
-			"enterprise_id":   auth.EnterpriseID,
-			"amount":          auth.Amount,
-			"currency":        auth.Currency,
-			"risk_score":      auth.RiskScore,
-			"auto_approved":   auth.AutoApproved,
+			"request_id":     auth.ID,
+			"smart_check_id": auth.SmartChequeID,
+			"milestone_id":   auth.MilestoneID,
+			"enterprise_id":  auth.EnterpriseID,
+			"amount":         auth.Amount,
+			"currency":       auth.Currency,
+			"risk_score":     auth.RiskScore,
+			"auto_approved":  auth.AutoApproved,
 		},
 	}
 

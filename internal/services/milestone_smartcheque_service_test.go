@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 // mockSmartChequeRepository implements the SmartChequeRepositoryInterface for testing
@@ -372,7 +373,7 @@ func TestTriggerPaymentRelease(t *testing.T) {
 		UpdatedAt:            now,
 	}
 
-	// Create test smart cheque
+	// Create test smart check
 	smartCheque := &models.SmartCheque{
 		ID:            "sc-test-milestone-1",
 		PayerID:       "payer-1",
@@ -565,7 +566,7 @@ func TestTriggerPaymentReleaseWithSmartCheque(t *testing.T) {
 		UpdatedAt:            now,
 	}
 
-	// Create test smart cheque
+	// Create test smart check
 	smartCheque := &models.SmartCheque{
 		ID:            "sc-test-milestone-1",
 		PayerID:       "payer-1",
@@ -630,7 +631,7 @@ func TestHandleMilestoneFailure(t *testing.T) {
 		UpdatedAt:            now,
 	}
 
-	// Create test smart cheque
+	// Create test smart check
 	smartCheque := &models.SmartCheque{
 		ID:            "sc-test-milestone-1",
 		PayerID:       "payer-1",
@@ -695,7 +696,7 @@ func TestProcessPartialPayment(t *testing.T) {
 		UpdatedAt:            now,
 	}
 
-	// Create test smart cheque
+	// Create test smart check
 	smartCheque := &models.SmartCheque{
 		ID:            "sc-test-milestone-1",
 		PayerID:       "payer-1",

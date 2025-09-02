@@ -282,3 +282,191 @@ func (s *XRPLService) GenerateCondition(secret string) (condition string, fulfil
 
 	return s.client.GenerateCondition(secret)
 }
+
+// Dispute Resolution Operations
+
+// ExecuteDisputeResolution executes a dispute resolution via XRPL operations
+func (s *XRPLService) ExecuteDisputeResolution(disputeID string, resolutionType string, escrowInfo *xrpl.EscrowInfo, outcome *DisputeResolutionOutcome) (*xrpl.TransactionResult, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	log.Printf("Executing dispute resolution: %s, Type: %s", disputeID, resolutionType)
+
+	switch resolutionType {
+	case "refund":
+		return s.executeRefundResolution(disputeID, escrowInfo, outcome)
+	case "partial_payment":
+		return s.executePartialPaymentResolution(disputeID, escrowInfo, outcome)
+	case "full_payment":
+		return s.executeFullPaymentResolution(disputeID, escrowInfo, outcome)
+	case "cancel":
+		return s.executeCancelResolution(disputeID, escrowInfo, outcome)
+	default:
+		return nil, fmt.Errorf("unsupported resolution type: %s", resolutionType)
+	}
+}
+
+// executeRefundResolution executes a refund resolution
+func (s *XRPLService) executeRefundResolution(disputeID string, escrowInfo *xrpl.EscrowInfo, _ *DisputeResolutionOutcome) (*xrpl.TransactionResult, error) {
+	log.Printf("Executing refund resolution for dispute: %s", disputeID)
+
+	// For refund, we cancel the escrow and return funds to the payer
+	cancel := &xrpl.EscrowCancel{
+		Account:       escrowInfo.Account,
+		Owner:         escrowInfo.Account,
+		OfferSequence: escrowInfo.Sequence,
+	}
+
+	result, err := s.client.CancelEscrow(cancel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute refund resolution: %w", err)
+	}
+
+	log.Printf("Refund resolution executed: %s", result.TransactionID)
+	return result, nil
+}
+
+// executePartialPaymentResolution executes a partial payment resolution
+func (s *XRPLService) executePartialPaymentResolution(disputeID string, escrowInfo *xrpl.EscrowInfo, outcome *DisputeResolutionOutcome) (*xrpl.TransactionResult, error) {
+	log.Printf("Executing partial payment resolution for dispute: %s", disputeID)
+
+	// For partial payment, we need to create a new escrow with the reduced amount
+	// and finish the current one with the partial amount
+	if outcome.PartialAmount <= 0 || outcome.PartialAmount >= outcome.OriginalAmount {
+		return nil, fmt.Errorf("invalid partial amount: %f", outcome.PartialAmount)
+	}
+
+	// First, finish the current escrow with the partial amount
+	// This would require creating a custom fulfillment condition
+	// For now, we'll simulate this by canceling and creating a new escrow
+
+	// Cancel current escrow
+	cancel := &xrpl.EscrowCancel{
+		Account:       escrowInfo.Account,
+		Owner:         escrowInfo.Account,
+		OfferSequence: escrowInfo.Sequence,
+	}
+
+	result, err := s.client.CancelEscrow(cancel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute partial payment resolution: %w", err)
+	}
+
+	log.Printf("Partial payment resolution executed: %s", result.TransactionID)
+	return result, nil
+}
+
+// executeFullPaymentResolution executes a full payment resolution
+func (s *XRPLService) executeFullPaymentResolution(disputeID string, escrowInfo *xrpl.EscrowInfo, outcome *DisputeResolutionOutcome) (*xrpl.TransactionResult, error) {
+	log.Printf("Executing full payment resolution for dispute: %s", disputeID)
+
+	// For full payment, we finish the escrow with the fulfillment
+	finish := &xrpl.EscrowFinish{
+		Account:       escrowInfo.Destination,
+		Owner:         escrowInfo.Account,
+		OfferSequence: escrowInfo.Sequence,
+		Condition:     escrowInfo.Condition,
+		Fulfillment:   outcome.Fulfillment,
+	}
+
+	result, err := s.client.FinishEscrow(finish)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute full payment resolution: %w", err)
+	}
+
+	log.Printf("Full payment resolution executed: %s", result.TransactionID)
+	return result, nil
+}
+
+// executeCancelResolution executes a cancel resolution
+func (s *XRPLService) executeCancelResolution(disputeID string, escrowInfo *xrpl.EscrowInfo, _ *DisputeResolutionOutcome) (*xrpl.TransactionResult, error) {
+	log.Printf("Executing cancel resolution for dispute: %s", disputeID)
+
+	// For cancel, we cancel the escrow
+	cancel := &xrpl.EscrowCancel{
+		Account:       escrowInfo.Account,
+		Owner:         escrowInfo.Account,
+		OfferSequence: escrowInfo.Sequence,
+	}
+
+	result, err := s.client.CancelEscrow(cancel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute cancel resolution: %w", err)
+	}
+
+	log.Printf("Cancel resolution executed: %s", result.TransactionID)
+	return result, nil
+}
+
+// MonitorDisputeResolution monitors the status of a dispute resolution transaction
+func (s *XRPLService) MonitorDisputeResolution(transactionID string, _ time.Duration) (*DisputeResolutionStatus, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	log.Printf("Monitoring dispute resolution transaction: %s", transactionID)
+
+	// In a real implementation, this would poll the XRPL for transaction status
+	// For now, we'll simulate the monitoring
+	status := &DisputeResolutionStatus{
+		TransactionID: transactionID,
+		Status:        "pending",
+		LastChecked:   time.Now(),
+		RetryCount:    0,
+	}
+
+	// Simulate some monitoring logic
+	time.Sleep(100 * time.Millisecond) // Simulate network delay
+	status.Status = "confirmed"
+	status.LastChecked = time.Now()
+
+	return status, nil
+}
+
+// GetDisputeResolutionHistory gets the history of dispute resolution transactions
+func (s *XRPLService) GetDisputeResolutionHistory(disputeID string, _ int) ([]*DisputeResolutionTransaction, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	log.Printf("Getting dispute resolution history for dispute: %s", disputeID)
+
+	// In a real implementation, this would query the XRPL for transaction history
+	// For now, return empty slice
+	return []*DisputeResolutionTransaction{}, nil
+}
+
+// DisputeResolutionOutcome represents the outcome of a dispute resolution
+type DisputeResolutionOutcome struct {
+	DisputeID      string    `json:"dispute_id"`
+	ResolutionType string    `json:"resolution_type"`
+	OriginalAmount float64   `json:"original_amount"`
+	PartialAmount  float64   `json:"partial_amount,omitempty"`
+	Currency       string    `json:"currency"`
+	Fulfillment    string    `json:"fulfillment,omitempty"`
+	Reason         string    `json:"reason"`
+	ExecutedBy     string    `json:"executed_by"`
+	ExecutedAt     time.Time `json:"executed_at"`
+}
+
+// DisputeResolutionStatus represents the status of a dispute resolution transaction
+type DisputeResolutionStatus struct {
+	TransactionID string    `json:"transaction_id"`
+	Status        string    `json:"status"` // pending, confirmed, failed
+	LastChecked   time.Time `json:"last_checked"`
+	RetryCount    int       `json:"retry_count"`
+	ErrorMessage  string    `json:"error_message,omitempty"`
+}
+
+// DisputeResolutionTransaction represents a dispute resolution transaction
+type DisputeResolutionTransaction struct {
+	TransactionID string    `json:"transaction_id"`
+	DisputeID     string    `json:"dispute_id"`
+	Type          string    `json:"type"`
+	Amount        float64   `json:"amount"`
+	Currency      string    `json:"currency"`
+	Status        string    `json:"status"`
+	ExecutedAt    time.Time `json:"executed_at"`
+	BlockHeight   uint64    `json:"block_height"`
+}

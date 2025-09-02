@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
@@ -310,7 +311,7 @@ func (s *ErrorHandlingService) RetryOperation(ctx context.Context, operationID u
 	delay := strategy.InitialDelay
 
 	for attempt := 0; attempt <= strategy.MaxRetries; attempt++ {
-		// Check if context is cancelled
+		// Check if context is canceled
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -694,7 +695,7 @@ func (s *ErrorHandlingService) updateCircuitBreaker(serviceName string, err erro
 }
 
 func (s *ErrorHandlingService) updateCircuitBreakers(ctx context.Context) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
 		return
@@ -709,7 +710,7 @@ func (s *ErrorHandlingService) updateCircuitBreakers(ctx context.Context) {
 	s.mutex.RUnlock()
 
 	for _, serviceName := range services {
-		// Check if context is cancelled before processing each service
+		// Check if context is canceled before processing each service
 		select {
 		case <-ctx.Done():
 			return
@@ -780,7 +781,7 @@ func (s *ErrorHandlingService) retryFromDeadLetterQueue(ctx context.Context, ope
 }
 
 func (s *ErrorHandlingService) triggerCircuitBreaker(ctx context.Context, operationID uuid.UUID) error {
-	// Check if context is cancelled before proceeding
+	// Check if context is canceled before proceeding
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -793,7 +794,7 @@ func (s *ErrorHandlingService) triggerCircuitBreaker(ctx context.Context, operat
 }
 
 func (s *ErrorHandlingService) executeFallbackStrategy(ctx context.Context, operationID uuid.UUID) error {
-	// Check if context is cancelled before proceeding
+	// Check if context is canceled before proceeding
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -806,7 +807,7 @@ func (s *ErrorHandlingService) executeFallbackStrategy(ctx context.Context, oper
 }
 
 func (s *ErrorHandlingService) markForManualReview(ctx context.Context, operationID uuid.UUID) error {
-	// Check if context is cancelled before proceeding
+	// Check if context is canceled before proceeding
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -819,7 +820,7 @@ func (s *ErrorHandlingService) markForManualReview(ctx context.Context, operatio
 }
 
 func (s *ErrorHandlingService) ignoreOperation(ctx context.Context, operationID uuid.UUID) error {
-	// Check if context is cancelled before proceeding
+	// Check if context is canceled before proceeding
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

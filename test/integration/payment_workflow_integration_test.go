@@ -42,10 +42,10 @@ func TestCompletePaymentWorkflowIntegration(t *testing.T) {
 
 // testServiceIntegration tests the integration between services
 func testServiceIntegration(t *testing.T, ctx context.Context) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
-		t.Skip("Test cancelled due to context timeout")
+		t.Skip("Test canceled due to context timeout")
 		return
 	default:
 	}
@@ -86,7 +86,7 @@ func testServiceIntegration(t *testing.T, ctx context.Context) {
 	t.Run("Workflow_Data_Structures", func(t *testing.T) {
 		// Test that all workflow data structures are compatible
 		userID := uuid.New()
-		smartChequeID := "test-smart-cheque-" + uuid.New().String()
+		smartChequeID := "test-smart-check-" + uuid.New().String()
 
 		// Test notification request structure
 		notification := &services.NotificationRequest{
@@ -97,7 +97,7 @@ func testServiceIntegration(t *testing.T, ctx context.Context) {
 			Channels:  []services.NotificationChannel{services.NotificationChannelEmail},
 			Subject:   "Test Notification",
 			Message:   "Test message",
-			Data:      map[string]interface{}{"smart_cheque_id": smartChequeID},
+			Data:      map[string]interface{}{"smart_check_id": smartChequeID},
 			Priority:  services.NotificationPriorityNormal,
 		}
 
@@ -216,10 +216,10 @@ func testErrorHandling(t *testing.T, ctx context.Context) {
 
 // testConfigurationValidation tests configuration validation
 func testConfigurationValidation(t *testing.T, ctx context.Context) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
-		t.Skip("Test cancelled due to context timeout")
+		t.Skip("Test canceled due to context timeout")
 		return
 	default:
 	}

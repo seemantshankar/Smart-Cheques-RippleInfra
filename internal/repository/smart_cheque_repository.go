@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -25,7 +26,7 @@ func NewSmartChequeRepository(db *sql.DB) SmartChequeRepositoryInterface {
 // CreateSmartCheque creates a new smart check in the database
 func (r *smartChequeRepository) CreateSmartCheque(ctx context.Context, smartCheque *models.SmartCheque) error {
 	query := `
-		INSERT INTO smart_cheques (
+		INSERT INTO smart_checks (
 			id, payer_id, payee_id, amount, currency, 
 			milestones, escrow_address, status, contract_hash, 
 			created_at, updated_at
@@ -53,13 +54,13 @@ func (r *smartChequeRepository) CreateSmartCheque(ctx context.Context, smartCheq
 		smartCheque.UpdatedAt,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create smart cheque: %w", err)
+		return fmt.Errorf("failed to create smart check: %w", err)
 	}
 
 	return nil
 }
 
-// BatchCreateSmartCheques creates multiple smart cheques in a single transaction
+// BatchCreateSmartCheques creates multiple smart checks in a single transaction
 func (r *smartChequeRepository) BatchCreateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error {
 	if len(smartCheques) == 0 {
 		return nil
@@ -78,7 +79,7 @@ func (r *smartChequeRepository) BatchCreateSmartCheques(ctx context.Context, sma
 
 	// Prepare statement for batch insert
 	query := `
-		INSERT INTO smart_cheques (
+		INSERT INTO smart_checks (
 			id, payer_id, payee_id, amount, currency, 
 			milestones, escrow_address, status, contract_hash, 
 			created_at, updated_at
@@ -96,7 +97,7 @@ func (r *smartChequeRepository) BatchCreateSmartCheques(ctx context.Context, sma
 		// Convert milestones to JSON
 		milestonesJSON, err := json.Marshal(smartCheque.Milestones)
 		if err != nil {
-			return fmt.Errorf("failed to marshal milestones for smart cheque %s: %w", smartCheque.ID, err)
+			return fmt.Errorf("failed to marshal milestones for smart check %s: %w", smartCheque.ID, err)
 		}
 
 		_, err = stmt.ExecContext(
@@ -114,7 +115,7 @@ func (r *smartChequeRepository) BatchCreateSmartCheques(ctx context.Context, sma
 			smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to create smart cheque %s: %w", smartCheque.ID, err)
+			return fmt.Errorf("failed to create smart check %s: %w", smartCheque.ID, err)
 		}
 	}
 
@@ -133,7 +134,7 @@ func (r *smartChequeRepository) GetSmartChequeByID(ctx context.Context, id strin
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE id = $1
 	`
 
@@ -159,7 +160,7 @@ func (r *smartChequeRepository) GetSmartChequeByID(ctx context.Context, id strin
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	// Convert string values to typed values
@@ -179,7 +180,7 @@ func (r *smartChequeRepository) GetSmartChequeByID(ctx context.Context, id strin
 // UpdateSmartCheque updates an existing smart check
 func (r *smartChequeRepository) UpdateSmartCheque(ctx context.Context, smartCheque *models.SmartCheque) error {
 	query := `
-		UPDATE smart_cheques 
+		UPDATE smart_checks 
 		SET payer_id = $1, payee_id = $2, amount = $3, currency = $4, 
 		    milestones = $5, escrow_address = $6, status = $7, contract_hash = $8, 
 		    updated_at = $9
@@ -206,7 +207,7 @@ func (r *smartChequeRepository) UpdateSmartCheque(ctx context.Context, smartCheq
 		smartCheque.ID,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to update smart cheque: %w", err)
+		return fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -215,7 +216,7 @@ func (r *smartChequeRepository) UpdateSmartCheque(ctx context.Context, smartCheq
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("smart cheque not found: %s", smartCheque.ID)
+		return fmt.Errorf("smart check not found: %s", smartCheque.ID)
 	}
 
 	return nil
@@ -223,11 +224,11 @@ func (r *smartChequeRepository) UpdateSmartCheque(ctx context.Context, smartCheq
 
 // DeleteSmartCheque deletes a smart check by its ID
 func (r *smartChequeRepository) DeleteSmartCheque(ctx context.Context, id string) error {
-	query := `DELETE FROM smart_cheques WHERE id = $1`
+	query := `DELETE FROM smart_checks WHERE id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete smart cheque: %w", err)
+		return fmt.Errorf("failed to delete smart check: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -236,7 +237,7 @@ func (r *smartChequeRepository) DeleteSmartCheque(ctx context.Context, id string
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("smart cheque not found: %s", id)
+		return fmt.Errorf("smart check not found: %s", id)
 	}
 
 	return nil
@@ -244,23 +245,28 @@ func (r *smartChequeRepository) DeleteSmartCheque(ctx context.Context, id string
 
 // GetSmartChequesByPayer retrieves smart checks by payer ID
 func (r *smartChequeRepository) GetSmartChequesByPayer(ctx context.Context, payerID string, limit, offset int) ([]*models.SmartCheque, error) {
-	query := `
-		SELECT id, payer_id, payee_id, amount, currency, 
-		       milestones, escrow_address, status, contract_hash, 
+	return r.getSmartChequesByEntity(ctx, payerID, "payer_id", limit, offset)
+}
+
+// getSmartChequesByEntity retrieves smart checks by entity type (payer/payee/contract)
+func (r *smartChequeRepository) getSmartChequesByEntity(ctx context.Context, entityID string, entityColumn string, limit, offset int) ([]*models.SmartCheque, error) {
+	query := fmt.Sprintf(`
+		SELECT id, payer_id, payee_id, amount, currency,
+		       milestones, escrow_address, status, contract_hash,
 		       created_at, updated_at
-		FROM smart_cheques 
-		WHERE payer_id = $1
+		FROM smart_checks
+		WHERE %s = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
-	`
+	`, entityColumn)
 
-	rows, err := r.db.QueryContext(ctx, query, payerID, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, entityID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to query smart checks: %w", err)
 	}
 	defer rows.Close()
 
-	var smartCheques []*models.SmartCheque
+	smartCheques := make([]*models.SmartCheque, 0, 50) // Pre-allocate for better performance
 	for rows.Next() {
 		var smartCheque models.SmartCheque
 		var currencyStr string
@@ -281,7 +287,7 @@ func (r *smartChequeRepository) GetSmartChequesByPayer(ctx context.Context, paye
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Convert string values to typed values
@@ -311,7 +317,7 @@ func (r *smartChequeRepository) GetSmartChequesByPayee(ctx context.Context, paye
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE payee_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
@@ -319,7 +325,7 @@ func (r *smartChequeRepository) GetSmartChequesByPayee(ctx context.Context, paye
 
 	rows, err := r.db.QueryContext(ctx, query, payeeID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to query smart checks: %w", err)
 	}
 	defer rows.Close()
 
@@ -344,7 +350,7 @@ func (r *smartChequeRepository) GetSmartChequesByPayee(ctx context.Context, paye
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Convert string values to typed values
@@ -374,7 +380,7 @@ func (r *smartChequeRepository) GetSmartChequesByStatus(ctx context.Context, sta
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE status = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
@@ -382,7 +388,7 @@ func (r *smartChequeRepository) GetSmartChequesByStatus(ctx context.Context, sta
 
 	rows, err := r.db.QueryContext(ctx, query, string(status), limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to query smart checks: %w", err)
 	}
 	defer rows.Close()
 
@@ -405,7 +411,7 @@ func (r *smartChequeRepository) GetSmartChequesByStatus(ctx context.Context, sta
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Set status and convert currency
@@ -429,76 +435,18 @@ func (r *smartChequeRepository) GetSmartChequesByStatus(ctx context.Context, sta
 	return smartCheques, nil
 }
 
-// GetSmartChequesByContract retrieves smart cheques by contract ID
+// GetSmartChequesByContract retrieves smart checks by contract ID
 func (r *smartChequeRepository) GetSmartChequesByContract(ctx context.Context, contractID string, limit, offset int) ([]*models.SmartCheque, error) {
-	query := `
-		SELECT id, payer_id, payee_id, amount, currency, 
-		       milestones, escrow_address, status, contract_hash, 
-		       created_at, updated_at
-		FROM smart_cheques 
-		WHERE contract_hash = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-	`
-
-	rows, err := r.db.QueryContext(ctx, query, contractID, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheques: %w", err)
-	}
-	defer rows.Close()
-
-	var smartCheques []*models.SmartCheque
-	for rows.Next() {
-		var smartCheque models.SmartCheque
-		var currencyStr string
-		var statusStr string
-		var milestonesJSON []byte
-
-		err := rows.Scan(
-			&smartCheque.ID,
-			&smartCheque.PayerID,
-			&smartCheque.PayeeID,
-			&smartCheque.Amount,
-			&currencyStr,
-			&milestonesJSON,
-			&smartCheque.EscrowAddress,
-			&statusStr,
-			&smartCheque.ContractHash,
-			&smartCheque.CreatedAt,
-			&smartCheque.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
-		}
-
-		// Convert string values to typed values
-		smartCheque.Currency = models.Currency(currencyStr)
-		smartCheque.Status = models.SmartChequeStatus(statusStr)
-
-		// Unmarshal milestones
-		if len(milestonesJSON) > 0 {
-			if err := json.Unmarshal(milestonesJSON, &smartCheque.Milestones); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal milestones: %w", err)
-			}
-		}
-
-		smartCheques = append(smartCheques, &smartCheque)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
-	}
-
-	return smartCheques, nil
+	return r.getSmartChequesByEntity(ctx, contractID, "contract_hash", limit, offset)
 }
 
-// GetSmartChequesByMilestone retrieves a smart cheque by milestone ID
+// GetSmartChequesByMilestone retrieves a smart check by milestone ID
 func (r *smartChequeRepository) GetSmartChequesByMilestone(ctx context.Context, milestoneID string) (*models.SmartCheque, error) {
 	query := `
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE milestones @> $1
 	`
 
@@ -527,7 +475,7 @@ func (r *smartChequeRepository) GetSmartChequesByMilestone(ctx context.Context, 
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to get smart cheque by milestone: %w", err)
+		return nil, fmt.Errorf("failed to get smart check by milestone: %w", err)
 	}
 
 	// Convert string values to typed values
@@ -544,26 +492,26 @@ func (r *smartChequeRepository) GetSmartChequesByMilestone(ctx context.Context, 
 	return &smartCheque, nil
 }
 
-// GetSmartChequeCount returns the total count of smart cheques
+// GetSmartChequeCount returns the total count of smart checks
 func (r *smartChequeRepository) GetSmartChequeCount(ctx context.Context) (int64, error) {
-	query := `SELECT COUNT(*) FROM smart_cheques`
+	query := `SELECT COUNT(*) FROM smart_checks`
 
 	var count int64
 	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get smart cheque count: %w", err)
+		return 0, fmt.Errorf("failed to get smart check count: %w", err)
 	}
 
 	return count, nil
 }
 
-// GetSmartChequeCountByStatus returns the count of smart cheques grouped by status
+// GetSmartChequeCountByStatus returns the count of smart checks grouped by status
 func (r *smartChequeRepository) GetSmartChequeCountByStatus(ctx context.Context) (map[models.SmartChequeStatus]int64, error) {
-	query := `SELECT status, COUNT(*) FROM smart_cheques GROUP BY status`
+	query := `SELECT status, COUNT(*) FROM smart_checks GROUP BY status`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts: %w", err)
+		return nil, fmt.Errorf("failed to query smart check counts: %w", err)
 	}
 	defer rows.Close()
 
@@ -574,7 +522,7 @@ func (r *smartChequeRepository) GetSmartChequeCountByStatus(ctx context.Context)
 
 		err := rows.Scan(&statusStr, &count)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check count: %w", err)
 		}
 
 		counts[models.SmartChequeStatus(statusStr)] = count
@@ -587,13 +535,13 @@ func (r *smartChequeRepository) GetSmartChequeCountByStatus(ctx context.Context)
 	return counts, nil
 }
 
-// GetSmartChequeCountByCurrency retrieves the count of smart cheques grouped by currency
+// GetSmartChequeCountByCurrency retrieves the count of smart checks grouped by currency
 func (r *smartChequeRepository) GetSmartChequeCountByCurrency(ctx context.Context) (map[models.Currency]int64, error) {
-	query := `SELECT currency, COUNT(*) FROM smart_cheques GROUP BY currency`
+	query := `SELECT currency, COUNT(*) FROM smart_checks GROUP BY currency`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts by currency: %w", err)
+		return nil, fmt.Errorf("failed to query smart check counts by currency: %w", err)
 	}
 	defer rows.Close()
 
@@ -604,7 +552,7 @@ func (r *smartChequeRepository) GetSmartChequeCountByCurrency(ctx context.Contex
 
 		err := rows.Scan(&currencyStr, &count)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count by currency: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check count by currency: %w", err)
 		}
 
 		countByCurrency[models.Currency(currencyStr)] = count
@@ -617,7 +565,7 @@ func (r *smartChequeRepository) GetSmartChequeCountByCurrency(ctx context.Contex
 	return countByCurrency, nil
 }
 
-// GetRecentSmartCheques retrieves the most recent smart cheques
+// GetRecentSmartCheques retrieves the most recent smart checks
 func (r *smartChequeRepository) GetRecentSmartCheques(ctx context.Context, limit int) ([]*models.SmartCheque, error) {
 	if limit <= 0 {
 		limit = 10
@@ -631,14 +579,14 @@ func (r *smartChequeRepository) GetRecentSmartCheques(ctx context.Context, limit
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		ORDER BY created_at DESC
 		LIMIT $1
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query recent smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to query recent smart checks: %w", err)
 	}
 	defer rows.Close()
 
@@ -663,7 +611,7 @@ func (r *smartChequeRepository) GetRecentSmartCheques(ctx context.Context, limit
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Convert string values to typed values
@@ -687,7 +635,7 @@ func (r *smartChequeRepository) GetRecentSmartCheques(ctx context.Context, limit
 	return smartCheques, nil
 }
 
-// BatchDeleteSmartCheques deletes multiple smart cheques by their IDs
+// BatchDeleteSmartCheques deletes multiple smart checks by their IDs
 func (r *smartChequeRepository) BatchDeleteSmartCheques(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {
 		return nil
@@ -701,11 +649,11 @@ func (r *smartChequeRepository) BatchDeleteSmartCheques(ctx context.Context, ids
 		args[i] = id
 	}
 
-	query := fmt.Sprintf("DELETE FROM smart_cheques WHERE id IN (%s)", strings.Join(placeholders, ","))
+	query := fmt.Sprintf("DELETE FROM smart_checks WHERE id IN (%s)", strings.Join(placeholders, ","))
 
 	result, err := r.db.ExecContext(ctx, query, args...)
 	if err != nil {
-		return fmt.Errorf("failed to delete smart cheques: %w", err)
+		return fmt.Errorf("failed to delete smart checks: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -714,13 +662,13 @@ func (r *smartChequeRepository) BatchDeleteSmartCheques(ctx context.Context, ids
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("no smart cheques found with provided IDs")
+		return fmt.Errorf("no smart checks found with provided IDs")
 	}
 
 	return nil
 }
 
-// BatchUpdateSmartCheques updates multiple smart cheques
+// BatchUpdateSmartCheques updates multiple smart checks
 func (r *smartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, smartCheques []*models.SmartCheque) error {
 	if len(smartCheques) == 0 {
 		return nil
@@ -739,7 +687,7 @@ func (r *smartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, sma
 
 	// Prepare statement for batch update
 	query := `
-		UPDATE smart_cheques 
+		UPDATE smart_checks 
 		SET payer_id = $1, payee_id = $2, amount = $3, currency = $4, 
 		    milestones = $5, escrow_address = $6, status = $7, contract_hash = $8, 
 		    updated_at = $9
@@ -757,7 +705,7 @@ func (r *smartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, sma
 		// Convert milestones to JSON
 		milestonesJSON, err := json.Marshal(smartCheque.Milestones)
 		if err != nil {
-			return fmt.Errorf("failed to marshal milestones for smart cheque %s: %w", smartCheque.ID, err)
+			return fmt.Errorf("failed to marshal milestones for smart check %s: %w", smartCheque.ID, err)
 		}
 
 		_, err = stmt.ExecContext(
@@ -774,7 +722,7 @@ func (r *smartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, sma
 			smartCheque.ID,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to update smart cheque %s: %w", smartCheque.ID, err)
+			return fmt.Errorf("failed to update smart check %s: %w", smartCheque.ID, err)
 		}
 	}
 
@@ -787,7 +735,7 @@ func (r *smartChequeRepository) BatchUpdateSmartCheques(ctx context.Context, sma
 	return nil
 }
 
-// BatchUpdateSmartChequeStatus updates the status of multiple smart cheques
+// BatchUpdateSmartChequeStatus updates the status of multiple smart checks
 func (r *smartChequeRepository) BatchUpdateSmartChequeStatus(ctx context.Context, ids []string, status models.SmartChequeStatus) error {
 	if len(ids) == 0 {
 		return nil
@@ -805,7 +753,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatus(ctx context.Context
 	}()
 
 	// Prepare statement for batch update
-	query := `UPDATE smart_cheques SET status = $1, updated_at = $2 WHERE id = $3`
+	query := `UPDATE smart_checks SET status = $1, updated_at = $2 WHERE id = $3`
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
@@ -818,7 +766,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatus(ctx context.Context
 	for _, id := range ids {
 		_, err := stmt.ExecContext(ctx, string(status), now, id)
 		if err != nil {
-			return fmt.Errorf("failed to update smart cheque %s: %w", id, err)
+			return fmt.Errorf("failed to update smart check %s: %w", id, err)
 		}
 	}
 
@@ -831,7 +779,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatus(ctx context.Context
 	return nil
 }
 
-// BatchGetSmartCheques retrieves multiple smart cheques by their IDs
+// BatchGetSmartCheques retrieves multiple smart checks by their IDs
 func (r *smartChequeRepository) BatchGetSmartCheques(ctx context.Context, ids []string) ([]*models.SmartCheque, error) {
 	if len(ids) == 0 {
 		return []*models.SmartCheque{}, nil
@@ -849,14 +797,14 @@ func (r *smartChequeRepository) BatchGetSmartCheques(ctx context.Context, ids []
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE id IN (%s)
 		ORDER BY created_at DESC
 	`, strings.Join(placeholders, ","))
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to query smart checks: %w", err)
 	}
 	defer rows.Close()
 
@@ -881,7 +829,7 @@ func (r *smartChequeRepository) BatchGetSmartCheques(ctx context.Context, ids []
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Convert string values to typed values
@@ -905,7 +853,7 @@ func (r *smartChequeRepository) BatchGetSmartCheques(ctx context.Context, ids []
 	return smartCheques, nil
 }
 
-// BatchUpdateSmartChequeStatuses updates the status of multiple smart cheques with different statuses
+// BatchUpdateSmartChequeStatuses updates the status of multiple smart checks with different statuses
 func (r *smartChequeRepository) BatchUpdateSmartChequeStatuses(ctx context.Context, updates map[string]models.SmartChequeStatus) error {
 	if len(updates) == 0 {
 		return nil
@@ -923,7 +871,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatuses(ctx context.Conte
 	}()
 
 	// Prepare statement for batch update
-	query := `UPDATE smart_cheques SET status = $1, updated_at = $2 WHERE id = $3`
+	query := `UPDATE smart_checks SET status = $1, updated_at = $2 WHERE id = $3`
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
@@ -936,7 +884,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatuses(ctx context.Conte
 	for id, status := range updates {
 		_, err := stmt.ExecContext(ctx, string(status), now, id)
 		if err != nil {
-			return fmt.Errorf("failed to update smart cheque %s: %w", id, err)
+			return fmt.Errorf("failed to update smart check %s: %w", id, err)
 		}
 	}
 
@@ -949,7 +897,7 @@ func (r *smartChequeRepository) BatchUpdateSmartChequeStatuses(ctx context.Conte
 	return nil
 }
 
-// GetSmartChequeAmountStatistics retrieves statistics about smart cheque amounts
+// GetSmartChequeAmountStatistics retrieves statistics about smart check amounts
 func (r *smartChequeRepository) GetSmartChequeAmountStatistics(ctx context.Context) (totalAmount, averageAmount, largestAmount, smallestAmount float64, err error) {
 	query := `
 		SELECT 
@@ -957,28 +905,35 @@ func (r *smartChequeRepository) GetSmartChequeAmountStatistics(ctx context.Conte
 			COALESCE(AVG(amount), 0) as average_amount,
 			COALESCE(MAX(amount), 0) as largest_amount,
 			COALESCE(MIN(amount), 0) as smallest_amount
-		FROM smart_cheques
+		FROM smart_checks
 	`
 
 	err = r.db.QueryRowContext(ctx, query).Scan(&totalAmount, &averageAmount, &largestAmount, &smallestAmount)
 	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("failed to get smart cheque amount statistics: %w", err)
+		return 0, 0, 0, 0, fmt.Errorf("failed to get smart check amount statistics: %w", err)
 	}
 
 	return totalAmount, averageAmount, largestAmount, smallestAmount, nil
 }
 
-// GetSmartChequeAnalyticsByPayer retrieves analytics for smart cheques by payer
+// GetSmartChequeAnalyticsByPayer retrieves analytics for smart checks by payer
 func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Context, payerID string) (*SmartChequeAnalytics, error) {
-	if payerID == "" {
-		return nil, fmt.Errorf("payer ID is required")
+	return r.getSmartChequeAnalytics(ctx, payerID, "payer", r.GetSmartChequesByPayer)
+}
+
+// getSmartChequeAnalytics retrieves analytics for smart checks by entity (payer/payee)
+func (r *smartChequeRepository) getSmartChequeAnalytics(ctx context.Context, entityID string, entityType string, getRecentActivity func(context.Context, string, int, int) ([]*models.SmartCheque, error)) (*SmartChequeAnalytics, error) {
+	if entityID == "" {
+		return nil, fmt.Errorf("%s ID is required", entityType)
 	}
 
-	// Get count by status for this payer
-	countByStatusQuery := `SELECT status, COUNT(*) FROM smart_cheques WHERE payer_id = $1 GROUP BY status`
-	countByStatusRows, err := r.db.QueryContext(ctx, countByStatusQuery, payerID)
+	entityColumn := entityType + "_id"
+
+	// Get count by status for this entity
+	countByStatusQuery := fmt.Sprintf(`SELECT status, COUNT(*) FROM smart_checks WHERE %s = $1 GROUP BY status`, entityColumn)
+	countByStatusRows, err := r.db.QueryContext(ctx, countByStatusQuery, entityID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts by status: %w", err)
+		return nil, fmt.Errorf("failed to query smart check counts by status: %w", err)
 	}
 	defer countByStatusRows.Close()
 
@@ -989,7 +944,7 @@ func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Conte
 
 		err := countByStatusRows.Scan(&statusStr, &count)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count by status: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check count by status: %w", err)
 		}
 
 		countByStatus[models.SmartChequeStatus(statusStr)] = count
@@ -999,11 +954,11 @@ func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Conte
 		return nil, fmt.Errorf("error iterating count by status rows: %w", err)
 	}
 
-	// Get count by currency for this payer
-	countByCurrencyQuery := `SELECT currency, COUNT(*) FROM smart_cheques WHERE payer_id = $1 GROUP BY currency`
-	countByCurrencyRows, err := r.db.QueryContext(ctx, countByCurrencyQuery, payerID)
+	// Get count by currency for this entity
+	countByCurrencyQuery := fmt.Sprintf(`SELECT currency, COUNT(*) FROM smart_checks WHERE %s = $1 GROUP BY currency`, entityColumn)
+	countByCurrencyRows, err := r.db.QueryContext(ctx, countByCurrencyQuery, entityID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts by currency: %w", err)
+		return nil, fmt.Errorf("failed to query smart check counts by currency: %w", err)
 	}
 	defer countByCurrencyRows.Close()
 
@@ -1014,7 +969,7 @@ func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Conte
 
 		err := countByCurrencyRows.Scan(&currencyStr, &count)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count by currency: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check count by currency: %w", err)
 		}
 
 		countByCurrency[models.Currency(currencyStr)] = count
@@ -1024,42 +979,42 @@ func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Conte
 		return nil, fmt.Errorf("error iterating count by currency rows: %w", err)
 	}
 
-	// Get amount statistics for this payer
-	amountStatsQuery := `
-		SELECT 
+	// Get amount statistics for this entity
+	amountStatsQuery := fmt.Sprintf(`
+		SELECT
 			COALESCE(SUM(amount), 0) as total_amount,
 			COALESCE(AVG(amount), 0) as average_amount,
 			COALESCE(MAX(amount), 0) as largest_amount,
 			COALESCE(MIN(amount), 0) as smallest_amount
-		FROM smart_cheques
-		WHERE payer_id = $1
-	`
+		FROM smart_checks
+		WHERE %s = $1
+	`, entityColumn)
 
 	var totalAmount, averageAmount, largestAmount, smallestAmount float64
-	err = r.db.QueryRowContext(ctx, amountStatsQuery, payerID).Scan(&totalAmount, &averageAmount, &largestAmount, &smallestAmount)
+	err = r.db.QueryRowContext(ctx, amountStatsQuery, entityID).Scan(&totalAmount, &averageAmount, &largestAmount, &smallestAmount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque amount statistics: %w", err)
+		return nil, fmt.Errorf("failed to get smart check amount statistics: %w", err)
 	}
 
-	// Get recent activity for this payer (last 10 smart cheques)
-	recentActivity, err := r.GetSmartChequesByPayer(ctx, payerID, 10, 0)
+	// Get recent activity for this entity (last 10 smart checks)
+	recentActivity, err := getRecentActivity(ctx, entityID, 10, 0)
 	if err != nil {
 		// If we can't get recent activity, continue with empty list
 		recentActivity = []*models.SmartCheque{}
 	}
 
-	// Get status trends for this payer (last 30 days)
-	trendsQuery := `
-		SELECT 
+	// Get status trends for this entity (last 30 days)
+	trendsQuery := fmt.Sprintf(`
+		SELECT
 			DATE(created_at) as creation_date,
 			COUNT(*) as count
-		FROM smart_cheques
-		WHERE payer_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+		FROM smart_checks
+		WHERE %s = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
 		GROUP BY DATE(created_at)
 		ORDER BY creation_date
-	`
+	`, entityColumn)
 
-	trendsRows, err := r.db.QueryContext(ctx, trendsQuery, payerID)
+	trendsRows, err := r.db.QueryContext(ctx, trendsQuery, entityID)
 	if err != nil {
 		// If we can't get trends, continue with empty map
 		statusTrends := make(map[string]int64)
@@ -1159,201 +1114,15 @@ func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayer(ctx context.Conte
 	return analytics, nil
 }
 
-// GetSmartChequeAnalyticsByPayee retrieves analytics for smart cheques by payee
+// GetSmartChequeAnalyticsByPayee retrieves analytics for smart checks by payee
 func (r *smartChequeRepository) GetSmartChequeAnalyticsByPayee(ctx context.Context, payeeID string) (*SmartChequeAnalytics, error) {
-	if payeeID == "" {
-		return nil, fmt.Errorf("payee ID is required")
-	}
-
-	// Get count by status for this payee
-	countByStatusQuery := `SELECT status, COUNT(*) FROM smart_cheques WHERE payee_id = $1 GROUP BY status`
-	countByStatusRows, err := r.db.QueryContext(ctx, countByStatusQuery, payeeID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts by status: %w", err)
-	}
-	defer countByStatusRows.Close()
-
-	countByStatus := make(map[models.SmartChequeStatus]int64)
-	for countByStatusRows.Next() {
-		var statusStr string
-		var count int64
-
-		err := countByStatusRows.Scan(&statusStr, &count)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count by status: %w", err)
-		}
-
-		countByStatus[models.SmartChequeStatus(statusStr)] = count
-	}
-
-	if err = countByStatusRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating count by status rows: %w", err)
-	}
-
-	// Get count by currency for this payee
-	countByCurrencyQuery := `SELECT currency, COUNT(*) FROM smart_cheques WHERE payee_id = $1 GROUP BY currency`
-	countByCurrencyRows, err := r.db.QueryContext(ctx, countByCurrencyQuery, payeeID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque counts by currency: %w", err)
-	}
-	defer countByCurrencyRows.Close()
-
-	countByCurrency := make(map[models.Currency]int64)
-	for countByCurrencyRows.Next() {
-		var currencyStr string
-		var count int64
-
-		err := countByCurrencyRows.Scan(&currencyStr, &count)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque count by currency: %w", err)
-		}
-
-		countByCurrency[models.Currency(currencyStr)] = count
-	}
-
-	if err = countByCurrencyRows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating count by currency rows: %w", err)
-	}
-
-	// Get amount statistics for this payee
-	amountStatsQuery := `
-		SELECT 
-			COALESCE(SUM(amount), 0) as total_amount,
-			COALESCE(AVG(amount), 0) as average_amount,
-			COALESCE(MAX(amount), 0) as largest_amount,
-			COALESCE(MIN(amount), 0) as smallest_amount
-		FROM smart_cheques
-		WHERE payee_id = $1
-	`
-
-	var totalAmount, averageAmount, largestAmount, smallestAmount float64
-	err = r.db.QueryRowContext(ctx, amountStatsQuery, payeeID).Scan(&totalAmount, &averageAmount, &largestAmount, &smallestAmount)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque amount statistics: %w", err)
-	}
-
-	// Get recent activity for this payee (last 10 smart cheques)
-	recentActivity, err := r.GetSmartChequesByPayee(ctx, payeeID, 10, 0)
-	if err != nil {
-		// If we can't get recent activity, continue with empty list
-		recentActivity = []*models.SmartCheque{}
-	}
-
-	// Get status trends for this payee (last 30 days)
-	trendsQuery := `
-		SELECT 
-			DATE(created_at) as creation_date,
-			COUNT(*) as count
-		FROM smart_cheques
-		WHERE payee_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
-		GROUP BY DATE(created_at)
-		ORDER BY creation_date
-	`
-
-	trendsRows, err := r.db.QueryContext(ctx, trendsQuery, payeeID)
-	if err != nil {
-		// If we can't get trends, continue with empty map
-		statusTrends := make(map[string]int64)
-		analytics := &SmartChequeAnalytics{
-			TotalCount:      0,
-			CountByStatus:   countByStatus,
-			CountByCurrency: countByCurrency,
-			AverageAmount:   averageAmount,
-			TotalAmount:     totalAmount,
-			LargestAmount:   largestAmount,
-			SmallestAmount:  smallestAmount,
-			RecentActivity:  recentActivity,
-			StatusTrends:    statusTrends,
-		}
-
-		// Calculate total count
-		for _, count := range countByStatus {
-			analytics.TotalCount += count
-		}
-
-		return analytics, nil
-	}
-	defer trendsRows.Close()
-
-	statusTrends := make(map[string]int64)
-	for trendsRows.Next() {
-		var dateStr string
-		var count int64
-
-		err := trendsRows.Scan(&dateStr, &count)
-		if err != nil {
-			// If we can't scan trends, continue with empty map
-			statusTrends := make(map[string]int64)
-			analytics := &SmartChequeAnalytics{
-				TotalCount:      0,
-				CountByStatus:   countByStatus,
-				CountByCurrency: countByCurrency,
-				AverageAmount:   averageAmount,
-				TotalAmount:     totalAmount,
-				LargestAmount:   largestAmount,
-				SmallestAmount:  smallestAmount,
-				RecentActivity:  recentActivity,
-				StatusTrends:    statusTrends,
-			}
-
-			// Calculate total count
-			for _, count := range countByStatus {
-				analytics.TotalCount += count
-			}
-
-			return analytics, nil
-		}
-
-		statusTrends[dateStr] = count
-	}
-
-	if err = trendsRows.Err(); err != nil {
-		// If we have an error iterating trends, continue with empty map
-		statusTrends := make(map[string]int64)
-		analytics := &SmartChequeAnalytics{
-			TotalCount:      0,
-			CountByStatus:   countByStatus,
-			CountByCurrency: countByCurrency,
-			AverageAmount:   averageAmount,
-			TotalAmount:     totalAmount,
-			LargestAmount:   largestAmount,
-			SmallestAmount:  smallestAmount,
-			RecentActivity:  recentActivity,
-			StatusTrends:    statusTrends,
-		}
-
-		// Calculate total count
-		for _, count := range countByStatus {
-			analytics.TotalCount += count
-		}
-
-		return analytics, nil
-	}
-
-	analytics := &SmartChequeAnalytics{
-		TotalCount:      0,
-		CountByStatus:   countByStatus,
-		CountByCurrency: countByCurrency,
-		AverageAmount:   averageAmount,
-		TotalAmount:     totalAmount,
-		LargestAmount:   largestAmount,
-		SmallestAmount:  smallestAmount,
-		RecentActivity:  recentActivity,
-		StatusTrends:    statusTrends,
-	}
-
-	// Calculate total count
-	for _, count := range countByStatus {
-		analytics.TotalCount += count
-	}
-
-	return analytics, nil
+	return r.getSmartChequeAnalytics(ctx, payeeID, "payee", r.GetSmartChequesByPayee)
 }
 
-// GetSmartChequeAuditTrail retrieves the audit trail for a specific smart cheque
+// GetSmartChequeAuditTrail retrieves the audit trail for a specific smart check
 func (r *smartChequeRepository) GetSmartChequeAuditTrail(ctx context.Context, smartChequeID string, limit, offset int) ([]models.AuditLog, error) {
 	if smartChequeID == "" {
-		return nil, fmt.Errorf("smart cheque ID is required")
+		return nil, fmt.Errorf("smart check ID is required")
 	}
 
 	if limit <= 0 {
@@ -1425,19 +1194,19 @@ func (r *smartChequeRepository) GetSmartChequeAuditTrail(ctx context.Context, sm
 	return auditLogs, nil
 }
 
-// GetSmartChequeComplianceReport generates a compliance report for a smart cheque
+// GetSmartChequeComplianceReport generates a compliance report for a smart check
 func (r *smartChequeRepository) GetSmartChequeComplianceReport(ctx context.Context, smartChequeID string) (*SmartChequeComplianceReport, error) {
 	if smartChequeID == "" {
-		return nil, fmt.Errorf("smart cheque ID is required")
+		return nil, fmt.Errorf("smart check ID is required")
 	}
 
-	// Get transaction count for this smart cheque
+	// Get transaction count for this smart check
 	txQuery := `
 		SELECT COUNT(*) as total_transactions,
 		       COUNT(CASE WHEN status = 'completed' THEN 1 END) as compliant_tx_count,
 		       COUNT(CASE WHEN status IN ('failed', 'cancelled', 'rejected') THEN 1 END) as non_compliant_tx_count
 		FROM transactions 
-		WHERE smart_cheque_id = $1
+		WHERE smart_check_id = $1
 	`
 
 	var totalTx, compliantTx, nonCompliantTx int64
@@ -1452,7 +1221,7 @@ func (r *smartChequeRepository) GetSmartChequeComplianceReport(ctx context.Conte
 		complianceRate = float64(compliantTx) / float64(totalTx)
 	}
 
-	// Get the latest audit log date for this smart cheque
+	// Get the latest audit log date for this smart check
 	auditQuery := `
 		SELECT MAX(created_at) as last_audit_date
 		FROM audit_logs 
@@ -1497,7 +1266,7 @@ func (r *smartChequeRepository) GetSmartChequeComplianceReport(ctx context.Conte
 	return report, nil
 }
 
-// GetSmartChequePerformanceMetrics retrieves performance metrics for smart cheques
+// GetSmartChequePerformanceMetrics retrieves performance metrics for smart checks
 func (r *smartChequeRepository) GetSmartChequePerformanceMetrics(ctx context.Context, filters *SmartChequeFilter) (*SmartChequePerformanceMetrics, error) {
 	// Build query with optional filters
 	query := `
@@ -1508,8 +1277,8 @@ func (r *smartChequeRepository) GetSmartChequePerformanceMetrics(ctx context.Con
 			COALESCE(AVG(s.amount), 0) as average_amount,
 			COALESCE(SUM(s.amount), 0) as total_volume,
 			COALESCE(MAX(s.amount), 0) as peak_hour_volume
-		FROM smart_cheques s
-		LEFT JOIN transactions t ON s.id = t.smart_cheque_id
+		FROM smart_checks s
+		LEFT JOIN transactions t ON s.id = t.smart_check_id
 		WHERE 1=1
 	`
 
@@ -1583,7 +1352,7 @@ func (r *smartChequeRepository) GetSmartChequePerformanceMetrics(ctx context.Con
 		&peakHourVolume,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque performance metrics: %w", err)
+		return nil, fmt.Errorf("failed to get smart check performance metrics: %w", err)
 	}
 
 	metrics := &SmartChequePerformanceMetrics{
@@ -1598,7 +1367,7 @@ func (r *smartChequeRepository) GetSmartChequePerformanceMetrics(ctx context.Con
 	return metrics, nil
 }
 
-// GetSmartChequeTrends retrieves trends for smart cheques over a number of days
+// GetSmartChequeTrends retrieves trends for smart checks over a number of days
 func (r *smartChequeRepository) GetSmartChequeTrends(ctx context.Context, days int) (map[string]int64, error) {
 	if days <= 0 {
 		days = 30
@@ -1612,7 +1381,7 @@ func (r *smartChequeRepository) GetSmartChequeTrends(ctx context.Context, days i
 		SELECT 
 			DATE(created_at) as creation_date,
 			COUNT(*) as count
-		FROM smart_cheques
+		FROM smart_checks
 		WHERE created_at >= CURRENT_DATE - INTERVAL '` + fmt.Sprintf("%d", days) + ` days'
 		GROUP BY DATE(created_at)
 		ORDER BY creation_date
@@ -1620,7 +1389,7 @@ func (r *smartChequeRepository) GetSmartChequeTrends(ctx context.Context, days i
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query smart cheque trends: %w", err)
+		return nil, fmt.Errorf("failed to query smart check trends: %w", err)
 	}
 	defer rows.Close()
 
@@ -1631,7 +1400,7 @@ func (r *smartChequeRepository) GetSmartChequeTrends(ctx context.Context, days i
 
 		err := rows.Scan(&dateStr, &count)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque trend: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check trend: %w", err)
 		}
 
 		trends[dateStr] = count
@@ -1644,7 +1413,7 @@ func (r *smartChequeRepository) GetSmartChequeTrends(ctx context.Context, days i
 	return trends, nil
 }
 
-// SearchSmartCheques searches for smart cheques based on a query string
+// SearchSmartCheques searches for smart checks based on a query string
 func (r *smartChequeRepository) SearchSmartCheques(ctx context.Context, query string, limit, offset int) ([]*models.SmartCheque, error) {
 	if limit <= 0 {
 		limit = 10
@@ -1659,7 +1428,7 @@ func (r *smartChequeRepository) SearchSmartCheques(ctx context.Context, query st
 		SELECT id, payer_id, payee_id, amount, currency, 
 		       milestones, escrow_address, status, contract_hash, 
 		       created_at, updated_at
-		FROM smart_cheques 
+		FROM smart_checks 
 		WHERE id ILIKE $1 OR payer_id ILIKE $1 OR payee_id ILIKE $1 OR contract_hash ILIKE $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
@@ -1670,7 +1439,7 @@ func (r *smartChequeRepository) SearchSmartCheques(ctx context.Context, query st
 
 	rows, err := r.db.QueryContext(ctx, searchQuery, searchTerm, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search smart cheques: %w", err)
+		return nil, fmt.Errorf("failed to search smart checks: %w", err)
 	}
 	defer rows.Close()
 
@@ -1695,7 +1464,7 @@ func (r *smartChequeRepository) SearchSmartCheques(ctx context.Context, query st
 			&smartCheque.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan smart cheque: %w", err)
+			return nil, fmt.Errorf("failed to scan smart check: %w", err)
 		}
 
 		// Convert string values to typed values

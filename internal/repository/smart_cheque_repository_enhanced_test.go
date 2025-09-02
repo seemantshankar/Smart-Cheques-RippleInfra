@@ -20,10 +20,10 @@ func TestSmartChequeRepository_GetSmartChequeAuditTrail(t *testing.T) {
 
 	repo := NewSmartChequeRepository(db)
 
-	// Test with empty smart cheque ID
+	// Test with empty smart check ID
 	_, err = repo.GetSmartChequeAuditTrail(context.Background(), "", 10, 0)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "smart cheque ID is required")
+	assert.Contains(t, err.Error(), "smart check ID is required")
 
 	// Test successful query
 	smartChequeID := "test-id"
@@ -35,9 +35,9 @@ func TestSmartChequeRepository_GetSmartChequeAuditTrail(t *testing.T) {
 		uuid.New(),
 		uuid.New(),
 		"create",
-		"smart_cheque",
+		"smart_check",
 		smartChequeID,
-		"Created smart cheque",
+		"Created smart check",
 		"127.0.0.1",
 		"test-agent",
 		true,
@@ -52,7 +52,7 @@ func TestSmartChequeRepository_GetSmartChequeAuditTrail(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, auditLogs, 1)
 	assert.Equal(t, smartChequeID, *auditLogs[0].ResourceID)
-	assert.Equal(t, "smart_cheque", auditLogs[0].Resource)
+	assert.Equal(t, "smart_check", auditLogs[0].Resource)
 	assert.Equal(t, "create", auditLogs[0].Action)
 
 	// Ensure all expectations were met
@@ -66,16 +66,16 @@ func TestSmartChequeRepository_GetSmartChequeComplianceReport(t *testing.T) {
 
 	repo := NewSmartChequeRepository(db)
 
-	// Test with empty smart cheque ID
+	// Test with empty smart check ID
 	_, err = repo.GetSmartChequeComplianceReport(context.Background(), "")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "smart cheque ID is required")
+	assert.Contains(t, err.Error(), "smart check ID is required")
 
 	// Test successful query
 	smartChequeID := "test-id"
 
 	// Mock transaction count query
-	mock.ExpectQuery("SELECT COUNT\\(\\*\\) as total_transactions, COUNT\\(CASE WHEN status = 'completed' THEN 1 END\\) as compliant_tx_count, COUNT\\(CASE WHEN status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 END\\) as non_compliant_tx_count FROM transactions WHERE smart_cheque_id = \\$1").
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) as total_transactions, COUNT\\(CASE WHEN status = 'completed' THEN 1 END\\) as compliant_tx_count, COUNT\\(CASE WHEN status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 END\\) as non_compliant_tx_count FROM transactions WHERE smart_check_id = \\$1").
 		WithArgs(smartChequeID).
 		WillReturnRows(sqlmock.NewRows([]string{"total_transactions", "compliant_tx_count", "non_compliant_tx_count"}).
 			AddRow(100, 95, 5))
@@ -116,7 +116,7 @@ func TestSmartChequeRepository_GetSmartChequeAnalyticsByPayer(t *testing.T) {
 	payerID := "payer1"
 
 	// Mock count by status query
-	mock.ExpectQuery("SELECT status, COUNT\\(\\*\\) FROM smart_cheques WHERE payer_id = \\$1 GROUP BY status").
+	mock.ExpectQuery("SELECT status, COUNT\\(\\*\\) FROM smart_checks WHERE payer_id = \\$1 GROUP BY status").
 		WithArgs(payerID).
 		WillReturnRows(sqlmock.NewRows([]string{"status", "count"}).
 			AddRow("created", 5).
@@ -124,27 +124,27 @@ func TestSmartChequeRepository_GetSmartChequeAnalyticsByPayer(t *testing.T) {
 			AddRow("completed", 2))
 
 	// Mock count by currency query
-	mock.ExpectQuery("SELECT currency, COUNT\\(\\*\\) FROM smart_cheques WHERE payer_id = \\$1 GROUP BY currency").
+	mock.ExpectQuery("SELECT currency, COUNT\\(\\*\\) FROM smart_checks WHERE payer_id = \\$1 GROUP BY currency").
 		WithArgs(payerID).
 		WillReturnRows(sqlmock.NewRows([]string{"currency", "count"}).
 			AddRow("USDT", 6).
 			AddRow("USDC", 4))
 
 	// Mock amount statistics query
-	mock.ExpectQuery("SELECT COALESCE\\(SUM\\(amount\\), 0\\) as total_amount, COALESCE\\(AVG\\(amount\\), 0\\) as average_amount, COALESCE\\(MAX\\(amount\\), 0\\) as largest_amount, COALESCE\\(MIN\\(amount\\), 0\\) as smallest_amount FROM smart_cheques WHERE payer_id = \\$1").
+	mock.ExpectQuery("SELECT COALESCE\\(SUM\\(amount\\), 0\\) as total_amount, COALESCE\\(AVG\\(amount\\), 0\\) as average_amount, COALESCE\\(MAX\\(amount\\), 0\\) as largest_amount, COALESCE\\(MIN\\(amount\\), 0\\) as smallest_amount FROM smart_checks WHERE payer_id = \\$1").
 		WithArgs(payerID).
 		WillReturnRows(sqlmock.NewRows([]string{"total_amount", "average_amount", "largest_amount", "smallest_amount"}).
 			AddRow(10000.0, 1000.0, 5000.0, 100.0))
 
 	// Mock recent activity query (GetSmartChequesByPayer)
-	mock.ExpectQuery("SELECT id, payer_id, payee_id, amount, currency, milestones, escrow_address, status, contract_hash, created_at, updated_at FROM smart_cheques WHERE payer_id = \\$1 ORDER BY created_at DESC LIMIT \\$2 OFFSET \\$3").
+	mock.ExpectQuery("SELECT id, payer_id, payee_id, amount, currency, milestones, escrow_address, status, contract_hash, created_at, updated_at FROM smart_checks WHERE payer_id = \\$1 ORDER BY created_at DESC LIMIT \\$2 OFFSET \\$3").
 		WithArgs(payerID, 10, 0).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "payer_id", "payee_id", "amount", "currency", "milestones", "escrow_address", "status", "contract_hash", "created_at", "updated_at"}).
 			AddRow("1", payerID, "payee1", 1000.0, "USDT", []byte("[]"), "", "created", "", time.Now(), time.Now()).
 			AddRow("2", payerID, "payee2", 2000.0, "USDC", []byte("[]"), "", "in_progress", "", time.Now(), time.Now()))
 
 	// Mock trends query
-	mock.ExpectQuery("SELECT DATE\\(created_at\\) as creation_date, COUNT\\(\\*\\) as count FROM smart_cheques WHERE payer_id = \\$1 AND created_at >= CURRENT_DATE - INTERVAL '30 days' GROUP BY DATE\\(created_at\\) ORDER BY creation_date").
+	mock.ExpectQuery("SELECT DATE\\(created_at\\) as creation_date, COUNT\\(\\*\\) as count FROM smart_checks WHERE payer_id = \\$1 AND created_at >= CURRENT_DATE - INTERVAL '30 days' GROUP BY DATE\\(created_at\\) ORDER BY creation_date").
 		WithArgs(payerID).
 		WillReturnRows(sqlmock.NewRows([]string{"creation_date", "count"}).
 			AddRow("2023-01-01", 5).
@@ -172,7 +172,7 @@ func TestSmartChequeRepository_GetSmartChequePerformanceMetrics(t *testing.T) {
 	repo := NewSmartChequeRepository(db)
 
 	// Test successful query with no filters
-	mock.ExpectQuery("SELECT COALESCE\\(AVG\\(EXTRACT\\(EPOCH FROM \\(t.updated_at - t.created_at\\)\\)\\), 0\\) as avg_processing_time, COALESCE\\(SUM\\(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 1\\) as success_rate, COALESCE\\(SUM\\(CASE WHEN t.status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 0\\) as failure_rate, COALESCE\\(AVG\\(s.amount\\), 0\\) as average_amount, COALESCE\\(SUM\\(s.amount\\), 0\\) as total_volume, COALESCE\\(MAX\\(s.amount\\), 0\\) as peak_hour_volume FROM smart_cheques s LEFT JOIN transactions t ON s.id = t.smart_cheque_id WHERE 1=1").
+	mock.ExpectQuery("SELECT COALESCE\\(AVG\\(EXTRACT\\(EPOCH FROM \\(t.updated_at - t.created_at\\)\\)\\), 0\\) as avg_processing_time, COALESCE\\(SUM\\(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 1\\) as success_rate, COALESCE\\(SUM\\(CASE WHEN t.status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 0\\) as failure_rate, COALESCE\\(AVG\\(s.amount\\), 0\\) as average_amount, COALESCE\\(SUM\\(s.amount\\), 0\\) as total_volume, COALESCE\\(MAX\\(s.amount\\), 0\\) as peak_hour_volume FROM smart_checks s LEFT JOIN transactions t ON s.id = t.smart_check_id WHERE 1=1").
 		WillReturnRows(sqlmock.NewRows([]string{"avg_processing_time", "success_rate", "failure_rate", "average_amount", "total_volume", "peak_hour_volume"}).
 			AddRow(30.0, 0.95, 0.05, 1000.0, 100000.0, 5000.0))
 
@@ -216,7 +216,7 @@ func TestSmartChequeRepository_GetSmartChequePerformanceMetrics_WithFilters(t *t
 		ContractHash: &contractHash,
 	}
 
-	mock.ExpectQuery("SELECT COALESCE\\(AVG\\(EXTRACT\\(EPOCH FROM \\(t.updated_at - t.created_at\\)\\)\\), 0\\) as avg_processing_time, COALESCE\\(SUM\\(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 1\\) as success_rate, COALESCE\\(SUM\\(CASE WHEN t.status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 0\\) as failure_rate, COALESCE\\(AVG\\(s.amount\\), 0\\) as average_amount, COALESCE\\(SUM\\(s.amount\\), 0\\) as total_volume, COALESCE\\(MAX\\(s.amount\\), 0\\) as peak_hour_volume FROM smart_cheques s LEFT JOIN transactions t ON s.id = t.smart_cheque_id WHERE 1=1 AND s.payer_id = \\$1 AND s.status = \\$2 AND s.currency = \\$3 AND s.created_at >= \\$4 AND s.created_at <= \\$5 AND s.amount >= \\$6 AND s.amount <= \\$7 AND s.contract_hash = \\$8").
+	mock.ExpectQuery("SELECT COALESCE\\(AVG\\(EXTRACT\\(EPOCH FROM \\(t.updated_at - t.created_at\\)\\)\\), 0\\) as avg_processing_time, COALESCE\\(SUM\\(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 1\\) as success_rate, COALESCE\\(SUM\\(CASE WHEN t.status IN \\('failed', 'cancelled', 'rejected'\\) THEN 1 ELSE 0 END\\) \\* 1.0 / COUNT\\(\\*\\), 0\\) as failure_rate, COALESCE\\(AVG\\(s.amount\\), 0\\) as average_amount, COALESCE\\(SUM\\(s.amount\\), 0\\) as total_volume, COALESCE\\(MAX\\(s.amount\\), 0\\) as peak_hour_volume FROM smart_checks s LEFT JOIN transactions t ON s.id = t.smart_check_id WHERE 1=1 AND s.payer_id = \\$1 AND s.status = \\$2 AND s.currency = \\$3 AND s.created_at >= \\$4 AND s.created_at <= \\$5 AND s.amount >= \\$6 AND s.amount <= \\$7 AND s.contract_hash = \\$8").
 		WithArgs(payerID, string(status), string(currency), dateFrom, dateTo, minAmount, maxAmount, contractHash).
 		WillReturnRows(sqlmock.NewRows([]string{"avg_processing_time", "success_rate", "failure_rate", "average_amount", "total_volume", "peak_hour_volume"}).
 			AddRow(25.0, 0.98, 0.02, 1500.0, 150000.0, 7500.0))
@@ -246,11 +246,11 @@ func TestSmartChequeRepository_UpdateSmartChequeStatus(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectPrepare("UPDATE smart_cheques SET status = \\$1, updated_at = \\$2 WHERE id = \\$3")
-	mock.ExpectExec("UPDATE smart_cheque.*").
+	mock.ExpectPrepare("UPDATE smart_checks SET status = \\$1, updated_at = \\$2 WHERE id = \\$3")
+	mock.ExpectExec("UPDATE smart_check.*").
 		WithArgs(string(models.SmartChequeStatusCompleted), sqlmock.AnyArg(), "id1").
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("UPDATE smart_cheque.*").
+	mock.ExpectExec("UPDATE smart_check.*").
 		WithArgs(string(models.SmartChequeStatusDisputed), sqlmock.AnyArg(), "id2").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()

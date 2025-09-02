@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -333,39 +332,22 @@ func (h *WithdrawalAuthorizationHandler) BulkApproveWithdrawals(c *gin.Context) 
 
 // GetAuthorizationHistory returns authorization history for an enterprise
 func (h *WithdrawalAuthorizationHandler) GetAuthorizationHistory(c *gin.Context) {
-	enterpriseIDStr := c.Param("enterpriseID")
-	enterpriseID, err := uuid.Parse(enterpriseIDStr)
+	enterpriseID, params, err := ParseEnterpriseIDAndPagination(c, "enterpriseID")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid enterprise ID"})
+		HandleEnterpriseIDError(c, err)
 		return
 	}
 
-	// Parse pagination parameters
-	limitStr := c.DefaultQuery("limit", "50")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 || limit > 1000 {
-		limit = 50
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	history, err := h.authorizationService.GetAuthorizationHistory(c.Request.Context(), enterpriseID, limit, offset)
+	history, err := h.authorizationService.GetAuthorizationHistory(c.Request.Context(), enterpriseID, params.Limit, params.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"history": history,
-		"pagination": gin.H{
-			"limit":  limit,
-			"offset": offset,
-			"count":  len(history),
-		},
-	})
+	response := CreatePaginationResponse(history, params.Limit, params.Offset)
+	response["pagination"].(gin.H)["count"] = len(history)
+	response["history"] = history
+	delete(response, "data")
+
+	c.JSON(http.StatusOK, response)
 }

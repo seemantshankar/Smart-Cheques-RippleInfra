@@ -496,14 +496,14 @@ func (s *AccountFraudStatusService) GenerateStatusReport(ctx context.Context, en
 	var riskTrend string
 	if err == nil && len(riskHistory) >= 2 {
 		if riskHistory[0].RiskScore > riskHistory[len(riskHistory)-1].RiskScore {
-			riskTrend = "increasing"
+			riskTrend = RiskTrendIncreasing
 		} else if riskHistory[0].RiskScore < riskHistory[len(riskHistory)-1].RiskScore {
-			riskTrend = "decreasing"
+			riskTrend = RiskTrendDecreasing
 		} else {
-			riskTrend = "stable"
+			riskTrend = RiskTrendStable
 		}
 	} else {
-		riskTrend = "unknown"
+		riskTrend = RiskTrendUnknown
 	}
 
 	// Generate recommendations
@@ -587,7 +587,7 @@ func (s *AccountFraudStatusService) calculateRiskLevel(riskScore float64) models
 	}
 }
 
-func (s *AccountFraudStatusService) getDaysSinceLastActivity(ctx context.Context, enterpriseID uuid.UUID) int {
+func (s *AccountFraudStatusService) getDaysSinceLastActivity(_ context.Context, _ uuid.UUID) int {
 	// This would query transaction history to find the last activity
 	// For now, return 0 (assume recent activity)
 	return 0

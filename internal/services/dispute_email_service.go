@@ -234,21 +234,21 @@ func (s *DisputeEmailService) initializeTemplates() {
 
 func (s *DisputeEmailService) getSubjectTemplate(eventType string) string {
 	switch eventType {
-	case "created":
+	case DisputeEventCreated:
 		return "New Dispute Created: {{.DisputeTitle}}"
-	case "status_changed":
+	case DisputeEventStatusChanged:
 		return "Dispute Status Changed: {{.DisputeTitle}}"
-	case "evidence_added":
+	case DisputeEventEvidenceAdded:
 		return "New Evidence Added to Dispute: {{.DisputeTitle}}"
-	case "resolution_proposed":
+	case DisputeEventResolutionProposed:
 		return "Resolution Proposed for Dispute: {{.DisputeTitle}}"
-	case "resolution_accepted":
+	case DisputeEventResolutionAccepted:
 		return "Resolution Accepted for Dispute: {{.DisputeTitle}}"
-	case "escalated":
+	case DisputeEventEscalated:
 		return "Dispute Escalated: {{.DisputeTitle}}"
-	case "resolved":
+	case DisputeEventResolved:
 		return "Dispute Resolved: {{.DisputeTitle}}"
-	case "closed":
+	case DisputeEventClosed:
 		return "Dispute Closed: {{.DisputeTitle}}"
 	default:
 		return "Dispute Update: {{.DisputeTitle}}"
@@ -283,7 +283,7 @@ View details at: {{.DisputeURL}}`
 	}
 }
 
-func (s *DisputeEmailService) prepareTemplateData(dispute *models.Dispute, eventType string, additionalData map[string]interface{}) map[string]interface{} {
+func (s *DisputeEmailService) prepareTemplateData(dispute *models.Dispute, _ string, additionalData map[string]interface{}) map[string]interface{} {
 	data := map[string]interface{}{
 		"DisputeID":          dispute.ID,
 		"DisputeTitle":       dispute.Title,

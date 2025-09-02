@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/internal/services"
@@ -124,7 +125,7 @@ func (h *DisputeHandler) GetDisputes(c *gin.Context) {
 	if respondentID := c.Query("respondent_id"); respondentID != "" {
 		filter.RespondentID = &respondentID
 	}
-	if smartChequeID := c.Query("smart_cheque_id"); smartChequeID != "" {
+	if smartChequeID := c.Query("smart_check_id"); smartChequeID != "" {
 		filter.SmartChequeID = &smartChequeID
 	}
 	if milestoneID := c.Query("milestone_id"); milestoneID != "" {

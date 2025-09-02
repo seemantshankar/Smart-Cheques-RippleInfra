@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 )
@@ -323,7 +324,7 @@ type Prediction struct {
 }
 
 // makePrediction makes a prediction using the ML model (simplified implementation)
-func (s *MLCategorizationService) makePrediction(model *models.CategorizationMLModel, features map[string]interface{}, dispute *models.Dispute) (*Prediction, error) {
+func (s *MLCategorizationService) makePrediction(_ *models.CategorizationMLModel, features map[string]interface{}, dispute *models.Dispute) (*Prediction, error) {
 	// This is a simplified implementation
 	// In a real system, this would use the actual ML model to make predictions
 
@@ -525,7 +526,7 @@ func (s *MLCategorizationService) TrainModel(ctx context.Context, modelName, alg
 }
 
 // simulateModelTraining simulates model training (for demonstration)
-func (s *MLCategorizationService) simulateModelTraining(model *models.CategorizationMLModel, trainingData []*models.CategorizationTrainingData) {
+func (s *MLCategorizationService) simulateModelTraining(model *models.CategorizationMLModel, _ []*models.CategorizationTrainingData) {
 	// Simulate training time
 	time.Sleep(5 * time.Second)
 
@@ -542,7 +543,11 @@ func (s *MLCategorizationService) simulateModelTraining(model *models.Categoriza
 	model.UpdatedAt = time.Now()
 
 	// Update model
-	s.modelRepo.UpdateModel(ctx, model)
+	if err := s.modelRepo.UpdateModel(ctx, model); err != nil {
+		// Log error but don't fail the operation as this is not critical
+		// TODO: Add proper logging here
+		_ = err
+	}
 }
 
 // generateModelVersion generates a new model version string

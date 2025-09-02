@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/smart-payment-infrastructure/internal/models"
 )
 
 type DisputeCategorizationServiceTestSuite struct {

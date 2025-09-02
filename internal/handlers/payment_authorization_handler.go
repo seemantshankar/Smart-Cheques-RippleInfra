@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/services"
 )
 
@@ -30,7 +31,7 @@ func (h *PaymentAuthorizationHandler) RegisterRoutes(router *gin.RouterGroup) {
 		payments.POST("", h.CreatePaymentAuthorization)
 		payments.GET("/:requestId", h.GetPaymentAuthorization)
 		payments.GET("/enterprise/:enterpriseId/pending", h.GetPendingPaymentAuthorizations)
-		payments.GET("/smart-cheque/:smartChequeId", h.GetPaymentAuthorizationsBySmartCheque)
+		payments.GET("/smart-check/:smartChequeId", h.GetPaymentAuthorizationsBySmartCheque)
 
 		// Approval workflow
 		payments.POST("/:requestId/approve", h.ApprovePayment)

@@ -377,7 +377,7 @@ func (s *FraudDetectionService) evaluateThresholdRule(rule *models.FraudRule, re
 }
 
 // evaluateVelocityRule evaluates velocity-based rules
-func (s *FraudDetectionService) evaluateVelocityRule(rule *models.FraudRule, req *FraudAnalysisRequest) (float64, map[string]interface{}, []string) {
+func (s *FraudDetectionService) evaluateVelocityRule(rule *models.FraudRule, _ *FraudAnalysisRequest) (float64, map[string]interface{}, []string) {
 	score := 0.0
 	evidence := make(map[string]interface{})
 	riskFactors := []string{}
@@ -445,7 +445,7 @@ func (s *FraudDetectionService) evaluatePatternRule(rule *models.FraudRule, req 
 }
 
 // evaluateStatisticalRule evaluates statistical-based rules
-func (s *FraudDetectionService) evaluateStatisticalRule(rule *models.FraudRule, req *FraudAnalysisRequest) (float64, map[string]interface{}, []string) {
+func (s *FraudDetectionService) evaluateStatisticalRule(_ *models.FraudRule, req *FraudAnalysisRequest) (float64, map[string]interface{}, []string) {
 	score := 0.0
 	evidence := make(map[string]interface{})
 	riskFactors := []string{}
@@ -523,7 +523,7 @@ func (s *FraudDetectionService) generateAlert(ctx context.Context, req *FraudAna
 }
 
 // determineAlertType determines the type of alert based on analysis
-func (s *FraudDetectionService) determineAlertType(req *FraudAnalysisRequest, result *FraudAnalysisResult) models.FraudAlertType {
+func (s *FraudDetectionService) determineAlertType(_ *FraudAnalysisRequest, result *FraudAnalysisResult) models.FraudAlertType {
 	if result.RiskScore >= 0.8 {
 		return models.FraudAlertTypeTransactionAnomaly
 	} else if len(result.RiskFactors) > 2 {
@@ -786,7 +786,7 @@ func (s *FraudDetectionService) UpdateCase(ctx context.Context, caseID uuid.UUID
 	return s.fraudRepo.UpdateFraudCase(ctx, fc)
 }
 
-func (s *FraudDetectionService) CloseCase(ctx context.Context, caseID uuid.UUID, resolution *models.FraudCaseResolution, userID uuid.UUID) error {
+func (s *FraudDetectionService) CloseCase(ctx context.Context, caseID uuid.UUID, resolution *models.FraudCaseResolution, _ uuid.UUID) error {
 	if s.fraudRepo == nil {
 		return nil
 	}

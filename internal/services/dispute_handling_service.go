@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/messaging"
@@ -99,30 +100,30 @@ func (d *DisputeHandlingService) HoldMilestoneFunds(ctx context.Context, milesto
 		return fmt.Errorf("failed to get milestone %s: %w", milestoneID, err)
 	}
 
-	// Get the smart cheque associated with this milestone
+	// Get the smart check associated with this milestone
 	smartCheque, err := d.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque for milestone %s: %w", milestoneID, err)
+		return fmt.Errorf("failed to get smart check for milestone %s: %w", milestoneID, err)
 	}
 
-	// Validate smart cheque
+	// Validate smart check
 	if smartCheque == nil {
-		return fmt.Errorf("no smart cheque found for milestone %s", milestoneID)
+		return fmt.Errorf("no smart check found for milestone %s", milestoneID)
 	}
 
 	// In a real implementation, we would:
 	// 1. Freeze the funds in the escrow
-	// 2. Update the smart cheque status
+	// 2. Update the smart check status
 	// 3. Update the milestone status
 	// 4. Create audit trail
 
-	log.Printf("Holding funds for milestone %s via smart cheque %s", milestoneID, smartCheque.ID)
+	log.Printf("Holding funds for milestone %s via smart check %s", milestoneID, smartCheque.ID)
 
-	// Update smart cheque status
+	// Update smart check status
 	smartCheque.Status = models.SmartChequeStatusDisputed
 	smartCheque.UpdatedAt = time.Now()
 	if err := d.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque %s: %w", smartCheque.ID, err)
+		return fmt.Errorf("failed to update smart check %s: %w", smartCheque.ID, err)
 	}
 
 	// Update milestone status
@@ -137,10 +138,10 @@ func (d *DisputeHandlingService) HoldMilestoneFunds(ctx context.Context, milesto
 		Type:   "milestone_funds_held",
 		Source: "dispute_handling_service",
 		Data: map[string]interface{}{
-			"milestone_id":    milestoneID,
-			"smart_cheque_id": smartCheque.ID,
-			"amount":          smartCheque.Amount,
-			"currency":        smartCheque.Currency,
+			"milestone_id":   milestoneID,
+			"smart_check_id": smartCheque.ID,
+			"amount":         smartCheque.Amount,
+			"currency":       smartCheque.Currency,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
@@ -196,7 +197,7 @@ func (d *DisputeHandlingService) EnforceDisputeOutcome(ctx context.Context, disp
 	// In a real implementation, we would:
 	// 1. Retrieve the dispute record
 	// 2. Enforce the resolution outcome (release funds, return funds, partial payment, etc.)
-	// 3. Update smart cheque and milestone status
+	// 3. Update smart check and milestone status
 	// 4. Create audit trail
 
 	log.Printf("Enforcing dispute outcome for dispute %s: %s", disputeID, outcome)

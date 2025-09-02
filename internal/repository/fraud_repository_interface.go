@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -30,9 +31,9 @@ type FraudRepositoryInterface interface {
 	GetFraudRulesByCategory(ctx context.Context, category models.FraudRuleCategory) ([]*models.FraudRule, error)
 
 	// Fraud case operations
-	CreateFraudCase(ctx context.Context, case_ *models.FraudCase) error
+	CreateFraudCase(ctx context.Context, fraudCase *models.FraudCase) error
 	GetFraudCaseByID(ctx context.Context, id uuid.UUID) (*models.FraudCase, error)
-	UpdateFraudCase(ctx context.Context, case_ *models.FraudCase) error
+	UpdateFraudCase(ctx context.Context, fraudCase *models.FraudCase) error
 	DeleteFraudCase(ctx context.Context, id uuid.UUID) error
 	ListFraudCases(ctx context.Context, filter *FraudCaseFilter, limit, offset int) ([]*models.FraudCase, error)
 	GetFraudCasesByEnterprise(ctx context.Context, enterpriseID uuid.UUID, limit, offset int) ([]*models.FraudCase, error)

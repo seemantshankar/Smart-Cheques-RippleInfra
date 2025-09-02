@@ -65,8 +65,14 @@ func setupIntegrationTest(t *testing.T) *IntegrationTestSuite {
 		},
 	}
 
-	// Connect to test database
-	db, err := sql.Open("postgres", cfg.Database.PostgresURL)
+	// Connect to test database using environment variables
+	dbHost := os.Getenv("TEST_DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	
+	connStr := fmt.Sprintf("postgres://user:password@%s:5432/smart_payment?sslmode=disable", dbHost)
+	db, err := sql.Open("postgres", connStr)
 	require.NoError(t, err)
 	require.NoError(t, db.Ping())
 
@@ -412,10 +418,12 @@ func TestWalletProvisioningEdgeCases(t *testing.T) {
 }
 
 func getTestPostgresURL() string {
-	if url := os.Getenv("TEST_POSTGRES_URL"); url != "" {
-		return url
+	dbHost := os.Getenv("TEST_DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
 	}
-	return "postgres://user:password@localhost:5432/smart_payment_test?sslmode=disable"
+	
+	return fmt.Sprintf("postgres://user:password@%s:5432/smart_payment?sslmode=disable", dbHost)
 }
 
 func cleanupTestData(t *testing.T, db *sql.DB) {

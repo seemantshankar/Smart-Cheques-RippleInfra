@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 )
 
@@ -205,9 +206,12 @@ func (r *ComplianceRepository) GetComplianceStats(enterpriseID *string, since *t
 		argIndex++
 	}
 
+	// argIndex is used to generate correct SQL parameter placeholders above
+	_ = argIndex
+
 	query := baseQuery
 	if len(conditions) > 0 {
-		query += " WHERE " + fmt.Sprintf("(%s)", fmt.Sprintf("%s", conditions[0]))
+		query += " WHERE " + fmt.Sprintf("(%s)", conditions[0])
 		for i := 1; i < len(conditions); i++ {
 			query += fmt.Sprintf(" AND (%s)", conditions[i])
 		}

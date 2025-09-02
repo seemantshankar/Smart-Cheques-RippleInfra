@@ -42,7 +42,7 @@ type CreateDisputeRequest struct {
 	Priority    models.DisputePriority `json:"priority" validate:"required"`
 
 	// Related entities
-	SmartChequeID *string `json:"smart_cheque_id,omitempty"`
+	SmartChequeID *string `json:"smart_check_id,omitempty"`
 	MilestoneID   *string `json:"milestone_id,omitempty"`
 	ContractID    *string `json:"contract_id,omitempty"`
 	TransactionID *string `json:"transaction_id,omitempty"`
@@ -403,17 +403,17 @@ func (s *DisputeManagementService) validateRelatedEntities(ctx context.Context, 
 	if request.SmartChequeID != nil {
 		smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, *request.SmartChequeID)
 		if err != nil {
-			return fmt.Errorf("failed to validate smart cheque: %w", err)
+			return fmt.Errorf("failed to validate smart check: %w", err)
 		}
 		if smartCheque == nil {
-			return fmt.Errorf("smart cheque not found: %s", *request.SmartChequeID)
+			return fmt.Errorf("smart check not found: %s", *request.SmartChequeID)
 		}
-		// Validate that initiator/respondent match smart cheque parties
+		// Validate that initiator/respondent match smart check parties
 		if smartCheque.PayerID != request.InitiatorID && smartCheque.PayerID != request.RespondentID {
-			return fmt.Errorf("initiator/respondent must be a party to the smart cheque")
+			return fmt.Errorf("initiator/respondent must be a party to the smart check")
 		}
 		if smartCheque.PayeeID != request.InitiatorID && smartCheque.PayeeID != request.RespondentID {
-			return fmt.Errorf("initiator/respondent must be a party to the smart cheque")
+			return fmt.Errorf("initiator/respondent must be a party to the smart check")
 		}
 	}
 	return nil

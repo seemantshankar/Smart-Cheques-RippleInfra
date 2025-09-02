@@ -6,56 +6,57 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/smart-payment-infrastructure/internal/models"
 	"github.com/smart-payment-infrastructure/internal/repository"
 )
 
-// SmartChequeServiceInterface defines the interface for smart cheque service operations
+// SmartChequeServiceInterface defines the interface for smart check service operations
 type SmartChequeServiceInterface interface {
-	// CreateSmartCheque creates a new smart cheque
+	// CreateSmartCheque creates a new smart check
 	CreateSmartCheque(ctx context.Context, request *CreateSmartChequeRequest) (*models.SmartCheque, error)
 
-	// GetSmartCheque retrieves a smart cheque by ID
+	// GetSmartCheque retrieves a smart check by ID
 	GetSmartCheque(ctx context.Context, id string) (*models.SmartCheque, error)
 
-	// UpdateSmartCheque updates an existing smart cheque
+	// UpdateSmartCheque updates an existing smart check
 	UpdateSmartCheque(ctx context.Context, id string, request *UpdateSmartChequeRequest) (*models.SmartCheque, error)
 
-	// DeleteSmartCheque deletes a smart cheque
+	// DeleteSmartCheque deletes a smart check
 	DeleteSmartCheque(ctx context.Context, id string) error
 
-	// ListSmartChequesByPayer lists smart cheques by payer ID
+	// ListSmartChequesByPayer lists smart checks by payer ID
 	ListSmartChequesByPayer(ctx context.Context, payerID string, limit, offset int) ([]*models.SmartCheque, error)
 
-	// ListSmartChequesByPayee lists smart cheques by payee ID
+	// ListSmartChequesByPayee lists smart checks by payee ID
 	ListSmartChequesByPayee(ctx context.Context, payeeID string, limit, offset int) ([]*models.SmartCheque, error)
 
-	// ListSmartChequesByStatus lists smart cheques by status
+	// ListSmartChequesByStatus lists smart checks by status
 	ListSmartChequesByStatus(ctx context.Context, status models.SmartChequeStatus, limit, offset int) ([]*models.SmartCheque, error)
 
-	// UpdateSmartChequeStatus updates the status of a smart cheque
+	// UpdateSmartChequeStatus updates the status of a smart check
 	UpdateSmartChequeStatus(ctx context.Context, id string, status models.SmartChequeStatus) error
 
-	// GetSmartChequeStatistics returns statistics about smart cheques
+	// GetSmartChequeStatistics returns statistics about smart checks
 	GetSmartChequeStatistics(ctx context.Context) (*SmartChequeStatistics, error)
 
-	// GetSmartChequeAnalytics returns detailed analytics about smart cheques
+	// GetSmartChequeAnalytics returns detailed analytics about smart checks
 	GetSmartChequeAnalytics(ctx context.Context) (*SmartChequeAnalytics, error)
 
-	// CreateSmartChequeBatch creates multiple smart cheques in a batch operation
+	// CreateSmartChequeBatch creates multiple smart checks in a batch operation
 	CreateSmartChequeBatch(ctx context.Context, requests []*CreateSmartChequeRequest) (*SmartChequeBatchOperationResult, error)
 
-	// UpdateSmartChequeBatch updates multiple smart cheques in a batch operation
+	// UpdateSmartChequeBatch updates multiple smart checks in a batch operation
 	UpdateSmartChequeBatch(ctx context.Context, updates map[string]*UpdateSmartChequeRequest) (*SmartChequeBatchOperationResult, error)
 
-	// CreateAuditLog creates an audit log entry for smart cheque operations
+	// CreateAuditLog creates an audit log entry for smart check operations
 	CreateAuditLog(ctx context.Context, entry *AuditLogEntry) error
 
-	// GetAuditTrail retrieves the audit trail for a specific smart cheque
+	// GetAuditTrail retrieves the audit trail for a specific smart check
 	GetAuditTrail(ctx context.Context, smartChequeID string, limit, offset int) ([]AuditLogEntry, error)
 }
 
-// CreateSmartChequeRequest represents the request to create a smart cheque
+// CreateSmartChequeRequest represents the request to create a smart check
 type CreateSmartChequeRequest struct {
 	PayerID      string             `json:"payer_id" binding:"required"`
 	PayeeID      string             `json:"payee_id" binding:"required"`
@@ -65,7 +66,7 @@ type CreateSmartChequeRequest struct {
 	ContractHash string             `json:"contract_hash"`
 }
 
-// UpdateSmartChequeRequest represents the request to update a smart cheque
+// UpdateSmartChequeRequest represents the request to update a smart check
 type UpdateSmartChequeRequest struct {
 	PayerID       *string                   `json:"payer_id,omitempty"`
 	PayeeID       *string                   `json:"payee_id,omitempty"`
@@ -77,13 +78,13 @@ type UpdateSmartChequeRequest struct {
 	ContractHash  *string                   `json:"contract_hash,omitempty"`
 }
 
-// SmartChequeStatistics represents statistics about smart cheques
+// SmartChequeStatistics represents statistics about smart checks
 type SmartChequeStatistics struct {
 	TotalCount    int64                              `json:"total_count"`
 	CountByStatus map[models.SmartChequeStatus]int64 `json:"count_by_status"`
 }
 
-// SmartChequeAnalytics represents detailed analytics for smart cheques
+// SmartChequeAnalytics represents detailed analytics for smart checks
 type SmartChequeAnalytics struct {
 	TotalCount           int64                              `json:"total_count"`
 	CountByStatus        map[models.SmartChequeStatus]int64 `json:"count_by_status"`
@@ -111,10 +112,10 @@ type BatchOperationResult struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// AuditLogEntry represents an audit log entry for smart cheque operations
+// AuditLogEntry represents an audit log entry for smart check operations
 type AuditLogEntry struct {
 	ID            string    `json:"id"`
-	SmartChequeID string    `json:"smart_cheque_id"`
+	SmartChequeID string    `json:"smart_check_id"`
 	Action        string    `json:"action"`
 	UserID        string    `json:"user_id,omitempty"`
 	Details       string    `json:"details,omitempty"`
@@ -129,7 +130,7 @@ type smartChequeService struct {
 	auditRepo       repository.AuditRepositoryInterface // Add audit repository
 }
 
-// NewSmartChequeService creates a new smart cheque service
+// NewSmartChequeService creates a new smart check service
 func NewSmartChequeService(smartChequeRepo repository.SmartChequeRepositoryInterface, auditRepo repository.AuditRepositoryInterface) SmartChequeServiceInterface {
 	return &smartChequeService{
 		smartChequeRepo: smartChequeRepo,
@@ -137,14 +138,14 @@ func NewSmartChequeService(smartChequeRepo repository.SmartChequeRepositoryInter
 	}
 }
 
-// CreateSmartCheque creates a new smart cheque
+// CreateSmartCheque creates a new smart check
 func (s *smartChequeService) CreateSmartCheque(ctx context.Context, request *CreateSmartChequeRequest) (*models.SmartCheque, error) {
 	// Validate request
 	if err := s.validateCreateRequest(request); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Create smart cheque model
+	// Create smart check model
 	smartCheque := &models.SmartCheque{
 		ID:            uuid.New().String(),
 		PayerID:       request.PayerID,
@@ -161,13 +162,13 @@ func (s *smartChequeService) CreateSmartCheque(ctx context.Context, request *Cre
 
 	// Save to repository
 	if err := s.smartChequeRepo.CreateSmartCheque(ctx, smartCheque); err != nil {
-		return nil, fmt.Errorf("failed to create smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to create smart check: %w", err)
 	}
 
 	return smartCheque, nil
 }
 
-// validateCreateRequest validates the create smart cheque request
+// validateCreateRequest validates the create smart check request
 func (s *smartChequeService) validateCreateRequest(request *CreateSmartChequeRequest) error {
 	if request.PayerID == "" {
 		return fmt.Errorf("payer_id is required")
@@ -207,10 +208,10 @@ func (s *smartChequeService) validateCreateRequest(request *CreateSmartChequeReq
 		totalMilestoneAmount += milestone.Amount
 	}
 
-	// Validate that milestone amounts sum up to total smart cheque amount
+	// Validate that milestone amounts sum up to total smart check amount
 	// Only validate if we have milestones
 	if len(request.Milestones) > 0 && totalMilestoneAmount != request.Amount {
-		return fmt.Errorf("sum of milestone amounts (%f) must equal smart cheque amount (%f)", totalMilestoneAmount, request.Amount)
+		return fmt.Errorf("sum of milestone amounts (%f) must equal smart check amount (%f)", totalMilestoneAmount, request.Amount)
 	}
 
 	return nil
@@ -312,7 +313,7 @@ func (s *smartChequeService) validateMilestone(milestone models.Milestone, index
 	return nil
 }
 
-// validateUpdateRequest validates the update smart cheque request
+// validateUpdateRequest validates the update smart check request
 func (s *smartChequeService) validateUpdateRequest(id string, request *UpdateSmartChequeRequest) error {
 	if id == "" {
 		return fmt.Errorf("id is required")
@@ -330,13 +331,13 @@ func (s *smartChequeService) validateUpdateRequest(id string, request *UpdateSma
 
 	// Validate status transition if provided
 	if request.Status != nil {
-		// Get current smart cheque to validate status transition
+		// Get current smart check to validate status transition
 		current, err := s.smartChequeRepo.GetSmartChequeByID(context.Background(), id)
 		if err != nil {
-			return fmt.Errorf("failed to get current smart cheque for validation: %w", err)
+			return fmt.Errorf("failed to get current smart check for validation: %w", err)
 		}
 		if current == nil {
-			return fmt.Errorf("smart cheque not found: %s", id)
+			return fmt.Errorf("smart check not found: %s", id)
 		}
 
 		if err := s.validateStatusTransition(current.Status, *request.Status); err != nil {
@@ -396,7 +397,7 @@ func (s *smartChequeService) validateStatusTransition(from, to models.SmartChequ
 	return nil
 }
 
-// GetSmartCheque retrieves a smart cheque by ID
+// GetSmartCheque retrieves a smart check by ID
 func (s *smartChequeService) GetSmartCheque(ctx context.Context, id string) (*models.SmartCheque, error) {
 	if id == "" {
 		return nil, fmt.Errorf("id is required")
@@ -404,31 +405,31 @@ func (s *smartChequeService) GetSmartCheque(ctx context.Context, id string) (*mo
 
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	if smartCheque == nil {
-		return nil, fmt.Errorf("smart cheque not found: %s", id)
+		return nil, fmt.Errorf("smart check not found: %s", id)
 	}
 
 	return smartCheque, nil
 }
 
-// UpdateSmartCheque updates an existing smart cheque
+// UpdateSmartCheque updates an existing smart check
 func (s *smartChequeService) UpdateSmartCheque(ctx context.Context, id string, request *UpdateSmartChequeRequest) (*models.SmartCheque, error) {
 	// Validate request
 	if err := s.validateUpdateRequest(id, request); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Get existing smart cheque
+	// Get existing smart check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	if smartCheque == nil {
-		return nil, fmt.Errorf("smart cheque not found: %s", id)
+		return nil, fmt.Errorf("smart check not found: %s", id)
 	}
 
 	// Update fields if provided
@@ -469,37 +470,37 @@ func (s *smartChequeService) UpdateSmartCheque(ctx context.Context, id string, r
 
 	// Save to repository
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return nil, fmt.Errorf("failed to update smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to update smart check: %w", err)
 	}
 
 	return smartCheque, nil
 }
 
-// DeleteSmartCheque deletes a smart cheque
+// DeleteSmartCheque deletes a smart check
 func (s *smartChequeService) DeleteSmartCheque(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("id is required")
 	}
 
-	// Check if smart cheque exists
+	// Check if smart check exists
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", id)
+		return fmt.Errorf("smart check not found: %s", id)
 	}
 
 	// Delete from repository
 	if err := s.smartChequeRepo.DeleteSmartCheque(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete smart cheque: %w", err)
+		return fmt.Errorf("failed to delete smart check: %w", err)
 	}
 
 	return nil
 }
 
-// ListSmartChequesByPayer lists smart cheques by payer ID
+// ListSmartChequesByPayer lists smart checks by payer ID
 func (s *smartChequeService) ListSmartChequesByPayer(ctx context.Context, payerID string, limit, offset int) ([]*models.SmartCheque, error) {
 	if payerID == "" {
 		return nil, fmt.Errorf("payer_id is required")
@@ -515,13 +516,13 @@ func (s *smartChequeService) ListSmartChequesByPayer(ctx context.Context, payerI
 
 	smartCheques, err := s.smartChequeRepo.GetSmartChequesByPayer(ctx, payerID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list smart cheques by payer: %w", err)
+		return nil, fmt.Errorf("failed to list smart checks by payer: %w", err)
 	}
 
 	return smartCheques, nil
 }
 
-// ListSmartChequesByPayee lists smart cheques by payee ID
+// ListSmartChequesByPayee lists smart checks by payee ID
 func (s *smartChequeService) ListSmartChequesByPayee(ctx context.Context, payeeID string, limit, offset int) ([]*models.SmartCheque, error) {
 	if payeeID == "" {
 		return nil, fmt.Errorf("payee_id is required")
@@ -537,13 +538,13 @@ func (s *smartChequeService) ListSmartChequesByPayee(ctx context.Context, payeeI
 
 	smartCheques, err := s.smartChequeRepo.GetSmartChequesByPayee(ctx, payeeID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list smart cheques by payee: %w", err)
+		return nil, fmt.Errorf("failed to list smart checks by payee: %w", err)
 	}
 
 	return smartCheques, nil
 }
 
-// ListSmartChequesByStatus lists smart cheques by status
+// ListSmartChequesByStatus lists smart checks by status
 func (s *smartChequeService) ListSmartChequesByStatus(ctx context.Context, status models.SmartChequeStatus, limit, offset int) ([]*models.SmartCheque, error) {
 	// Validate status
 	switch status {
@@ -565,13 +566,13 @@ func (s *smartChequeService) ListSmartChequesByStatus(ctx context.Context, statu
 
 	smartCheques, err := s.smartChequeRepo.GetSmartChequesByStatus(ctx, status, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list smart cheques by status: %w", err)
+		return nil, fmt.Errorf("failed to list smart checks by status: %w", err)
 	}
 
 	return smartCheques, nil
 }
 
-// UpdateSmartChequeStatus updates the status of a smart cheque
+// UpdateSmartChequeStatus updates the status of a smart check
 func (s *smartChequeService) UpdateSmartChequeStatus(ctx context.Context, id string, status models.SmartChequeStatus) error {
 	if id == "" {
 		return fmt.Errorf("id is required")
@@ -587,14 +588,14 @@ func (s *smartChequeService) UpdateSmartChequeStatus(ctx context.Context, id str
 		return fmt.Errorf("invalid status: %s", status)
 	}
 
-	// Get existing smart cheque
+	// Get existing smart check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque: %w", err)
+		return fmt.Errorf("failed to get smart check: %w", err)
 	}
 
 	if smartCheque == nil {
-		return fmt.Errorf("smart cheque not found: %s", id)
+		return fmt.Errorf("smart check not found: %s", id)
 	}
 
 	// Update status
@@ -603,24 +604,24 @@ func (s *smartChequeService) UpdateSmartChequeStatus(ctx context.Context, id str
 
 	// Save to repository
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque status: %w", err)
+		return fmt.Errorf("failed to update smart check status: %w", err)
 	}
 
 	return nil
 }
 
-// GetSmartChequeStatistics returns statistics about smart cheques
+// GetSmartChequeStatistics returns statistics about smart checks
 func (s *smartChequeService) GetSmartChequeStatistics(ctx context.Context) (*SmartChequeStatistics, error) {
 	// Get total count
 	totalCount, err := s.smartChequeRepo.GetSmartChequeCount(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque count: %w", err)
+		return nil, fmt.Errorf("failed to get smart check count: %w", err)
 	}
 
 	// Get count by status
 	countByStatus, err := s.smartChequeRepo.GetSmartChequeCountByStatus(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque count by status: %w", err)
+		return nil, fmt.Errorf("failed to get smart check count by status: %w", err)
 	}
 
 	statistics := &SmartChequeStatistics{
@@ -631,27 +632,27 @@ func (s *smartChequeService) GetSmartChequeStatistics(ctx context.Context) (*Sma
 	return statistics, nil
 }
 
-// GetSmartChequeAnalytics returns detailed analytics about smart cheques
+// GetSmartChequeAnalytics returns detailed analytics about smart checks
 func (s *smartChequeService) GetSmartChequeAnalytics(ctx context.Context) (*SmartChequeAnalytics, error) {
 	// Get count by status
 	countByStatus, err := s.smartChequeRepo.GetSmartChequeCountByStatus(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque count by status: %w", err)
+		return nil, fmt.Errorf("failed to get smart check count by status: %w", err)
 	}
 
 	// Get count by currency
 	countByCurrency, err := s.smartChequeRepo.GetSmartChequeCountByCurrency(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque count by currency: %w", err)
+		return nil, fmt.Errorf("failed to get smart check count by currency: %w", err)
 	}
 
 	// Get amount statistics
 	totalAmount, averageAmount, largestAmount, smallestAmount, err := s.smartChequeRepo.GetSmartChequeAmountStatistics(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get smart cheque amount statistics: %w", err)
+		return nil, fmt.Errorf("failed to get smart check amount statistics: %w", err)
 	}
 
-	// Get recent activity (last 10 smart cheques)
+	// Get recent activity (last 10 smart checks)
 	recentActivity, err := s.smartChequeRepo.GetRecentSmartCheques(ctx, 10)
 	if err != nil {
 		// If we can't get recent activity, continue with empty list
@@ -696,7 +697,7 @@ func (s *smartChequeService) GetSmartChequeAnalytics(ctx context.Context) (*Smar
 	return analytics, nil
 }
 
-// CreateSmartChequeBatch creates multiple smart cheques in a batch operation
+// CreateSmartChequeBatch creates multiple smart checks in a batch operation
 func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, requests []*CreateSmartChequeRequest) (*SmartChequeBatchOperationResult, error) {
 	if len(requests) == 0 {
 		return nil, fmt.Errorf("no requests provided")
@@ -704,7 +705,7 @@ func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, request
 
 	// Limit batch size to prevent excessive load
 	if len(requests) > 100 {
-		return nil, fmt.Errorf("batch size limit exceeded: maximum 100 smart cheques per batch")
+		return nil, fmt.Errorf("batch size limit exceeded: maximum 100 smart checks per batch")
 	}
 
 	// Validate all requests first
@@ -715,7 +716,7 @@ func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, request
 			return nil, fmt.Errorf("validation failed for request %d: %w", i, err)
 		}
 
-		// Create smart cheque model
+		// Create smart check model
 		smartCheque := &models.SmartCheque{
 			ID:            uuid.New().String(),
 			PayerID:       request.PayerID,
@@ -736,7 +737,7 @@ func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, request
 	// Use repository batch create method
 	err := s.smartChequeRepo.BatchCreateSmartCheques(ctx, smartCheques)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create smart cheques in batch: %w", err)
+		return nil, fmt.Errorf("failed to create smart checks in batch: %w", err)
 	}
 
 	// Create result
@@ -753,12 +754,12 @@ func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, request
 		}
 	}
 
-	// Create audit log entries for each created smart cheque
+	// Create audit log entries for each created smart check
 	for _, smartCheque := range smartCheques {
 		auditEntry := &AuditLogEntry{
 			SmartChequeID: smartCheque.ID,
-			Action:        "smart_cheque_created",
-			Details:       fmt.Sprintf("Smart cheque created with amount %f %s", smartCheque.Amount, smartCheque.Currency),
+			Action:        "smart_check_created",
+			Details:       fmt.Sprintf("Smart check created with amount %f %s", smartCheque.Amount, smartCheque.Currency),
 			Timestamp:     time.Now(),
 		}
 		_ = s.CreateAuditLog(ctx, auditEntry) // Log error but don't fail the operation
@@ -767,7 +768,7 @@ func (s *smartChequeService) CreateSmartChequeBatch(ctx context.Context, request
 	return result, nil
 }
 
-// UpdateSmartChequeBatch updates multiple smart cheques in a batch operation
+// UpdateSmartChequeBatch updates multiple smart checks in a batch operation
 func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates map[string]*UpdateSmartChequeRequest) (*SmartChequeBatchOperationResult, error) {
 	if len(updates) == 0 {
 		return nil, fmt.Errorf("no updates provided")
@@ -775,10 +776,10 @@ func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates
 
 	// Limit batch size to prevent excessive load
 	if len(updates) > 100 {
-		return nil, fmt.Errorf("batch size limit exceeded: maximum 100 smart cheques per batch")
+		return nil, fmt.Errorf("batch size limit exceeded: maximum 100 smart checks per batch")
 	}
 
-	// Validate and prepare smart cheques for update
+	// Validate and prepare smart checks for update
 	smartCheques := make([]*models.SmartCheque, 0, len(updates))
 	result := &SmartChequeBatchOperationResult{
 		SuccessCount: 0,
@@ -801,11 +802,11 @@ func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates
 			continue
 		}
 
-		// Get existing smart cheque
+		// Get existing smart check
 		smartCheque, err := s.smartChequeRepo.GetSmartChequeByID(ctx, id)
 		if err != nil {
 			batchResult.Success = false
-			batchResult.Error = fmt.Sprintf("failed to get smart cheque: %v", err)
+			batchResult.Error = fmt.Sprintf("failed to get smart check: %v", err)
 			result.FailureCount++
 			result.Results = append(result.Results, batchResult)
 			continue
@@ -813,7 +814,7 @@ func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates
 
 		if smartCheque == nil {
 			batchResult.Success = false
-			batchResult.Error = "smart cheque not found"
+			batchResult.Error = "smart check not found"
 			result.FailureCount++
 			result.Results = append(result.Results, batchResult)
 			continue
@@ -865,15 +866,15 @@ func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates
 	if len(smartCheques) > 0 {
 		err := s.smartChequeRepo.BatchUpdateSmartCheques(ctx, smartCheques)
 		if err != nil {
-			return nil, fmt.Errorf("failed to update smart cheques in batch: %w", err)
+			return nil, fmt.Errorf("failed to update smart checks in batch: %w", err)
 		}
 
-		// Create audit log entries for each updated smart cheque
+		// Create audit log entries for each updated smart check
 		for _, smartCheque := range smartCheques {
 			auditEntry := &AuditLogEntry{
 				SmartChequeID: smartCheque.ID,
-				Action:        "smart_cheque_updated",
-				Details:       fmt.Sprintf("Smart cheque updated with status %s", smartCheque.Status),
+				Action:        "smart_check_updated",
+				Details:       fmt.Sprintf("Smart check updated with status %s", smartCheque.Status),
 				Timestamp:     time.Now(),
 			}
 			_ = s.CreateAuditLog(ctx, auditEntry) // Log error but don't fail the operation
@@ -883,12 +884,12 @@ func (s *smartChequeService) UpdateSmartChequeBatch(ctx context.Context, updates
 	return result, nil
 }
 
-// CreateAuditLog creates an audit log entry for smart cheque operations
+// CreateAuditLog creates an audit log entry for smart check operations
 func (s *smartChequeService) CreateAuditLog(ctx context.Context, entry *AuditLogEntry) error {
 	// Convert our audit log entry to the model used by the audit repository
 	auditLog := &models.AuditLog{
 		Action:     entry.Action,
-		Resource:   "smart_cheque",
+		Resource:   "smart_check",
 		ResourceID: &entry.SmartChequeID,
 		Details:    entry.Details,
 		IPAddress:  entry.IPAddress,
@@ -907,10 +908,10 @@ func (s *smartChequeService) CreateAuditLog(ctx context.Context, entry *AuditLog
 	return s.auditRepo.CreateAuditLog(auditLog)
 }
 
-// GetAuditTrail retrieves the audit trail for a specific smart cheque
+// GetAuditTrail retrieves the audit trail for a specific smart check
 func (s *smartChequeService) GetAuditTrail(ctx context.Context, smartChequeID string, limit, offset int) ([]AuditLogEntry, error) {
 	if smartChequeID == "" {
-		return nil, fmt.Errorf("smart cheque ID is required")
+		return nil, fmt.Errorf("smart check ID is required")
 	}
 
 	if limit <= 0 {
@@ -922,15 +923,15 @@ func (s *smartChequeService) GetAuditTrail(ctx context.Context, smartChequeID st
 	}
 
 	// Get audit logs from repository
-	auditLogs, err := s.auditRepo.GetAuditLogs(nil, nil, "", "smart_cheque", limit, offset)
+	auditLogs, err := s.auditRepo.GetAuditLogs(nil, nil, "", "smart_check", limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit logs: %w", err)
 	}
 
-	// Filter logs for this specific smart cheque
+	// Filter logs for this specific smart check
 	var result []AuditLogEntry
 	for _, log := range auditLogs {
-		// Check if this log is for our smart cheque
+		// Check if this log is for our smart check
 		if log.ResourceID != nil && *log.ResourceID == smartChequeID {
 			entry := AuditLogEntry{
 				ID:            log.ID.String(),

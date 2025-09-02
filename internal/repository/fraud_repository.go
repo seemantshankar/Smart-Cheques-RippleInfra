@@ -69,7 +69,7 @@ func (r *FraudRepository) DeleteFraudAlert(ctx context.Context, id uuid.UUID) er
 }
 
 func (r *FraudRepository) ListFraudAlerts(ctx context.Context, filter *FraudAlertFilter, limit, offset int) ([]*models.FraudAlert, error) {
-	var alerts []*models.FraudAlert
+	alerts := make([]*models.FraudAlert, 0, 100)
 
 	for _, alert := range r.alerts {
 		if filter != nil {
@@ -159,7 +159,7 @@ func (r *FraudRepository) DeleteFraudRule(ctx context.Context, id uuid.UUID) err
 }
 
 func (r *FraudRepository) ListFraudRules(ctx context.Context, filter *FraudRuleFilter, limit, offset int) ([]*models.FraudRule, error) {
-	var rules []*models.FraudRule
+	rules := make([]*models.FraudRule, 0, 50)
 
 	for _, rule := range r.rules {
 		if filter != nil {
@@ -212,30 +212,30 @@ func (r *FraudRepository) GetFraudRulesByCategory(ctx context.Context, category 
 }
 
 // Fraud case operations
-func (r *FraudRepository) CreateFraudCase(ctx context.Context, case_ *models.FraudCase) error {
-	if case_.ID == uuid.Nil {
-		case_.ID = uuid.New()
+func (r *FraudRepository) CreateFraudCase(ctx context.Context, fraudCase *models.FraudCase) error {
+	if fraudCase.ID == uuid.Nil {
+		fraudCase.ID = uuid.New()
 	}
-	case_.CreatedAt = time.Now()
-	case_.UpdatedAt = time.Now()
-	r.cases[case_.ID] = case_
+	fraudCase.CreatedAt = time.Now()
+	fraudCase.UpdatedAt = time.Now()
+	r.cases[fraudCase.ID] = fraudCase
 	return nil
 }
 
 func (r *FraudRepository) GetFraudCaseByID(ctx context.Context, id uuid.UUID) (*models.FraudCase, error) {
-	case_, exists := r.cases[id]
+	fraudCase, exists := r.cases[id]
 	if !exists {
 		return nil, fmt.Errorf("fraud case not found: %s", id)
 	}
-	return case_, nil
+	return fraudCase, nil
 }
 
-func (r *FraudRepository) UpdateFraudCase(ctx context.Context, case_ *models.FraudCase) error {
-	if _, exists := r.cases[case_.ID]; !exists {
-		return fmt.Errorf("fraud case not found: %s", case_.ID)
+func (r *FraudRepository) UpdateFraudCase(ctx context.Context, fraudCase *models.FraudCase) error {
+	if _, exists := r.cases[fraudCase.ID]; !exists {
+		return fmt.Errorf("fraud case not found: %s", fraudCase.ID)
 	}
-	case_.UpdatedAt = time.Now()
-	r.cases[case_.ID] = case_
+	fraudCase.UpdatedAt = time.Now()
+	r.cases[fraudCase.ID] = fraudCase
 	return nil
 }
 
@@ -248,27 +248,27 @@ func (r *FraudRepository) DeleteFraudCase(ctx context.Context, id uuid.UUID) err
 }
 
 func (r *FraudRepository) ListFraudCases(ctx context.Context, filter *FraudCaseFilter, limit, offset int) ([]*models.FraudCase, error) {
-	var cases []*models.FraudCase
+	cases := make([]*models.FraudCase, 0, 50)
 
-	for _, case_ := range r.cases {
+	for _, fraudCase := range r.cases {
 		if filter != nil {
-			if filter.EnterpriseID != nil && case_.EnterpriseID != *filter.EnterpriseID {
+			if filter.EnterpriseID != nil && fraudCase.EnterpriseID != *filter.EnterpriseID {
 				continue
 			}
-			if filter.Status != nil && case_.Status != *filter.Status {
+			if filter.Status != nil && fraudCase.Status != *filter.Status {
 				continue
 			}
-			if filter.Priority != nil && case_.Priority != *filter.Priority {
+			if filter.Priority != nil && fraudCase.Priority != *filter.Priority {
 				continue
 			}
-			if filter.Category != nil && case_.Category != *filter.Category {
+			if filter.Category != nil && fraudCase.Category != *filter.Category {
 				continue
 			}
-			if filter.AssignedTo != nil && (case_.AssignedTo == nil || *case_.AssignedTo != *filter.AssignedTo) {
+			if filter.AssignedTo != nil && (fraudCase.AssignedTo == nil || *fraudCase.AssignedTo != *filter.AssignedTo) {
 				continue
 			}
 		}
-		cases = append(cases, case_)
+		cases = append(cases, fraudCase)
 	}
 
 	// Simple pagination
@@ -341,7 +341,7 @@ func (r *FraudRepository) DeleteAccountFraudStatus(ctx context.Context, enterpri
 }
 
 func (r *FraudRepository) ListAccountFraudStatus(ctx context.Context, filter *AccountFraudStatusFilter, limit, offset int) ([]*models.AccountFraudStatus, error) {
-	var statuses []*models.AccountFraudStatus
+	statuses := make([]*models.AccountFraudStatus, 0, 20)
 
 	for _, status := range r.statuses {
 		if filter != nil {

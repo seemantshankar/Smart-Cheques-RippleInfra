@@ -114,7 +114,7 @@ func NewMilestoneSmartChequeService(
 	}
 }
 
-// GenerateSmartChequeFromMilestone creates a smart cheque based on a milestone
+// GenerateSmartChequeFromMilestone creates a smart check based on a milestone
 func (s *milestoneSmartChequeService) GenerateSmartChequeFromMilestone(ctx context.Context, milestone *models.ContractMilestone) (*models.SmartCheque, error) {
 	if milestone == nil {
 		return nil, fmt.Errorf("milestone is nil")
@@ -135,7 +135,7 @@ func (s *milestoneSmartChequeService) GenerateSmartChequeFromMilestone(ctx conte
 	// In a real implementation, this would be based on the contract terms
 	amount := 1000.0 // Placeholder amount
 
-	// Create milestone for the smart cheque
+	// Create milestone for the smart check
 	smartChequeMilestone := models.Milestone{
 		ID:                 milestone.ID,
 		Description:        milestone.TriggerConditions,
@@ -144,7 +144,7 @@ func (s *milestoneSmartChequeService) GenerateSmartChequeFromMilestone(ctx conte
 		Status:             models.MilestoneStatusPending,
 	}
 
-	// Create smart cheque
+	// Create smart check
 	smartCheque := &models.SmartCheque{
 		ID:            fmt.Sprintf("sc-%s", milestone.ID),
 		PayerID:       "", // Will be set from contract parties
@@ -167,9 +167,9 @@ func (s *milestoneSmartChequeService) GenerateSmartChequeFromMilestone(ctx conte
 		return nil, fmt.Errorf("contract must have at least 2 parties")
 	}
 
-	// Save the smart cheque to the repository
+	// Save the smart check to the repository
 	if err := s.smartChequeRepo.CreateSmartCheque(ctx, smartCheque); err != nil {
-		return nil, fmt.Errorf("failed to create smart cheque: %w", err)
+		return nil, fmt.Errorf("failed to create smart check: %w", err)
 	}
 
 	return smartCheque, nil
@@ -223,7 +223,7 @@ func (s *milestoneSmartChequeService) SyncMilestoneWithEscrow(ctx context.Contex
 	}
 
 	// In a real implementation, we would:
-	// 1. Get the smart cheque associated with this milestone
+	// 1. Get the smart check associated with this milestone
 	// 2. Get the escrow status from XRPL
 	// 3. Update milestone status based on escrow status
 	// 4. Save the updated milestone
@@ -258,29 +258,29 @@ func (s *milestoneSmartChequeService) TriggerPaymentRelease(ctx context.Context,
 		return fmt.Errorf("milestone %s is not completed yet", milestoneID)
 	}
 
-	// Get the smart cheque associated with this milestone
+	// Get the smart check associated with this milestone
 	smartCheque, err := s.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque for milestone %s: %w", milestoneID, err)
+		return fmt.Errorf("failed to get smart check for milestone %s: %w", milestoneID, err)
 	}
 
-	// Validate smart cheque
+	// Validate smart check
 	if smartCheque == nil {
-		return fmt.Errorf("no smart cheque found for milestone %s", milestoneID)
+		return fmt.Errorf("no smart check found for milestone %s", milestoneID)
 	}
 
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque %s has no escrow address", smartCheque.ID)
+		return fmt.Errorf("smart check %s has no escrow address", smartCheque.ID)
 	}
 
 	// In a real implementation, we would:
 	// 1. Get the escrow details from XRPL
 	// 2. Generate the fulfillment for the escrow condition
 	// 3. Trigger the XRPL escrow finish transaction
-	// 4. Update the smart cheque and milestone status
+	// 4. Update the smart check and milestone status
 	// 5. Log the payment release
 
-	log.Printf("Triggering payment release for milestone %s via smart cheque %s", milestoneID, smartCheque.ID)
+	log.Printf("Triggering payment release for milestone %s via smart check %s", milestoneID, smartCheque.ID)
 
 	// Update milestone status
 	milestone.UpdatedAt = time.Now()
@@ -288,11 +288,11 @@ func (s *milestoneSmartChequeService) TriggerPaymentRelease(ctx context.Context,
 		return fmt.Errorf("failed to update milestone %s: %w", milestoneID, err)
 	}
 
-	// Update smart cheque status
+	// Update smart check status
 	smartCheque.Status = models.SmartChequeStatusCompleted
 	smartCheque.UpdatedAt = time.Now()
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque %s: %w", smartCheque.ID, err)
+		return fmt.Errorf("failed to update smart check %s: %w", smartCheque.ID, err)
 	}
 
 	return nil
@@ -311,26 +311,26 @@ func (s *milestoneSmartChequeService) HandleMilestoneFailure(ctx context.Context
 		return fmt.Errorf("failed to get milestone %s: %w", milestoneID, err)
 	}
 
-	// Get the smart cheque associated with this milestone
+	// Get the smart check associated with this milestone
 	smartCheque, err := s.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque for milestone %s: %w", milestoneID, err)
+		return fmt.Errorf("failed to get smart check for milestone %s: %w", milestoneID, err)
 	}
 
-	// Validate smart cheque
+	// Validate smart check
 	if smartCheque == nil {
-		return fmt.Errorf("no smart cheque found for milestone %s", milestoneID)
+		return fmt.Errorf("no smart check found for milestone %s", milestoneID)
 	}
 
 	if smartCheque.EscrowAddress == "" {
-		return fmt.Errorf("smart cheque %s has no escrow address", smartCheque.ID)
+		return fmt.Errorf("smart check %s has no escrow address", smartCheque.ID)
 	}
 
 	// In a real implementation, we would:
 	// 1. Get the escrow details from XRPL
 	// 2. Trigger the XRPL escrow cancel transaction
 	// 3. Return funds to the payer
-	// 4. Update the milestone and smart cheque status
+	// 4. Update the milestone and smart check status
 	// 5. Log the failure
 
 	log.Printf("Handling milestone failure for milestone %s: %s", milestoneID, reason)
@@ -341,11 +341,11 @@ func (s *milestoneSmartChequeService) HandleMilestoneFailure(ctx context.Context
 		return fmt.Errorf("failed to update milestone %s: %w", milestoneID, err)
 	}
 
-	// Update smart cheque status
+	// Update smart check status
 	smartCheque.Status = models.SmartChequeStatusDisputed
 	smartCheque.UpdatedAt = time.Now()
 	if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
-		return fmt.Errorf("failed to update smart cheque %s: %w", smartCheque.ID, err)
+		return fmt.Errorf("failed to update smart check %s: %w", smartCheque.ID, err)
 	}
 
 	return nil
@@ -369,25 +369,25 @@ func (s *milestoneSmartChequeService) ProcessPartialPayment(ctx context.Context,
 		return fmt.Errorf("failed to get milestone %s: %w", milestoneID, err)
 	}
 
-	// Get the smart cheque associated with this milestone
+	// Get the smart check associated with this milestone
 	smartCheque, err := s.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err != nil {
-		return fmt.Errorf("failed to get smart cheque for milestone %s: %w", milestoneID, err)
+		return fmt.Errorf("failed to get smart check for milestone %s: %w", milestoneID, err)
 	}
 
-	// Validate smart cheque
+	// Validate smart check
 	if smartCheque == nil {
-		return fmt.Errorf("no smart cheque found for milestone %s", milestoneID)
+		return fmt.Errorf("no smart check found for milestone %s", milestoneID)
 	}
 
 	// Calculate partial amount
 	partialAmount := smartCheque.Amount * (percentage / 100.0)
 
 	// In a real implementation, we would:
-	// 1. Create a partial smart cheque or modify existing escrow
+	// 1. Create a partial smart check or modify existing escrow
 	// 2. Trigger partial payment release
 	// 3. Update the milestone progress
-	// 4. Update the smart cheque status
+	// 4. Update the smart check status
 
 	log.Printf("Processing partial payment for milestone %s: %.2f%% (Amount: %.2f)", milestoneID, percentage, partialAmount)
 

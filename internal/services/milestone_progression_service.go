@@ -88,7 +88,7 @@ func (s *milestoneProgressionService) StartMilestone(ctx context.Context, milest
 	}
 
 	// Update milestone status
-	milestone.Status = "in_progress"
+	milestone.Status = StatusInProgress
 	if milestone.ActualStartDate == nil {
 		now := time.Now()
 		milestone.ActualStartDate = &now
@@ -168,15 +168,15 @@ func (s *milestoneProgressionService) CompleteMilestone(ctx context.Context, mil
 		return fmt.Errorf("failed to update milestone %s: %w", milestoneID, err)
 	}
 
-	// Trigger payment release if associated with a smart cheque
+	// Trigger payment release if associated with a smart check
 	smartCheque, err := s.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err == nil && smartCheque != nil {
-		// Update smart cheque status
+		// Update smart check status
 		smartCheque.Status = models.SmartChequeStatusCompleted
 		smartCheque.UpdatedAt = time.Now()
 		if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
 			// Log error but don't fail the operation
-			fmt.Printf("Warning: Failed to update smart cheque %s: %v\n", smartCheque.ID, err)
+			fmt.Printf("Warning: Failed to update smart check %s: %v\n", smartCheque.ID, err)
 		}
 	}
 
@@ -204,15 +204,15 @@ func (s *milestoneProgressionService) FailMilestone(ctx context.Context, milesto
 		return fmt.Errorf("failed to update milestone %s: %w", milestoneID, err)
 	}
 
-	// Update associated smart cheque if it exists
+	// Update associated smart check if it exists
 	smartCheque, err := s.smartChequeRepo.GetSmartChequesByMilestone(ctx, milestoneID)
 	if err == nil && smartCheque != nil {
-		// Update smart cheque status
+		// Update smart check status
 		smartCheque.Status = models.SmartChequeStatusDisputed
 		smartCheque.UpdatedAt = time.Now()
 		if err := s.smartChequeRepo.UpdateSmartCheque(ctx, smartCheque); err != nil {
 			// Log error but don't fail the operation
-			fmt.Printf("Warning: Failed to update smart cheque %s: %v\n", smartCheque.ID, err)
+			fmt.Printf("Warning: Failed to update smart check %s: %v\n", smartCheque.ID, err)
 		}
 	}
 

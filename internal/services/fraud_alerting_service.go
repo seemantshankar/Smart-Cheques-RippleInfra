@@ -274,8 +274,8 @@ func (s *FraudAlertingService) buildEmailBody(alert *models.FraudAlert, enterpri
 	var body strings.Builder
 
 	body.WriteString(fmt.Sprintf("Dear %s,\n\n", enterprise.LegalName))
-	body.WriteString(fmt.Sprintf("A fraud alert has been detected for your account.\n\n"))
-	body.WriteString(fmt.Sprintf("Alert Details:\n"))
+	body.WriteString("A fraud alert has been detected for your account.\n\n")
+	body.WriteString("Alert Details:\n")
 	body.WriteString(fmt.Sprintf("- Type: %s\n", alert.AlertType))
 	body.WriteString(fmt.Sprintf("- Severity: %s\n", alert.Severity))
 	body.WriteString(fmt.Sprintf("- Score: %.2f\n", alert.Score))

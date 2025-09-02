@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -61,25 +62,14 @@ func BenchmarkMilestoneRepository_SearchPerformance(b *testing.B) {
 	// Run the benchmark
 	for i := 0; i < b.N; i++ {
 		// Setup test database for each iteration
-		db, mock, err := sqlmock.New()
-		require.NoError(b, err)
+		db, mock := setupMilestoneTestDB(b)
+		defer db.Close()
 
 		repo := NewPostgresMilestoneRepository(db)
 		ctx := context.Background()
 
 		// Mock the search milestones call
-		rows := sqlmock.NewRows([]string{
-			"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
-			"priority", "critical_path", "trigger_conditions", "verification_criteria",
-			"estimated_start_date", "estimated_end_date", "actual_start_date", "actual_end_date",
-			"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
-			"contingency_plans", "criticality_score", "created_at", "updated_at",
-		}).AddRow(
-			"search-milestone-1", "contract-1", "SM1", 1, pq.Array([]string{}), "delivery",
-			1, false, "condition", "criteria", nil, nil, nil, nil,
-			nil, nil, 50.0, "medium",
-			pq.Array([]string{}), 75, time.Now(), time.Now(),
-		)
+		rows := createMilestoneRows()
 		mock.ExpectQuery(`SELECT .+ FROM contract_milestones WHERE`).
 			WillReturnRows(rows)
 
@@ -202,25 +192,14 @@ func BenchmarkMilestoneRepository_NotificationSystemScalability(b *testing.B) {
 	b.Run("MilestonesByPriority", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// Setup test database for each iteration
-			db, mock, err := sqlmock.New()
-			require.NoError(b, err)
+			db, mock := setupMilestoneTestDB(b)
+			defer db.Close()
 
 			repo := NewPostgresMilestoneRepository(db)
 			ctx := context.Background()
 
 			// Mock the get milestones by priority call
-			rows := sqlmock.NewRows([]string{
-				"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
-				"priority", "critical_path", "trigger_conditions", "verification_criteria",
-				"estimated_start_date", "estimated_end_date", "actual_start_date", "actual_end_date",
-				"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
-				"contingency_plans", "criticality_score", "created_at", "updated_at",
-			}).AddRow(
-				"notification-milestone-1", "contract-1", "NM1", 1, pq.Array([]string{}), "delivery",
-				1, false, "condition", "criteria", nil, nil, nil, nil,
-				nil, nil, 50.0, "medium",
-				pq.Array([]string{}), 75, time.Now(), time.Now(),
-			)
+			rows := createMilestoneRows()
 			mock.ExpectQuery(`SELECT .+ FROM contract_milestones WHERE priority = \$1`).
 				WillReturnRows(rows)
 
@@ -236,25 +215,14 @@ func BenchmarkMilestoneRepository_NotificationSystemScalability(b *testing.B) {
 	b.Run("MilestonesByRiskLevel", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// Setup test database for each iteration
-			db, mock, err := sqlmock.New()
-			require.NoError(b, err)
+			db, mock := setupMilestoneTestDB(b)
+			defer db.Close()
 
 			repo := NewPostgresMilestoneRepository(db)
 			ctx := context.Background()
 
 			// Mock the get milestones by risk level call
-			rows := sqlmock.NewRows([]string{
-				"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
-				"priority", "critical_path", "trigger_conditions", "verification_criteria",
-				"estimated_start_date", "estimated_end_date", "actual_start_date", "actual_end_date",
-				"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
-				"contingency_plans", "criticality_score", "created_at", "updated_at",
-			}).AddRow(
-				"notification-milestone-1", "contract-1", "NM1", 1, pq.Array([]string{}), "delivery",
-				1, false, "condition", "criteria", nil, nil, nil, nil,
-				nil, nil, 50.0, "medium",
-				pq.Array([]string{}), 75, time.Now(), time.Now(),
-			)
+			rows := createMilestoneRows()
 			mock.ExpectQuery(`SELECT .+ FROM contract_milestones WHERE risk_level = \$1`).
 				WillReturnRows(rows)
 
@@ -414,4 +382,28 @@ func TestMilestoneRepository_SearchPerformance(t *testing.T) {
 			assert.Less(t, duration.Milliseconds(), int64(200), "Search should complete within 200ms")
 		})
 	}
+}
+
+// setupMilestoneTestDB creates a test database with mock data for milestone tests
+func setupMilestoneTestDB(b *testing.B) (*sql.DB, sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
+	require.NoError(b, err)
+
+	return db, mock
+}
+
+// createMilestoneRows creates mock rows for milestone tests
+func createMilestoneRows() *sqlmock.Rows {
+	return sqlmock.NewRows([]string{
+		"id", "contract_id", "milestone_id", "sequence_number", "dependencies", "category",
+		"priority", "critical_path", "trigger_conditions", "verification_criteria",
+		"estimated_start_date", "estimated_end_date", "actual_start_date", "actual_end_date",
+		"estimated_duration", "actual_duration", "percentage_complete", "risk_level",
+		"contingency_plans", "criticality_score", "created_at", "updated_at",
+	}).AddRow(
+		"test-milestone-1", "contract-1", "TM1", 1, pq.Array([]string{}), "delivery",
+		1, false, "condition", "criteria", nil, nil, nil, nil,
+		nil, nil, 50.0, "medium",
+		pq.Array([]string{}), 75, time.Now(), time.Now(),
+	)
 }

@@ -115,7 +115,7 @@ func (s *milestoneCompletionTriggerService) monitorMilestones(ctx context.Contex
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Context cancelled, stopping milestone monitoring")
+			log.Printf("Context canceled, stopping milestone monitoring")
 			return
 		case <-s.stopChan:
 			log.Printf("Stop signal received, stopping milestone monitoring")

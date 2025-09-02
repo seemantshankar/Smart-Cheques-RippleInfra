@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/smart-payment-infrastructure/pkg/messaging"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/smart-payment-infrastructure/pkg/messaging"
 )
 
 // NotificationServiceInterface defines the interface for notification operations
@@ -608,9 +609,9 @@ func (s *NotificationService) getEventSubject(eventType string) string {
 	case "milestone.completed":
 		return "Milestone Completed"
 	case "smartcheque.created":
-		return "Smart Cheque Created"
+		return "Smart Check Created"
 	case "smartcheque.completed":
-		return "Smart Cheque Completed"
+		return "Smart Check Completed"
 	default:
 		return "Payment Notification"
 	}
@@ -627,21 +628,21 @@ func (s *NotificationService) getEventMessage(event *messaging.Event) string {
 	case "payment.confirmed":
 		return "Your payment has been confirmed on the blockchain."
 	case "milestone.completed":
-		return "A milestone in your Smart Cheque has been completed."
+		return "A milestone in your Smart Check has been completed."
 	case "smartcheque.created":
-		return "A new Smart Cheque has been created."
+		return "A new Smart Check has been created."
 	case "smartcheque.completed":
-		return "Your Smart Cheque has been completed successfully."
+		return "Your Smart Check has been completed successfully."
 	default:
 		return "You have a new payment notification."
 	}
 }
 
 func (s *NotificationService) recordNotificationHistory(ctx context.Context, notification *NotificationRequest, status, errorMsg string) {
-	// Check if context is cancelled
+	// Check if context is canceled
 	select {
 	case <-ctx.Done():
-		log.Printf("Context cancelled, skipping notification history recording for: %s", notification.ID)
+		log.Printf("Context canceled, skipping notification history recording for: %s", notification.ID)
 		return
 	default:
 	}
