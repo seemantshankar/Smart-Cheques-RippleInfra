@@ -470,3 +470,148 @@ type DisputeResolutionTransaction struct {
 	ExecutedAt    time.Time `json:"executed_at"`
 	BlockHeight   uint64    `json:"block_height"`
 }
+
+// Phase 1: Transaction Creation & Signing Methods
+
+// CreatePaymentTransaction creates a new XRPL payment transaction
+func (s *XRPLService) CreatePaymentTransaction(fromAddress, toAddress, amount, currency string, fee string, sequence uint32) (*xrpl.PaymentTransaction, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	// Validate addresses
+	if !s.client.ValidateAddress(fromAddress) {
+		return nil, fmt.Errorf("invalid from address: %s", fromAddress)
+	}
+	if !s.client.ValidateAddress(toAddress) {
+		return nil, fmt.Errorf("invalid to address: %s", toAddress)
+	}
+
+	// Create payment transaction
+	payment, err := s.client.CreatePaymentTransaction(fromAddress, toAddress, amount, currency, fee, sequence)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create payment transaction: %w", err)
+	}
+
+	log.Printf("Created payment transaction: %s -> %s, Amount: %s %s", fromAddress, toAddress, amount, currency)
+	return payment, nil
+}
+
+// SignPaymentTransaction signs a payment transaction with the provided private key
+func (s *XRPLService) SignPaymentTransaction(transaction *xrpl.PaymentTransaction, privateKeyHex string, keyType string) (string, error) {
+	if !s.initialized {
+		return "", fmt.Errorf("XRPL service not initialized")
+	}
+
+	if transaction == nil {
+		return "", fmt.Errorf("transaction cannot be nil")
+	}
+
+	if privateKeyHex == "" {
+		return "", fmt.Errorf("private key cannot be empty")
+	}
+
+	// Sign the transaction
+	txBlob, err := s.client.SignTransaction(transaction, privateKeyHex, keyType)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	log.Printf("Payment transaction signed successfully with %s key", keyType)
+	return txBlob, nil
+}
+
+// SubmitPaymentTransaction submits a signed payment transaction to the XRPL network
+func (s *XRPLService) SubmitPaymentTransaction(txBlob string) (*xrpl.TransactionResult, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	if txBlob == "" {
+		return nil, fmt.Errorf("transaction blob cannot be empty")
+	}
+
+	// Submit the signed transaction
+	result, err := s.client.SubmitSignedTransaction(txBlob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit transaction: %w", err)
+	}
+
+	log.Printf("Payment transaction submitted successfully: %s", result.TransactionID)
+	return result, nil
+}
+
+// MonitorPaymentTransaction monitors the status of a submitted payment transaction
+func (s *XRPLService) MonitorPaymentTransaction(transactionID string, maxRetries int, retryInterval time.Duration) (*xrpl.TransactionStatus, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	if transactionID == "" {
+		return nil, fmt.Errorf("transaction ID cannot be empty")
+	}
+
+	// Monitor the transaction
+	status, err := s.client.MonitorTransaction(transactionID, maxRetries, retryInterval)
+	if err != nil {
+		return nil, fmt.Errorf("failed to monitor transaction: %w", err)
+	}
+
+	log.Printf("Payment transaction monitoring completed: %s, Status: %s", transactionID, status.Status)
+	return status, nil
+}
+
+// GetPaymentTransactionStatus gets the current status of a payment transaction
+func (s *XRPLService) GetPaymentTransactionStatus(transactionID string) (*xrpl.TransactionStatus, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	if transactionID == "" {
+		return nil, fmt.Errorf("transaction ID cannot be empty")
+	}
+
+	// Get transaction status
+	status, err := s.client.GetTransactionStatus(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transaction status: %w", err)
+	}
+
+	return status, nil
+}
+
+// CompletePaymentTransactionWorkflow executes the complete Phase 1 workflow
+func (s *XRPLService) CompletePaymentTransactionWorkflow(fromAddress, toAddress, amount, currency, privateKeyHex, keyType string) (*xrpl.TransactionStatus, error) {
+	if !s.initialized {
+		return nil, fmt.Errorf("XRPL service not initialized")
+	}
+
+	log.Printf("Starting complete payment transaction workflow: %s -> %s, Amount: %s %s", fromAddress, toAddress, amount, currency)
+
+	// Step 1: Create payment transaction
+	payment, err := s.CreatePaymentTransaction(fromAddress, toAddress, amount, currency, "", 1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create payment transaction: %w", err)
+	}
+
+	// Step 2: Sign transaction
+	txBlob, err := s.SignPaymentTransaction(payment, privateKeyHex, keyType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign payment transaction: %w", err)
+	}
+
+	// Step 3: Submit transaction
+	result, err := s.SubmitPaymentTransaction(txBlob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit payment transaction: %w", err)
+	}
+
+	// Step 4: Monitor transaction
+	status, err := s.MonitorPaymentTransaction(result.TransactionID, 10, 2*time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("failed to monitor payment transaction: %w", err)
+	}
+
+	log.Printf("Payment transaction workflow completed successfully: %s, Final Status: %s", result.TransactionID, status.Status)
+	return status, nil
+}

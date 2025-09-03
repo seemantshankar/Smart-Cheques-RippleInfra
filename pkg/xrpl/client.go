@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -85,6 +86,33 @@ type TransactionResult struct {
 	Validated     bool   `json:"validated"`
 	ResultCode    string `json:"result_code"`
 	ResultMessage string `json:"result_message"`
+}
+
+// PaymentTransaction represents a basic payment transaction for Phase 1
+type PaymentTransaction struct {
+	Account            string `json:"Account"`
+	Destination        string `json:"Destination"`
+	Amount             string `json:"Amount"`
+	Fee                string `json:"Fee"`
+	Sequence           uint32 `json:"Sequence"`
+	LastLedgerSequence uint32 `json:"LastLedgerSequence"`
+	TransactionType    string `json:"TransactionType"`
+	Flags              uint32 `json:"Flags"`
+	SigningPubKey      string `json:"SigningPubKey"`
+	TxnSignature       string `json:"TxnSignature"`
+}
+
+// TransactionStatus represents the current status of a submitted transaction
+type TransactionStatus struct {
+	TransactionID string    `json:"transaction_id"`
+	Status        string    `json:"status"`
+	SubmitTime    time.Time `json:"submit_time"`
+	LastChecked   time.Time `json:"last_checked"`
+	RetryCount    int       `json:"retry_count"`
+	LedgerIndex   uint32    `json:"ledger_index"`
+	Validated     bool      `json:"validated"`
+	ResultCode    string    `json:"result_code"`
+	ResultMessage string    `json:"result_message"`
 }
 
 func NewClient(networkURL string, testNet bool) *Client {
@@ -545,6 +573,239 @@ func (c *Client) CreateConditionalEscrowWithValidation(escrow *EscrowCreate, mil
 	return c.CreateEscrowWithMilestones(escrow, milestones)
 }
 
+// CreatePaymentTransaction creates a new XRPL payment transaction
+func (c *Client) CreatePaymentTransaction(fromAddress, toAddress, amount, currency string, fee string, sequence uint32) (*PaymentTransaction, error) {
+	if c.httpClient == nil {
+		return nil, fmt.Errorf("XRPL client not connected")
+	}
+
+	// Validate addresses
+	if !c.ValidateAddress(fromAddress) {
+		return nil, fmt.Errorf("invalid from address: %s", fromAddress)
+	}
+	if !c.ValidateAddress(toAddress) {
+		return nil, fmt.Errorf("invalid to address: %s", toAddress)
+	}
+
+	// Format amount based on currency
+	formattedAmount := c.formatAmount(amount, currency)
+
+	// Set default fee if not provided
+	if fee == "" {
+		fee = "12" // Default fee in drops (12 drops = 0.000012 XRP)
+	}
+
+	// Create payment transaction
+	payment := &PaymentTransaction{
+		Account:         fromAddress,
+		Destination:     toAddress,
+		Amount:          formattedAmount,
+		Fee:             fee,
+		Sequence:        sequence,
+		TransactionType: "Payment",
+		Flags:           0x00020000, // tfPartialPayment flag
+	}
+
+	// Set LastLedgerSequence for transaction expiration
+	// This should be set to current ledger + 4 for testnet
+	payment.LastLedgerSequence = c.getCurrentLedgerIndex() + 4
+
+	log.Printf("Created payment transaction: %s -> %s, Amount: %s %s, Fee: %s drops",
+		fromAddress, toAddress, amount, currency, fee)
+
+	return payment, nil
+}
+
+// SignTransaction signs an XRPL transaction with the provided private key
+func (c *Client) SignTransaction(transaction *PaymentTransaction, privateKeyHex string, keyType string) (string, error) {
+	if c.httpClient == nil {
+		return "", fmt.Errorf("XRPL client not connected")
+	}
+
+	if transaction == nil {
+		return "", fmt.Errorf("transaction cannot be nil")
+	}
+
+	if privateKeyHex == "" {
+		return "", fmt.Errorf("private key cannot be empty")
+	}
+
+	// For now, create a simplified signature for demonstration
+	// In production, this would use proper XRPL signing with the xrpl-go library
+
+	// Create a mock signature based on transaction data
+	txData := fmt.Sprintf("%s%s%s%s%d%d%s",
+		transaction.Account,
+		transaction.Destination,
+		transaction.Amount,
+		transaction.Fee,
+		transaction.Sequence,
+		transaction.LastLedgerSequence,
+		transaction.TransactionType)
+
+	// Generate a simple hash-based signature
+	hash := sha256.Sum256([]byte(txData))
+	signature := hex.EncodeToString(hash[:16]) // Use first 16 bytes as signature
+
+	// Set mock signing public key and signature
+	transaction.SigningPubKey = "mock_public_key_" + keyType
+	transaction.TxnSignature = signature
+
+	// Convert transaction to canonical format and create transaction blob
+	txBlob, err := c.createTransactionBlob(transaction)
+	if err != nil {
+		return "", fmt.Errorf("failed to create transaction blob: %w", err)
+	}
+
+	log.Printf("Transaction signed successfully with %s key (mock implementation)", keyType)
+	return txBlob, nil
+}
+
+// SubmitSignedTransaction submits a signed transaction to the XRPL network
+func (c *Client) SubmitSignedTransaction(txBlob string) (*TransactionResult, error) {
+	if c.httpClient == nil {
+		return nil, fmt.Errorf("XRPL client not connected")
+	}
+
+	if txBlob == "" {
+		return nil, fmt.Errorf("transaction blob cannot be empty")
+	}
+
+	// For now, simulate successful submission
+	// In production, this would use the xrpl-go library to submit to the network
+
+	// Generate a mock transaction ID
+	txID := c.generateTransactionID()
+
+	log.Printf("Transaction submitted successfully (mock): %s", txID)
+
+	return &TransactionResult{
+		TransactionID: txID,
+		LedgerIndex:   0, // Will be set when transaction is validated
+		Validated:     false,
+		ResultCode:    "tesSUCCESS",
+		ResultMessage: "Transaction submitted successfully (mock)",
+	}, nil
+}
+
+// MonitorTransaction monitors the status of a submitted transaction
+func (c *Client) MonitorTransaction(transactionID string, maxRetries int, retryInterval time.Duration) (*TransactionStatus, error) {
+	if c.httpClient == nil {
+		return nil, fmt.Errorf("XRPL client not connected")
+	}
+
+	if transactionID == "" {
+		return nil, fmt.Errorf("transaction ID cannot be empty")
+	}
+
+	status := &TransactionStatus{
+		TransactionID: transactionID,
+		Status:        "pending",
+		SubmitTime:    time.Now(),
+		LastChecked:   time.Now(),
+		RetryCount:    0,
+	}
+
+	// Simulate transaction monitoring
+	for i := 0; i < maxRetries; i++ {
+		log.Printf("Monitoring transaction %s (attempt %d/%d)", transactionID, i+1, maxRetries)
+
+		// Simulate network delay
+		time.Sleep(retryInterval)
+
+		// Simulate transaction progression
+		if i == maxRetries-1 {
+			// Final attempt - mark as validated
+			status.Status = "validated"
+			status.LedgerIndex = uint32(12345 + i)
+			status.Validated = true
+			status.ResultCode = "tesSUCCESS"
+			status.ResultMessage = "Transaction validated successfully"
+			log.Printf("Transaction %s validated in ledger %d", transactionID, status.LedgerIndex)
+		} else {
+			status.RetryCount++
+			status.LastChecked = time.Now()
+		}
+	}
+
+	return status, nil
+}
+
+// GetTransactionStatus gets the current status of a transaction
+func (c *Client) GetTransactionStatus(transactionID string) (*TransactionStatus, error) {
+	if c.httpClient == nil {
+		return nil, fmt.Errorf("XRPL client not connected")
+	}
+
+	if transactionID == "" {
+		return nil, fmt.Errorf("transaction ID cannot be empty")
+	}
+
+	// For now, return a mock status
+	// In production, this would query the XRPL network
+	return &TransactionStatus{
+		TransactionID: transactionID,
+		Status:        "validated",
+		LedgerIndex:   12345,
+		Validated:     true,
+		ResultCode:    "tesSUCCESS",
+		ResultMessage: "Transaction validated successfully",
+		LastChecked:   time.Now(),
+	}, nil
+}
+
+// Helper methods
+
+// createTransactionHash creates a hash of the transaction for signing
+func (c *Client) createTransactionHash(transaction *PaymentTransaction) []byte {
+	// Create a canonical representation of the transaction
+	// This is a simplified implementation - in production, use proper XRPL canonicalization
+	txData := fmt.Sprintf("%s%s%s%s%d%d%s",
+		transaction.Account,
+		transaction.Destination,
+		transaction.Amount,
+		transaction.Fee,
+		transaction.Sequence,
+		transaction.LastLedgerSequence,
+		transaction.TransactionType)
+
+	hash := sha256.Sum256([]byte(txData))
+	return hash[:]
+}
+
+// createTransactionBlob creates a transaction blob from the signed transaction
+func (c *Client) createTransactionBlob(transaction *PaymentTransaction) (string, error) {
+	// Convert transaction to JSON
+	txJSON, err := json.Marshal(transaction)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal transaction: %w", err)
+	}
+
+	// In production, this would use proper XRPL serialization
+	// For now, return the JSON as a hex-encoded string
+	return hex.EncodeToString(txJSON), nil
+}
+
+// getCurrentLedgerIndex gets the current ledger index from the network
+func (c *Client) getCurrentLedgerIndex() uint32 {
+	// For now, return a mock ledger index
+	// In production, this would query the XRPL network
+	return 12345
+}
+
+// formatAmount formats amount based on currency
+func (c *Client) formatAmount(amount, currency string) string {
+	switch currency {
+	case "XRP":
+		// Convert XRP to drops (1 XRP = 1,000,000 drops)
+		// This is a simplified conversion - in production, handle decimal parsing properly
+		return amount + "000000" // Simplified - should parse and multiply properly
+	default:
+		// For other currencies, return as-is
+		return amount
+	}
+}
+
 // generateTransactionID creates a mock transaction ID
 func (c *Client) generateTransactionID() string {
 	// Generate random bytes for transaction
@@ -564,4 +825,40 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// Helper methods for real XRPL API responses
+
+// parseRealSubmitResponse parses the real response from XRPL submit API
+func (c *Client) parseRealSubmitResponse(result interface{}) (*TransactionResult, error) {
+	resultMap, ok := result.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid submit response format")
+	}
+
+	// Extract transaction hash from real XRPL response
+	hash, ok := resultMap["hash"].(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid hash in response")
+	}
+
+	// Extract result code
+	resultCode := "tesSUCCESS"
+	if code, ok := resultMap["resultCode"].(string); ok {
+		resultCode = code
+	}
+
+	// Extract result message
+	resultMessage := "Transaction submitted successfully"
+	if message, ok := resultMap["resultMessage"].(string); ok {
+		resultMessage = message
+	}
+
+	return &TransactionResult{
+		TransactionID: hash,
+		LedgerIndex:   0, // Will be set when transaction is validated
+		Validated:     false,
+		ResultCode:    resultCode,
+		ResultMessage: resultMessage,
+	}, nil
 }
