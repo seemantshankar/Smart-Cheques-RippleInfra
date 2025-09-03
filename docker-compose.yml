@@ -16,22 +16,6 @@ services:
       timeout: 10s
       retries: 3
 
-  mongodb:
-    image: mongo:7-jammy
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: smart_payment
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Message Queue (Redis for development)
   redis:
     image: redis:7-alpine
@@ -54,13 +38,10 @@ services:
       - "8000:8000"
     environment:
       - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
-      - MONGO_URL=mongodb://admin:password@mongodb:27017
       - REDIS_URL=redis:6379
       - ENV=development
     depends_on:
       postgres:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -74,13 +55,10 @@ services:
       - "8001:8001"
     environment:
       - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
-      - MONGO_URL=mongodb://admin:password@mongodb:27017
       - REDIS_URL=redis:6379
       - ENV=development
     depends_on:
       postgres:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -94,15 +72,12 @@ services:
       - "8002:8002"
     environment:
       - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
-      - MONGO_URL=mongodb://admin:password@mongodb:27017
       - REDIS_URL=redis:6379
       - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
       - XRPL_TESTNET=true
       - ENV=development
     depends_on:
       postgres:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -116,15 +91,12 @@ services:
       - "8003:8003"
     environment:
       - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
-      - MONGO_URL=mongodb://admin:password@mongodb:27017
       - REDIS_URL=redis:6379
       - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
       - XRPL_TESTNET=true
       - ENV=development
     depends_on:
       postgres:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -138,15 +110,12 @@ services:
       - "8004:8004"
     environment:
       - POSTGRES_URL=postgres://user:password@postgres:5432/smart_payment?sslmode=disable
-      - MONGO_URL=mongodb://admin:password@mongodb:27017
       - REDIS_URL=redis:6379
       - XRPL_NETWORK_URL=wss://s.altnet.rippletest.net:51233
       - XRPL_TESTNET=true
       - ENV=development
     depends_on:
       postgres:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -171,7 +140,6 @@ services:
 
 volumes:
   postgres_data:
-  mongodb_data:
   redis_data:
 
 networks:
