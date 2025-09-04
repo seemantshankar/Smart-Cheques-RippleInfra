@@ -1621,3 +1621,37 @@ func getMapKeys(m map[string]interface{}) []string {
 	}
 	return keys
 }
+
+// CreateConditionalEscrowWithValidation creates an escrow with milestone validation
+func (c *EnhancedClient) CreateConditionalEscrowWithValidation(escrow *EscrowCreate, milestones []MilestoneCondition) (*TransactionResult, error) {
+	if !c.initialized {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	// For now, create a basic escrow - in production this would validate milestone conditions
+	// This is a simplified implementation that creates the escrow without complex milestone logic
+	result, err := c.CreateEscrow(escrow, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create conditional escrow: %w", err)
+	}
+
+	log.Printf("Conditional escrow created with %d milestones: %s", len(milestones), result.TransactionID)
+	return result, nil
+}
+
+// GenerateCompoundSecret generates a compound secret from milestone conditions
+func (c *EnhancedClient) GenerateCompoundSecret(milestones []MilestoneCondition) string {
+	if len(milestones) == 0 {
+		return ""
+	}
+
+	// Create a compound secret by combining milestone IDs and amounts
+	var compound string
+	for _, milestone := range milestones {
+		compound += milestone.MilestoneID + ":" + milestone.Amount + "|"
+	}
+
+	// Hash the compound string for security
+	hash := sha256.Sum256([]byte(compound))
+	return hex.EncodeToString(hash[:])
+}

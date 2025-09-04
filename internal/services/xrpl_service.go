@@ -11,7 +11,7 @@ import (
 )
 
 type XRPLService struct {
-	client      *xrpl.Client
+	client      *xrpl.EnhancedClient
 	initialized bool
 }
 
@@ -26,7 +26,7 @@ type XRPLConfig struct {
 }
 
 func NewXRPLService(config XRPLConfig) *XRPLService {
-	client := xrpl.NewClient(config.NetworkURL, config.TestNet)
+	client := xrpl.NewEnhancedClient(config.NetworkURL, config.WebSocketURL, config.TestNet)
 	return &XRPLService{
 		client: client,
 	}
