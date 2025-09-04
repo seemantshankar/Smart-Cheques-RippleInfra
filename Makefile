@@ -45,8 +45,7 @@ build:
 	@go build -o bin/xrpl-service ./cmd/xrpl-service
 	@go build -o bin/asset-gateway ./cmd/asset-gateway
 	@go build -o bin/db-migrate ./cmd/db-migrate
-	@go build -o bin/xrpl-websocket-example ./cmd/xrpl-websocket-example
-	@go build -o bin/xrpl-websocket-test ./cmd/xrpl-websocket-test
+
 	@echo "All binaries built successfully!"
 
 # Build all Docker images
@@ -194,8 +193,3 @@ local-dev: db-local-start
 	@echo "Run 'make db-local-migrate' to apply migrations"
 	@echo "Run 'make db-local-status' to check status"
 
-# XRPL WebSocket example
-websocket-example: build
-	@echo "Running XRPL WebSocket example client..."
-	@echo "Press Ctrl+C to stop the client"
-	@./bin/xrpl-websocket-example

@@ -20,8 +20,9 @@ type XRPLService struct {
 // var _ repository.XRPLServiceInterface = (*XRPLService)(nil)
 
 type XRPLConfig struct {
-	NetworkURL string
-	TestNet    bool
+	NetworkURL   string
+	WebSocketURL string
+	TestNet      bool
 }
 
 func NewXRPLService(config XRPLConfig) *XRPLService {

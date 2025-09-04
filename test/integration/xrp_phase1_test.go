@@ -244,7 +244,7 @@ func TestXRPLPhase1Integration(t *testing.T) {
 		realClient := xrpl.NewRealXRPLClient(testConfig.NetworkURL, testConfig.TestNet)
 
 		// Also create enhanced client for transaction creation
-		enhancedClient := xrpl.NewEnhancedClient(testConfig.NetworkURL, testConfig.TestNet)
+		enhancedClient := xrpl.NewEnhancedClient(testConfig.NetworkURL, testConfig.WebSocketURL, testConfig.TestNet)
 		err := enhancedClient.Connect()
 		if err != nil {
 			t.Fatalf("Failed to connect enhanced client: %v", err)

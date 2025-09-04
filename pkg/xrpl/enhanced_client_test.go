@@ -5,7 +5,7 @@ import (
 )
 
 func TestNewEnhancedClient(t *testing.T) {
-	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", true)
+	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", "wss://s.altnet.rippletest.net:51233", true)
 
 	if client == nil {
 		t.Fatal("Expected client to be created, got nil")
@@ -25,7 +25,7 @@ func TestNewEnhancedClient(t *testing.T) {
 }
 
 func TestEnhancedClient_ValidateAddress(t *testing.T) {
-	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", true)
+	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", "wss://s.altnet.rippletest.net:51233", true)
 
 	// Test valid XRPL address
 	validAddress := "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
@@ -52,7 +52,7 @@ func TestEnhancedClient_ValidateAddress(t *testing.T) {
 }
 
 func TestEnhancedClient_GenerateWallet(t *testing.T) {
-	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", true)
+	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", "wss://s.altnet.rippletest.net:51233", true)
 
 	// Test real XRPL functionality as per docs - validate address format
 	validAddress := "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
@@ -81,7 +81,7 @@ func TestEnhancedClient_GenerateWallet(t *testing.T) {
 }
 
 func TestEnhancedClient_GenerateSecp256k1Wallet(t *testing.T) {
-	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", true)
+	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", "wss://s.altnet.rippletest.net:51233", true)
 
 	// Test real XRPL functionality as per docs - test amount formatting
 	xrpAmount := 1.5
@@ -103,7 +103,7 @@ func TestEnhancedClient_GenerateSecp256k1Wallet(t *testing.T) {
 }
 
 func TestEnhancedClient_GenerateCondition(t *testing.T) {
-	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", true)
+	client := NewEnhancedClient("https://s.altnet.rippletest.net:51233", "wss://s.altnet.rippletest.net:51233", true)
 
 	secret := "test_secret_123"
 	condition, fulfillment, err := client.GenerateCondition(secret)

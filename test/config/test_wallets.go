@@ -10,8 +10,9 @@ import (
 
 // TestWalletConfig contains configuration for test wallets
 type TestWalletConfig struct {
-	NetworkURL string
-	TestNet    bool
+	NetworkURL   string
+	WebSocketURL string
+	TestNet      bool
 
 	// Test Wallet 1 (Source Account)
 	Wallet1Address    string
@@ -48,8 +49,9 @@ type TestWalletConfig struct {
 func LoadTestConfig() *TestWalletConfig {
 	config := &TestWalletConfig{
 		// Network Configuration
-		NetworkURL: getEnvOrDefault("XRPL_NETWORK_URL", "https://s.altnet.rippletest.net:51234"),
-		TestNet:    getEnvBoolOrDefault("XRPL_TESTNET", true),
+		NetworkURL:   getEnvOrDefault("XRPL_NETWORK_URL", "https://s.altnet.rippletest.net:51234"),
+		WebSocketURL: getEnvOrDefault("XRPL_WEBSOCKET_URL", "wss://s.altnet.rippletest.net:51233"),
+		TestNet:      getEnvBoolOrDefault("XRPL_TESTNET", true),
 
 		// Test Wallet 1 (Source Account)
 		Wallet1Address:    getEnvOrDefault("TEST_WALLET_1_ADDRESS", "r3HhM6gecjrzZQXRaLNZnL82K8vxRgdSGe"),

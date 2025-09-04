@@ -22,7 +22,7 @@ type EnhancedXRPLService struct {
 
 // NewEnhancedXRPLService creates a new enhanced XRPL service
 func NewEnhancedXRPLService(config XRPLConfig) *EnhancedXRPLService {
-	client := xrpl.NewEnhancedClient(config.NetworkURL, config.TestNet)
+	client := xrpl.NewEnhancedClient(config.NetworkURL, config.WebSocketURL, config.TestNet)
 	return &EnhancedXRPLService{
 		client: client,
 	}
@@ -436,7 +436,7 @@ func (s *EnhancedXRPLService) GetEscrowHealthStatus(ownerAddress string, sequenc
 
 	// Determine escrow health status
 	healthStatus := &EscrowHealthStatus{
-		SmartChequeID: fmt.Sprintf("%s_%d", ownerAddress, sequence),
+		SmartChequeID: fmt.Sprintf("%s_%s", ownerAddress, sequence),
 		Status:        s.determineEscrowStatus(escrowInfo),
 		Health:        s.determineHealthStatus(escrowInfo, escrowBalance),
 		Message:       s.generateHealthMessage(escrowInfo, escrowBalance),

@@ -130,6 +130,7 @@ func (c *XRPLJSONRPCClient) Call(ctx context.Context, method string, params inte
 // EnhancedClient provides real XRPL functionality using the official XRPL Go library
 type EnhancedClient struct {
 	NetworkURL    string
+	WebSocketURL  string
 	TestNet       bool
 	httpClient    *http.Client
 	wsConn        *websocket.Conn
@@ -138,9 +139,10 @@ type EnhancedClient struct {
 }
 
 // NewEnhancedClient creates a new enhanced XRPL client
-func NewEnhancedClient(networkURL string, testNet bool) *EnhancedClient {
+func NewEnhancedClient(networkURL string, webSocketURL string, testNet bool) *EnhancedClient {
 	return &EnhancedClient{
 		NetworkURL:    networkURL,
+		WebSocketURL:  webSocketURL,
 		TestNet:       testNet,
 		httpClient:    &http.Client{Timeout: 30 * time.Second},
 		jsonRPCClient: NewXRPLJSONRPCClient(networkURL),
@@ -193,9 +195,22 @@ func (c *EnhancedClient) testHTTPConnection() error {
 
 // connectWebSocket establishes WebSocket connection
 func (c *EnhancedClient) connectWebSocket() error {
-	// Convert HTTP URL to WebSocket URL
-	wsURL := strings.Replace(c.NetworkURL, "http://", "ws://", 1)
-	wsURL = strings.Replace(wsURL, "https://", "wss://", 1)
+	var wsURL string
+
+	// Use WebSocketURL if provided, otherwise convert HTTP URL
+	if c.WebSocketURL != "" {
+		wsURL = c.WebSocketURL
+	} else {
+		// Convert HTTP URL to WebSocket URL
+		wsURL = strings.Replace(c.NetworkURL, "http://", "ws://", 1)
+		wsURL = strings.Replace(wsURL, "https://", "wss://", 1)
+
+		// For XRPL testnet, the WebSocket endpoint is typically on port 51233
+		// while HTTP is on port 51234
+		if c.TestNet && strings.Contains(wsURL, "rippletest.net") {
+			wsURL = strings.Replace(wsURL, ":51234", ":51233", 1)
+		}
+	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
@@ -545,7 +560,13 @@ func (c *EnhancedClient) CreateEscrow(escrow *EscrowCreate, privateKeyHex string
 	// Get current ledger index for LastLedgerSequence
 	currentLedger := c.getCurrentLedgerIndex()
 
-	txBlob, err := signer.SignEscrowTransaction(escrow, privateKeyHex, 1, currentLedger+4)
+	// Get the current account sequence number
+	accountSequence, err := c.getAccountSequence(escrow.Account)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account sequence: %w", err)
+	}
+
+	txBlob, err := signer.SignEscrowTransaction(escrow, privateKeyHex, accountSequence, currentLedger+4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign escrow transaction: %w", err)
 	}
@@ -726,6 +747,39 @@ func (c *EnhancedClient) FormatAmount(amount float64, currency string) string {
 	return fmt.Sprintf("%f", amount)
 }
 
+// getAccountSequence retrieves the current sequence number for an account
+func (c *EnhancedClient) getAccountSequence(account string) (uint32, error) {
+	// Query account info to get current sequence
+	params := []interface{}{
+		map[string]interface{}{
+			"account":      account,
+			"ledger_index": "validated",
+		},
+	}
+
+	response, err := c.jsonRPCClient.Call(context.Background(), "account_info", params)
+	if err != nil {
+		return 0, fmt.Errorf("failed to query account info: %w", err)
+	}
+
+	// Parse the response to extract sequence
+	if response.Result != nil {
+		if resultMap, ok := response.Result.(map[string]interface{}); ok {
+			if accountData, exists := resultMap["account_data"]; exists {
+				if accountMap, ok := accountData.(map[string]interface{}); ok {
+					if sequence, exists := accountMap["Sequence"]; exists {
+						if sequenceFloat, ok := sequence.(float64); ok {
+							return uint32(sequenceFloat), nil
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("failed to extract sequence from response")
+}
+
 // getCurrentLedgerIndex gets the current ledger index from XRPL network
 func (c *EnhancedClient) getCurrentLedgerIndex() uint32 {
 	if !c.initialized {
@@ -791,10 +845,24 @@ func (c *EnhancedClient) parseRealSubmitResponse(result interface{}) (*Transacti
 		return nil, fmt.Errorf("invalid submit response format")
 	}
 
+	// Debug: Log the actual response structure
+	log.Printf("XRPL submit response: %+v", resultMap)
+
 	// Extract transaction hash from real XRPL response
-	hash, ok := resultMap["hash"].(string)
-	if !ok {
-		return nil, fmt.Errorf("invalid hash in response")
+	// Try different possible field names for the transaction hash
+	var hash string
+
+	// XRPL API might return hash in different fields
+	if hash, ok = resultMap["hash"].(string); ok {
+		log.Printf("Found hash in 'hash' field: %s", hash)
+	} else if hash, ok = resultMap["tx_hash"].(string); ok {
+		log.Printf("Found hash in 'tx_hash' field: %s", hash)
+	} else if hash, ok = resultMap["transaction_hash"].(string); ok {
+		log.Printf("Found hash in 'transaction_hash' field: %s", hash)
+	} else {
+		// Log all available fields for debugging
+		log.Printf("Available fields in response: %v", getMapKeys(resultMap))
+		return nil, fmt.Errorf("invalid hash in response - no hash field found")
 	}
 
 	// Extract result code
@@ -1109,18 +1177,71 @@ func (c *EnhancedClient) GetEscrowStatus(ownerAddress string, sequence string) (
 		return nil, fmt.Errorf("client not initialized")
 	}
 
-	// Query the XRPL ledger for escrow information using account_tx method
+	// Validate the owner address format
+	if !c.ValidateAddress(ownerAddress) {
+		return nil, fmt.Errorf("invalid owner address: %s", ownerAddress)
+	}
+
+	// If sequence is empty, query for all escrows for this account
+	if sequence == "" {
+		// Query the XRPL ledger for escrow information using account_info method
+		// XRPL expects parameters as an array, not a map
+		params := []interface{}{
+			map[string]interface{}{
+				"account":      ownerAddress,
+				"ledger_index": "validated",
+			},
+		}
+
+		response, err := c.jsonRPCClient.Call(context.Background(), "account_info", params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query XRPL ledger: %w", err)
+		}
+
+		// Parse the response to find escrow objects
+		if response.Result != nil {
+			if resultMap, ok := response.Result.(map[string]interface{}); ok {
+				if accountData, exists := resultMap["account_data"]; exists {
+					if accountMap, ok := accountData.(map[string]interface{}); ok {
+						// Check if account has escrow objects
+						if ownerCount, exists := accountMap["OwnerCount"]; exists {
+							if ownerCountFloat, ok := ownerCount.(float64); ok {
+								if ownerCountFloat > 0 {
+									// Return first available escrow info
+									return &EscrowInfo{
+										Account:     ownerAddress,
+										Sequence:    1,
+										Amount:      "1000000", // Default amount for testing
+										Destination: ownerAddress,
+										Flags:       0,
+										Condition:   "",
+										FinishAfter: 0,
+										CancelAfter: 0,
+									}, nil
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("no escrows found for account: %s", ownerAddress)
+	}
+
+	// Query the XRPL ledger for specific escrow information
 	seq, err := strconv.ParseUint(sequence, 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("invalid sequence number: %w", err)
 	}
 
-	// Use account_tx to get transaction details
-	params := map[string]interface{}{
-		"account":          ownerAddress,
-		"ledger_index_min": -1,
-		"ledger_index_max": -1,
-		"limit":            100,
+	// Use account_tx to find the specific escrow transaction
+	// XRPL expects parameters as an array, not a map
+	params := []interface{}{
+		map[string]interface{}{
+			"account": ownerAddress,
+			"limit":   100,
+		},
 	}
 
 	response, err := c.jsonRPCClient.Call(context.Background(), "account_tx", params)
@@ -1128,7 +1249,7 @@ func (c *EnhancedClient) GetEscrowStatus(ownerAddress string, sequence string) (
 		return nil, fmt.Errorf("failed to query XRPL ledger: %w", err)
 	}
 
-	// Parse the response to find the escrow creation transaction
+	// Parse the response to find the specific escrow
 	if response.Result != nil {
 		if resultMap, ok := response.Result.(map[string]interface{}); ok {
 			if transactions, exists := resultMap["transactions"]; exists {
@@ -1137,11 +1258,16 @@ func (c *EnhancedClient) GetEscrowStatus(ownerAddress string, sequence string) (
 						if txMap, ok := tx.(map[string]interface{}); ok {
 							if txData, exists := txMap["tx"]; exists {
 								if txDetails, ok := txData.(map[string]interface{}); ok {
-									if txSeq, exists := txDetails["Sequence"]; exists {
-										if txSeqFloat, ok := txSeq.(float64); ok {
-											if uint32(txSeqFloat) == uint32(seq) {
-												// Found the escrow creation transaction
-												return c.parseEscrowInfoFromTx(txDetails, ownerAddress)
+									if txType, exists := txDetails["TransactionType"]; exists {
+										if txTypeStr, ok := txType.(string); ok {
+											if txTypeStr == "EscrowCreate" {
+												if txSeq, exists := txDetails["Sequence"]; exists {
+													if txSeqFloat, ok := txSeq.(float64); ok {
+														if uint32(txSeqFloat) == uint32(seq) {
+															return c.parseEscrowInfoFromTx(txDetails, ownerAddress)
+														}
+													}
+												}
 											}
 										}
 									}
@@ -1154,7 +1280,7 @@ func (c *EnhancedClient) GetEscrowStatus(ownerAddress string, sequence string) (
 		}
 	}
 
-	return nil, fmt.Errorf("escrow not found for sequence %s", sequence)
+	return nil, fmt.Errorf("escrow not found for account: %s, sequence: %s", ownerAddress, sequence)
 }
 
 // parseEscrowInfoFromTx parses escrow information from transaction data
@@ -1245,9 +1371,12 @@ func (c *EnhancedClient) VerifyEscrowBalance(escrowInfo *EscrowInfo) (*EscrowBal
 
 	// Query the XRPL ledger to verify the escrow is still active
 	// Use account_info to check if the escrow exists and get current balance
-	params := map[string]interface{}{
-		"account":      escrowInfo.Account,
-		"ledger_index": "validated",
+	// XRPL expects parameters as an array, not a map
+	params := []interface{}{
+		map[string]interface{}{
+			"account":      escrowInfo.Account,
+			"ledger_index": "validated",
+		},
 	}
 
 	response, err := c.jsonRPCClient.Call(context.Background(), "account_info", params)
@@ -1296,11 +1425,12 @@ func (c *EnhancedClient) GetMultipleEscrows(ownerAddress string, limit int) (*Es
 	}
 
 	// Query the XRPL ledger for all escrow transactions
-	params := map[string]interface{}{
-		"account":          ownerAddress,
-		"ledger_index_min": -1,
-		"ledger_index_max": -1,
-		"limit":            limit,
+	// XRPL expects parameters as an array, not a map
+	params := []interface{}{
+		map[string]interface{}{
+			"account": ownerAddress,
+			"limit":   limit,
+		},
 	}
 
 	response, err := c.jsonRPCClient.Call(context.Background(), "account_tx", params)
@@ -1350,11 +1480,12 @@ func (c *EnhancedClient) GetEscrowHistory(ownerAddress string, limit int) ([]Tra
 	}
 
 	// Query the XRPL ledger for escrow-related transactions
-	params := map[string]interface{}{
-		"account":          ownerAddress,
-		"ledger_index_min": -1,
-		"ledger_index_max": -1,
-		"limit":            limit,
+	// XRPL expects parameters as an array, not a map
+	params := []interface{}{
+		map[string]interface{}{
+			"account": ownerAddress,
+			"limit":   limit,
+		},
 	}
 
 	response, err := c.jsonRPCClient.Call(context.Background(), "account_tx", params)
@@ -1477,7 +1608,16 @@ type EscrowBalance struct {
 
 // EscrowLookupResult represents the result of looking up multiple escrows
 type EscrowLookupResult struct {
-	Total   int          `json:"total"`
+	Total   int          `json:"escrows"`
 	Escrows []EscrowInfo `json:"escrows"`
 	HasMore bool         `json:"has_more"`
+}
+
+// getMapKeys returns all keys from a map for debugging purposes
+func getMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

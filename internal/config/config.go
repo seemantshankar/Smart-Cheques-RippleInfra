@@ -35,8 +35,9 @@ type JWTConfig struct {
 
 // XRPLConfig represents XRPL configuration
 type XRPLConfig struct {
-	NetworkURL string
-	TestNet    bool
+	NetworkURL   string
+	WebSocketURL string
+	TestNet      bool
 }
 
 // Load loads configuration from environment variables with defaults
@@ -57,8 +58,9 @@ func Load() *Config {
 			RefreshTokenDuration: getEnv("JWT_REFRESH_TOKEN_DURATION", "24h"),
 		},
 		XRPL: XRPLConfig{
-			NetworkURL: getEnv("XRPL_NETWORK_URL", "https://s.altnet.rippletest.net:51234"),
-			TestNet:    getEnvAsBool("XRPL_TESTNET", true),
+			NetworkURL:   getEnv("XRPL_NETWORK_URL", "https://s.altnet.rippletest.net:51234"),
+			WebSocketURL: getEnv("XRPL_WEBSOCKET_URL", "wss://s.altnet.rippletest.net:51233"),
+			TestNet:      getEnvAsBool("XRPL_TESTNET", true),
 		},
 	}
 }
