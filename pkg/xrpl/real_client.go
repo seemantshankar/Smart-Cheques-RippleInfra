@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+
+	"github.com/xrpl-go/xrpl-go/wallet"
 	"github.com/ybbus/jsonrpc/v3"
 )
 
@@ -386,4 +391,213 @@ func (c *RealXRPLClient) parseRealTransactionStatus(result interface{}) (*Transa
 	}
 
 	return status, nil
+}
+
+// GenerateWallet creates a real XRPL wallet using the xrpl-go library
+func (c *RealXRPLClient) GenerateWallet() (*WalletInfo, error) {
+	// Use real XRPL wallet generation - create a random seed first
+	seedBytes := make([]byte, 16)
+	if _, err := rand.Read(seedBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate random seed: %w", err)
+	}
+
+	// Convert to hex string for seed
+	seed := hex.EncodeToString(seedBytes)
+
+	// Use FromSeed to create wallet from the generated seed
+	xrplWallet, err := wallet.FromSeed(seed, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create XRPL wallet: %w", err)
+	}
+
+	// Convert to our WalletInfo format
+	walletInfo := &WalletInfo{
+		Address:    xrplWallet.GetAddress().String(),
+		PublicKey:  "",   // Will be set when signing
+		PrivateKey: seed, // Use seed as private key for now
+		Seed:       seed,
+	}
+
+	log.Printf("Generated real XRPL wallet: %s", walletInfo.Address)
+	return walletInfo, nil
+}
+
+// GenerateCondition creates a cryptographic condition for escrow
+func (c *RealXRPLClient) GenerateCondition(secret string) (condition string, fulfillment string, retErr error) {
+	if secret == "" {
+		return "", "", fmt.Errorf("secret cannot be empty")
+	}
+
+	// Create a SHA-256 based condition with additional entropy for security
+	hash := sha256.Sum256([]byte(secret + "smartcheque_condition"))
+	condition = hex.EncodeToString(hash[:])
+	fulfillment = secret
+
+	log.Printf("Generated condition: %s for secret", condition)
+	return condition, fulfillment, nil
+}
+
+// CreateEscrow creates a real XRPL escrow transaction
+func (c *RealXRPLClient) CreateEscrow(escrow *EscrowCreate) (*TransactionResult, error) {
+	// Validate required fields
+	if escrow.Account == "" || escrow.Destination == "" || escrow.Amount == "" {
+		return nil, fmt.Errorf("missing required escrow fields: Account, Destination, and Amount are required")
+	}
+
+	// Validate addresses
+	if !c.ValidateAddress(escrow.Account) {
+		return nil, fmt.Errorf("invalid account address: %s", escrow.Account)
+	}
+	if !c.ValidateAddress(escrow.Destination) {
+		return nil, fmt.Errorf("invalid destination address: %s", escrow.Destination)
+	}
+
+	// Get account sequence for escrow creation
+	accountInfo, err := c.GetAccountInfo(escrow.Account)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account info: %w", err)
+	}
+
+	// Extract sequence from account info
+	sequence, ok := accountInfo["Sequence"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("failed to get account sequence")
+	}
+
+	// Create escrow transaction using real XRPL API
+	escrowTx := map[string]interface{}{
+		"TransactionType": "EscrowCreate",
+		"Account":         escrow.Account,
+		"Destination":     escrow.Destination,
+		"Amount":          escrow.Amount,
+		"Sequence":        uint32(sequence),
+	}
+
+	if escrow.Condition != "" {
+		escrowTx["Condition"] = escrow.Condition
+	}
+	if escrow.CancelAfter > 0 {
+		escrowTx["CancelAfter"] = escrow.CancelAfter
+	}
+	if escrow.FinishAfter > 0 {
+		escrowTx["FinishAfter"] = escrow.FinishAfter
+	}
+
+	// Submit escrow creation transaction
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response jsonrpc.RPCResponse
+	rpcClient := jsonrpc.NewClient(c.NetworkURL)
+	err = rpcClient.CallFor(ctx, &response, "submit", map[string]interface{}{
+		"tx_json": escrowTx,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit escrow creation: %w", err)
+	}
+
+	if response.Error != nil {
+		return nil, fmt.Errorf("XRPL escrow creation error: %s", response.Error.Message)
+	}
+
+	// Parse response to get transaction hash
+	result, ok := response.Result.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid response format from XRPL")
+	}
+
+	txHash, _ := result["tx_hash"].(string)
+	engineResult, _ := result["engine_result"].(string)
+
+	log.Printf("Created escrow: %s -> %s, Amount: %s, TxID: %s",
+		escrow.Account, escrow.Destination, escrow.Amount, txHash)
+
+	return &TransactionResult{
+		TransactionID: txHash,
+		LedgerIndex:   0, // Will be set when validated
+		Validated:     false,
+		ResultCode:    engineResult,
+		ResultMessage: "Escrow creation submitted to XRPL",
+	}, nil
+}
+
+// FinishEscrow completes a real XRPL escrow transaction
+func (c *RealXRPLClient) FinishEscrow(finish *EscrowFinish) (*TransactionResult, error) {
+	// Validate required fields
+	if finish.Account == "" || finish.Owner == "" {
+		return nil, fmt.Errorf("missing required fields: Account and Owner are required")
+	}
+
+	// Validate addresses
+	if !c.ValidateAddress(finish.Account) {
+		return nil, fmt.Errorf("invalid account address: %s", finish.Account)
+	}
+	if !c.ValidateAddress(finish.Owner) {
+		return nil, fmt.Errorf("invalid owner address: %s", finish.Owner)
+	}
+
+	// Get account sequence
+	accountInfo, err := c.GetAccountInfo(finish.Account)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account info: %w", err)
+	}
+
+	// Extract sequence from account info
+	sequence, ok := accountInfo["Sequence"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("failed to get account sequence")
+	}
+
+	// Create escrow finish transaction
+	finishTx := map[string]interface{}{
+		"TransactionType": "EscrowFinish",
+		"Account":         finish.Account,
+		"Owner":           finish.Owner,
+		"OfferSequence":   finish.OfferSequence,
+		"Sequence":        uint32(sequence),
+	}
+
+	if finish.Condition != "" {
+		finishTx["Condition"] = finish.Condition
+	}
+	if finish.Fulfillment != "" {
+		finishTx["Fulfillment"] = finish.Fulfillment
+	}
+
+	// Submit escrow finish transaction
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response jsonrpc.RPCResponse
+	rpcClient := jsonrpc.NewClient(c.NetworkURL)
+	err = rpcClient.CallFor(ctx, &response, "submit", map[string]interface{}{
+		"tx_json": finishTx,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit escrow finish: %w", err)
+	}
+
+	if response.Error != nil {
+		return nil, fmt.Errorf("XRPL escrow finish error: %s", response.Error.Message)
+	}
+
+	// Parse response
+	result, ok := response.Result.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid response format from XRPL")
+	}
+
+	txHash, _ := result["tx_hash"].(string)
+	engineResult, _ := result["engine_result"].(string)
+
+	log.Printf("Finished escrow: Account: %s, Owner: %s, Sequence: %d, TxID: %s",
+		finish.Account, finish.Owner, finish.OfferSequence, txHash)
+
+	return &TransactionResult{
+		TransactionID: txHash,
+		LedgerIndex:   0, // Will be set when validated
+		Validated:     false,
+		ResultCode:    engineResult,
+		ResultMessage: "Escrow finish submitted to XRPL",
+	}, nil
 }
