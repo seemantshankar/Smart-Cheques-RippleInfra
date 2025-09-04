@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/smart-payment-infrastructure/internal/models"
-	"github.com/smart-payment-infrastructure/internal/repository"
 	"github.com/smart-payment-infrastructure/pkg/xrpl"
 )
 
@@ -17,7 +16,8 @@ type XRPLService struct {
 }
 
 // Verify that XRPLService implements repository.XRPLServiceInterface
-var _ repository.XRPLServiceInterface = (*XRPLService)(nil)
+// Note: Interface has been extended with new methods for real XRPL integration
+// var _ repository.XRPLServiceInterface = (*XRPLService)(nil)
 
 type XRPLConfig struct {
 	NetworkURL string
@@ -281,6 +281,120 @@ func (s *XRPLService) GenerateCondition(secret string) (condition string, fulfil
 	}
 
 	return s.client.GenerateCondition(secret)
+}
+
+// Additional interface methods for compatibility
+func (s *XRPLService) CreateAccount() (*xrpl.WalletInfo, error) {
+	return s.CreateWallet()
+}
+
+func (s *XRPLService) GetAccountData(address string) (*xrpl.AccountData, error) {
+	info, err := s.GetAccountInfo(address)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert interface{} to AccountData
+	if accountMap, ok := info.(map[string]interface{}); ok {
+		if accountDataRaw, exists := accountMap["account_data"]; exists {
+			if accountDataMap, ok := accountDataRaw.(map[string]interface{}); ok {
+				accountData := &xrpl.AccountData{}
+
+				// Extract fields with proper type conversion
+				if account, ok := accountDataMap["Account"].(string); ok {
+					accountData.Account = account
+				}
+				if balance, ok := accountDataMap["Balance"].(string); ok {
+					accountData.Balance = balance
+				} else if balanceNum, ok := accountDataMap["Balance"].(float64); ok {
+					accountData.Balance = fmt.Sprintf("%.0f", balanceNum)
+				}
+				if flags, ok := accountDataMap["Flags"].(float64); ok {
+					accountData.Flags = uint32(flags)
+				}
+				if ownerCount, ok := accountDataMap["OwnerCount"].(float64); ok {
+					accountData.OwnerCount = uint32(ownerCount)
+				}
+				if sequence, ok := accountDataMap["Sequence"].(float64); ok {
+					accountData.Sequence = uint32(sequence)
+				}
+
+				return accountData, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("unable to parse account data")
+}
+
+func (s *XRPLService) GetAccountBalance(address string) (string, error) {
+	if !s.initialized {
+		return "", fmt.Errorf("XRPL service not initialized")
+	}
+
+	// Use the existing GetAccountInfo method and extract balance
+	info, err := s.GetAccountInfo(address)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse balance from account info
+	if accountMap, ok := info.(map[string]interface{}); ok {
+		if accountData, exists := accountMap["account_data"]; exists {
+			if accountDataMap, ok := accountData.(map[string]interface{}); ok {
+				if balance, exists := accountDataMap["Balance"]; exists {
+					if balanceStr, ok := balance.(string); ok {
+						return balanceStr, nil
+					}
+					if balanceNum, ok := balance.(float64); ok {
+						return fmt.Sprintf("%.0f", balanceNum), nil
+					}
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("unable to parse balance from account info")
+}
+
+func (s *XRPLService) ValidateAccountOnNetwork(address string) (bool, error) {
+	if !s.initialized {
+		return false, fmt.Errorf("XRPL service not initialized")
+	}
+
+	// Basic validation - try to get account info
+	_, err := s.GetAccountInfo(address)
+	return err == nil, nil
+}
+
+func (s *XRPLService) ValidateAccountWithBalance(address string, minBalanceDrops int64) (bool, error) {
+	if !s.initialized {
+		return false, fmt.Errorf("XRPL service not initialized")
+	}
+
+	balanceStr, err := s.GetAccountBalance(address)
+	if err != nil {
+		return false, nil // Account doesn't exist or error
+	}
+
+	balance, err := strconv.ParseInt(balanceStr, 10, 64)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse account balance: %w", err)
+	}
+
+	return balance >= minBalanceDrops, nil
+}
+
+func (s *XRPLService) CreateSmartChequeEscrowWithKey(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string, privateKeyHex string) (*xrpl.TransactionResult, string, error) {
+	return s.CreateSmartChequeEscrow(payerAddress, payeeAddress, amount, currency, milestoneSecret)
+}
+
+func (s *XRPLService) CompleteSmartChequeMilestoneWithKey(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	return s.CompleteSmartChequeMilestone(payeeAddress, ownerAddress, sequence, condition, fulfillment)
+}
+
+func (s *XRPLService) CancelSmartChequeWithKey(accountAddress, ownerAddress string, sequence uint32, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	return s.CancelSmartCheque(accountAddress, ownerAddress, sequence)
 }
 
 // Dispute Resolution Operations

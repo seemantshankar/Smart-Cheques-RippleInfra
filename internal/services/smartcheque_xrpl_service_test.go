@@ -396,6 +396,52 @@ func (m *mockXRPLServiceXRPL) GenerateCondition(secret string) (condition string
 	return condition, fulfillment, args.Error(2)
 }
 
+func (m *mockXRPLServiceXRPL) CreateAccount() (*xrpl.WalletInfo, error) {
+	args := m.Called()
+	wallet, _ := args.Get(0).(*xrpl.WalletInfo)
+	return wallet, args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) GetAccountData(address string) (*xrpl.AccountData, error) {
+	args := m.Called(address)
+	accountData, _ := args.Get(0).(*xrpl.AccountData)
+	return accountData, args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) GetAccountBalance(address string) (string, error) {
+	args := m.Called(address)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) ValidateAccountOnNetwork(address string) (bool, error) {
+	args := m.Called(address)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) ValidateAccountWithBalance(address string, minBalanceDrops int64) (bool, error) {
+	args := m.Called(address, minBalanceDrops)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) CreateSmartChequeEscrowWithKey(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string, privateKeyHex string) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestoneSecret, privateKeyHex)
+	result, _ := args.Get(0).(*xrpl.TransactionResult)
+	fulfillment, _ := args.Get(1).(string)
+	return result, fulfillment, args.Error(2)
+}
+
+func (m *mockXRPLServiceXRPL) CompleteSmartChequeMilestoneWithKey(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(payeeAddress, ownerAddress, sequence, condition, fulfillment, privateKeyHex)
+	result, _ := args.Get(0).(*xrpl.TransactionResult)
+	return result, args.Error(1)
+}
+
+func (m *mockXRPLServiceXRPL) CancelSmartChequeWithKey(accountAddress, ownerAddress string, sequence uint32, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(accountAddress, ownerAddress, sequence, privateKeyHex)
+	result, _ := args.Get(0).(*xrpl.TransactionResult)
+	return result, args.Error(1)
+}
+
 type mockMilestoneRepoXRPL struct {
 	mock.Mock
 }

@@ -216,6 +216,61 @@ func (m *MockXRPLService) GenerateCondition(secret string) (condition string, fu
 	return args.String(0), args.String(1), args.Error(2)
 }
 
+func (m *MockXRPLService) CreateAccount() (*xrpl.WalletInfo, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.WalletInfo), args.Error(1)
+}
+
+func (m *MockXRPLService) GetAccountData(address string) (*xrpl.AccountData, error) {
+	args := m.Called(address)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.AccountData), args.Error(1)
+}
+
+func (m *MockXRPLService) GetAccountBalance(address string) (string, error) {
+	args := m.Called(address)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockXRPLService) ValidateAccountOnNetwork(address string) (bool, error) {
+	args := m.Called(address)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockXRPLService) ValidateAccountWithBalance(address string, minBalanceDrops int64) (bool, error) {
+	args := m.Called(address, minBalanceDrops)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockXRPLService) CreateSmartChequeEscrowWithKey(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string, privateKeyHex string) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestoneSecret, privateKeyHex)
+	if args.Get(0) == nil {
+		return nil, "", args.Error(2)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)
+}
+
+func (m *MockXRPLService) CompleteSmartChequeMilestoneWithKey(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(payeeAddress, ownerAddress, sequence, condition, fulfillment, privateKeyHex)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
+func (m *MockXRPLService) CancelSmartChequeWithKey(accountAddress, ownerAddress string, sequence uint32, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(accountAddress, ownerAddress, sequence, privateKeyHex)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
 func (m *MockXRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
 	args := m.Called(payerAddress, payeeAddress, amount, currency, milestones)
 	if args.Get(0) == nil {

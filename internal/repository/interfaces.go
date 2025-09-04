@@ -53,13 +53,23 @@ type WalletRepositoryInterface interface {
 type XRPLServiceInterface interface {
 	Initialize() error
 	CreateWallet() (*xrpl.WalletInfo, error)
+	CreateAccount() (*xrpl.WalletInfo, error)
 	ValidateAddress(address string) bool
 	GetAccountInfo(address string) (interface{}, error)
+	GetAccountData(address string) (*xrpl.AccountData, error)
+	GetAccountBalance(address string) (string, error)
+	ValidateAccountOnNetwork(address string) (bool, error)
+	ValidateAccountWithBalance(address string, minBalanceDrops int64) (bool, error)
 	HealthCheck() error
+	// Legacy methods for backward compatibility
 	CreateSmartChequeEscrow(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string) (*xrpl.TransactionResult, string, error)
+	// New methods with real XRPL testnet integration
+	CreateSmartChequeEscrowWithKey(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string, privateKeyHex string) (*xrpl.TransactionResult, string, error)
 	CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error)
 	CompleteSmartChequeMilestone(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string) (*xrpl.TransactionResult, error)
+	CompleteSmartChequeMilestoneWithKey(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string, privateKeyHex string) (*xrpl.TransactionResult, error)
 	CancelSmartCheque(accountAddress, ownerAddress string, sequence uint32) (*xrpl.TransactionResult, error)
+	CancelSmartChequeWithKey(accountAddress, ownerAddress string, sequence uint32, privateKeyHex string) (*xrpl.TransactionResult, error)
 	GetEscrowStatus(ownerAddress string, sequence string) (*xrpl.EscrowInfo, error)
 	GenerateCondition(secret string) (condition string, fulfillment string, err error)
 }

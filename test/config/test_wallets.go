@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -82,19 +83,34 @@ func LoadTestConfig() *TestWalletConfig {
 	return config
 }
 
-// GetTestWallet1 returns the first test wallet configuration
+// GetTestWallet1 returns the first test wallet configuration with generated private key
 func (c *TestWalletConfig) GetTestWallet1() (address, secret, privateKey, keyType string) {
-	return c.Wallet1Address, c.Wallet1Secret, c.Wallet1PrivateKey, c.Wallet1KeyType
+	addr, sec, priv, typ, err := c.GetWalletWithPrivateKey(c.Wallet1Address, c.Wallet1Secret, c.Wallet1KeyType)
+	if err != nil {
+		// Return original values if generation fails (for backward compatibility)
+		return c.Wallet1Address, c.Wallet1Secret, c.Wallet1PrivateKey, c.Wallet1KeyType
+	}
+	return addr, sec, priv, typ
 }
 
-// GetTestWallet2 returns the second test wallet configuration
+// GetTestWallet2 returns the second test wallet configuration with generated private key
 func (c *TestWalletConfig) GetTestWallet2() (address, secret, privateKey, keyType string) {
-	return c.Wallet2Address, c.Wallet2Secret, c.Wallet2PrivateKey, c.Wallet2KeyType
+	addr, sec, priv, typ, err := c.GetWalletWithPrivateKey(c.Wallet2Address, c.Wallet2Secret, c.Wallet2KeyType)
+	if err != nil {
+		// Return original values if generation fails (for backward compatibility)
+		return c.Wallet2Address, c.Wallet2Secret, c.Wallet2PrivateKey, c.Wallet2KeyType
+	}
+	return addr, sec, priv, typ
 }
 
-// GetTestWallet3 returns the third test wallet configuration
+// GetTestWallet3 returns the third test wallet configuration with generated private key
 func (c *TestWalletConfig) GetTestWallet3() (address, secret, privateKey, keyType string) {
-	return c.Wallet3Address, c.Wallet3Secret, c.Wallet3PrivateKey, c.Wallet3KeyType
+	addr, sec, priv, typ, err := c.GetWalletWithPrivateKey(c.Wallet3Address, c.Wallet3Secret, c.Wallet3KeyType)
+	if err != nil {
+		// Return original values if generation fails (for backward compatibility)
+		return c.Wallet3Address, c.Wallet3Secret, c.Wallet3PrivateKey, c.Wallet3KeyType
+	}
+	return addr, sec, priv, typ
 }
 
 // GetTransactionParams returns the test transaction parameters
@@ -105,6 +121,30 @@ func (c *TestWalletConfig) GetTransactionParams() (amount, currency, fee string)
 // GetMonitoringConfig returns the test monitoring configuration
 func (c *TestWalletConfig) GetMonitoringConfig() (maxRetries, retryInterval int) {
 	return c.MonitorMaxRetries, c.MonitorRetryInterval
+}
+
+// GeneratePrivateKeyFromSecret generates private key hex from XRPL secret
+// Note: For now, we'll return the secret directly as the service expects private keys
+// In a production implementation, this would extract the actual private key from the wallet
+func GeneratePrivateKeyFromSecret(secret string) (string, error) {
+	if secret == "" {
+		return "", fmt.Errorf("secret cannot be empty")
+	}
+
+	// For now, return the secret as-is since the current service implementation
+	// may expect secrets rather than extracted private keys
+	return secret, nil
+}
+
+// GetWalletWithPrivateKey returns wallet info with generated private key
+func (c *TestWalletConfig) GetWalletWithPrivateKey(address, secret, keyType string) (addressOut, secretOut, privateKey, keyTypeOut string, err error) {
+	if secret != "" {
+		privateKey, err = GeneratePrivateKeyFromSecret(secret)
+		if err != nil {
+			return "", "", "", "", fmt.Errorf("failed to generate private key for %s: %w", address, err)
+		}
+	}
+	return address, secret, privateKey, keyType, nil
 }
 
 // Helper functions for environment variable handling

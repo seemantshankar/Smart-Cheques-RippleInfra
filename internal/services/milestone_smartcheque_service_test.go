@@ -275,6 +275,46 @@ func (m *mockXRPLService) GenerateCondition(secret string) (condition string, fu
 	return args.String(0), args.String(1), args.Error(2)
 }
 
+func (m *mockXRPLService) CreateAccount() (*xrpl.WalletInfo, error) {
+	args := m.Called()
+	return args.Get(0).(*xrpl.WalletInfo), args.Error(1)
+}
+
+func (m *mockXRPLService) GetAccountData(address string) (*xrpl.AccountData, error) {
+	args := m.Called(address)
+	return args.Get(0).(*xrpl.AccountData), args.Error(1)
+}
+
+func (m *mockXRPLService) GetAccountBalance(address string) (string, error) {
+	args := m.Called(address)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockXRPLService) ValidateAccountOnNetwork(address string) (bool, error) {
+	args := m.Called(address)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockXRPLService) ValidateAccountWithBalance(address string, minBalanceDrops int64) (bool, error) {
+	args := m.Called(address, minBalanceDrops)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockXRPLService) CreateSmartChequeEscrowWithKey(payerAddress, payeeAddress string, amount float64, currency string, milestoneSecret string, privateKeyHex string) (*xrpl.TransactionResult, string, error) {
+	args := m.Called(payerAddress, payeeAddress, amount, currency, milestoneSecret, privateKeyHex)
+	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)
+}
+
+func (m *mockXRPLService) CompleteSmartChequeMilestoneWithKey(payeeAddress, ownerAddress string, sequence uint32, condition, fulfillment string, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(payeeAddress, ownerAddress, sequence, condition, fulfillment, privateKeyHex)
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
+func (m *mockXRPLService) CancelSmartChequeWithKey(accountAddress, ownerAddress string, sequence uint32, privateKeyHex string) (*xrpl.TransactionResult, error) {
+	args := m.Called(accountAddress, ownerAddress, sequence, privateKeyHex)
+	return args.Get(0).(*xrpl.TransactionResult), args.Error(1)
+}
+
 func (m *mockXRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeAddress string, amount float64, currency string, milestones []models.Milestone) (*xrpl.TransactionResult, string, error) {
 	args := m.Called(payerAddress, payeeAddress, amount, currency, milestones)
 	return args.Get(0).(*xrpl.TransactionResult), args.String(1), args.Error(2)

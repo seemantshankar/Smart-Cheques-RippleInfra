@@ -53,6 +53,21 @@ func TestEnhancedXRPLService_CreateWallet(t *testing.T) {
 	assert.Contains(t, err.Error(), "service not initialized")
 }
 
+func TestEnhancedXRPLService_CreateAccount(t *testing.T) {
+	config := XRPLConfig{
+		NetworkURL: "https://s.altnet.rippletest.net:51233",
+		TestNet:    true,
+	}
+
+	service := NewEnhancedXRPLService(config)
+
+	// Test account creation (will fail due to service not initialized)
+	wallet, err := service.CreateAccount()
+	assert.Error(t, err)
+	assert.Nil(t, wallet)
+	assert.Contains(t, err.Error(), "service not initialized")
+}
+
 func TestEnhancedXRPLService_CreateSecp256k1Wallet(t *testing.T) {
 	config := XRPLConfig{
 		NetworkURL: "https://s.altnet.rippletest.net:51233",
@@ -189,6 +204,7 @@ func TestEnhancedXRPLService_CreateSmartChequeEscrow(t *testing.T) {
 		100.0,
 		"XRP",
 		"test_secret",
+		"mock_private_key",
 	)
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -248,6 +264,7 @@ func TestEnhancedXRPLService_CompleteSmartChequeMilestone(t *testing.T) {
 		1,
 		"condition_hash",
 		"fulfillment_secret",
+		"mock_private_key",
 	)
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -267,6 +284,7 @@ func TestEnhancedXRPLService_CancelSmartCheque(t *testing.T) {
 		"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
 		"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
 		1,
+		"mock_private_key",
 	)
 	assert.Error(t, err)
 	assert.Nil(t, result)
