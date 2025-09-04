@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -14,9 +15,10 @@ import (
 )
 
 type Client struct {
-	NetworkURL string
-	TestNet    bool
-	httpClient *http.Client
+	NetworkURL    string
+	TestNet       bool
+	httpClient    *http.Client
+	jsonRPCClient *XRPLJSONRPCClient
 }
 
 type WalletInfo struct {
@@ -117,11 +119,10 @@ type TransactionStatus struct {
 
 func NewClient(networkURL string, testNet bool) *Client {
 	return &Client{
-		NetworkURL: networkURL,
-		TestNet:    testNet,
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		NetworkURL:    networkURL,
+		TestNet:       testNet,
+		httpClient:    &http.Client{Timeout: 30 * time.Second},
+		jsonRPCClient: NewXRPLJSONRPCClient(networkURL),
 	}
 }
 
@@ -630,34 +631,30 @@ func (c *Client) SignTransaction(transaction *PaymentTransaction, privateKeyHex 
 		return "", fmt.Errorf("private key cannot be empty")
 	}
 
-	// For now, create a simplified signature for demonstration
-	// In production, this would use proper XRPL signing with the xrpl-go library
+	// Use real XRPL signing with xrpl-go library
+	signer := NewTransactionSigner(21338) // Testnet network ID
 
-	// Create a mock signature based on transaction data
-	txData := fmt.Sprintf("%s%s%s%s%d%d%s",
-		transaction.Account,
-		transaction.Destination,
-		transaction.Amount,
-		transaction.Fee,
-		transaction.Sequence,
-		transaction.LastLedgerSequence,
-		transaction.TransactionType)
-
-	// Generate a simple hash-based signature
-	hash := sha256.Sum256([]byte(txData))
-	signature := hex.EncodeToString(hash[:16]) // Use first 16 bytes as signature
-
-	// Set mock signing public key and signature
-	transaction.SigningPubKey = "mock_public_key_" + keyType
-	transaction.TxnSignature = signature
-
-	// Convert transaction to canonical format and create transaction blob
-	txBlob, err := c.createTransactionBlob(transaction)
-	if err != nil {
-		return "", fmt.Errorf("failed to create transaction blob: %w", err)
+	// Convert PaymentTransaction to XRPLTransaction format
+	// Ensure all required fields are properly set for XRPL
+	xrplTx := &XRPLTransaction{
+		TransactionType:    "Payment", // XRPL expects string "Payment" for type 0
+		Account:            transaction.Account,
+		Destination:        transaction.Destination,
+		Amount:             transaction.Amount,
+		Fee:                transaction.Fee,
+		Sequence:           transaction.Sequence,
+		LastLedgerSequence: transaction.LastLedgerSequence,
+		Flags:              0x00080000, // tfFullyCanonicalSig flag for XRPL
+		NetworkID:          21338,      // Testnet network ID
 	}
 
-	log.Printf("Transaction signed successfully with %s key (mock implementation)", keyType)
+	// Sign the transaction using the transaction signer
+	txBlob, err := signer.signTransaction(xrplTx, privateKeyHex)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	log.Printf("Transaction signed successfully with %s key", keyType)
 	return txBlob, nil
 }
 
@@ -671,21 +668,83 @@ func (c *Client) SubmitSignedTransaction(txBlob string) (*TransactionResult, err
 		return nil, fmt.Errorf("transaction blob cannot be empty")
 	}
 
-	// For now, simulate successful submission
-	// In production, this would use the xrpl-go library to submit to the network
+	// Submit to real XRPL testnet using submit method
+	// XRPL submit API expects: {"method": "submit", "params": [{"tx_blob": "..."}]}
+	params := map[string]interface{}{
+		"method": "submit",
+		"params": []map[string]interface{}{
+			{
+				"tx_blob": txBlob,
+			},
+		},
+	}
 
-	// Generate a mock transaction ID
-	txID := c.generateTransactionID()
+	// Make direct HTTP POST request since we're using the submit method
+	jsonData, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal submit request: %w", err)
+	}
 
-	log.Printf("Transaction submitted successfully (mock): %s", txID)
+	resp, err := c.httpClient.Post(c.NetworkURL, "application/json", strings.NewReader(string(jsonData)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit transaction to XRPL: %w", err)
+	}
+	defer resp.Body.Close()
 
-	return &TransactionResult{
-		TransactionID: txID,
-		LedgerIndex:   0, // Will be set when transaction is validated
-		Validated:     false,
-		ResultCode:    "tesSUCCESS",
-		ResultMessage: "Transaction submitted successfully (mock)",
-	}, nil
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("XRPL submit failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	// Parse the response
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode XRPL response: %w", err)
+	}
+
+	// Debug: Log the response to see what we're getting
+	log.Printf("XRPL submit response: %+v", response)
+
+	// Check for errors
+	if errorField, exists := response["error"]; exists {
+		if errorStr, ok := errorField.(string); ok {
+			return nil, fmt.Errorf("XRPL error: %s", errorStr)
+		}
+	}
+
+	// Check for result
+	if result, exists := response["result"]; exists {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			log.Printf("XRPL result: %+v", resultMap)
+
+			if engineResult, exists := resultMap["engine_result"]; exists {
+				if engineResultStr, ok := engineResult.(string); ok {
+					log.Printf("XRPL engine result: %s", engineResultStr)
+
+					if engineResultStr == "tesSUCCESS" {
+						// Transaction submitted successfully
+						if txHash, exists := resultMap["tx_hash"]; exists {
+							if txHashStr, ok := txHash.(string); ok {
+								log.Printf("Transaction submitted successfully to XRPL: %s", txHashStr)
+								return &TransactionResult{
+									TransactionID: txHashStr,
+									LedgerIndex:   0, // Will be set when transaction is validated
+									Validated:     false,
+									ResultCode:    engineResultStr,
+									ResultMessage: "Transaction submitted successfully to XRPL",
+								}, nil
+							}
+						}
+					} else {
+						// Transaction failed
+						return nil, fmt.Errorf("XRPL transaction failed: %s", engineResultStr)
+					}
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("failed to parse XRPL submit response")
 }
 
 // MonitorTransaction monitors the status of a submitted transaction

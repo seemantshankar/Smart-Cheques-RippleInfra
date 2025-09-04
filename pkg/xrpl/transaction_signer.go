@@ -455,6 +455,42 @@ func (ts *TransactionSigner) GenerateSecp256k1Wallet() (*WalletInfo, error) {
 	}, nil
 }
 
+// CreateWalletFromSeed creates a wallet from an existing seed
+func (ts *TransactionSigner) CreateWalletFromSeed(seed string) (*WalletInfo, error) {
+	// Decode the hex seed
+	seedBytes, err := hex.DecodeString(seed)
+	if err != nil {
+		return nil, fmt.Errorf("invalid seed format: %w", err)
+	}
+
+	// For now, create a simple wallet info from the seed
+	// In a real implementation, this would derive the public key and address
+	address := ts.generateSimpleAddress(seedBytes)
+
+	return &WalletInfo{
+		Address:    address,
+		PublicKey:  hex.EncodeToString(seedBytes), // Simplified for testing
+		PrivateKey: seed,
+		Seed:       seed,
+	}, nil
+}
+
+// generateSimpleAddress generates a simple address for testing purposes
+func (ts *TransactionSigner) generateSimpleAddress(seed []byte) string {
+	// Use a simple hash-based approach for testing
+	hash := sha256.Sum256(seed)
+
+	// Create a testnet address starting with 'r'
+	// This is simplified for testing - in production use proper XRPL address generation
+	address := "r"
+	for i := 0; i < 25; i++ {
+		index := int(hash[i%len(hash)]) % 58
+		address += "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[index : index+1]
+	}
+
+	return address
+}
+
 // generateXRPLAddress generates a proper XRPL address from a public key
 func (ts *TransactionSigner) generateXRPLAddress(publicKey []byte) (string, error) {
 	// XRPL Address Generation Algorithm:
@@ -509,28 +545,29 @@ func (ts *TransactionSigner) calculateChecksum(payload []byte) []byte {
 func (ts *TransactionSigner) base58Encode(input []byte) string {
 	const base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
-	result := ""
-	x := make([]byte, len(input)+1)
-	copy(x[1:], input)
-
-	for len(x) > 1 || x[0] > 0 {
-		carry := 0
-		for i := len(x) - 1; i >= 0; i-- {
-			carry = carry*256 + int(x[i])
-			x[i] = byte(carry / 58)
-			carry %= 58
-		}
-		result = string(base58Alphabet[carry]) + result
+	// Handle empty input
+	if len(input) == 0 {
+		return ""
 	}
 
-	// Remove leading zeros
-	for i, b := range input {
+	// Convert to big integer for division
+	var num uint64
+	for _, b := range input {
+		num = num<<8 + uint64(b)
+	}
+
+	// Convert to base58
+	var result string
+	for num > 0 {
+		result = string(base58Alphabet[num%58]) + result
+		num /= 58
+	}
+
+	// Handle leading zeros - each leading zero byte adds a '1' character
+	for _, b := range input {
 		if b == 0 {
 			result = "1" + result
 		} else {
-			break
-		}
-		if i == len(input)-1 && b == 0 {
 			break
 		}
 	}

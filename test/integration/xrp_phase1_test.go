@@ -14,8 +14,8 @@ func TestXRPLPhase1Integration(t *testing.T) {
 	testConfig := config.LoadTestConfig()
 
 	t.Run("Complete Payment Transaction Workflow", func(t *testing.T) {
-		// Initialize XRPL service with testnet configuration
-		xrplService := services.NewXRPLService(services.XRPLConfig{
+		// Initialize enhanced XRPL service with testnet configuration
+		xrplService := services.NewEnhancedXRPLService(services.XRPLConfig{
 			NetworkURL: testConfig.NetworkURL,
 			TestNet:    testConfig.TestNet,
 		})
@@ -98,8 +98,8 @@ func TestXRPLPhase1Integration(t *testing.T) {
 	})
 
 	t.Run("Individual Phase 1 Components", func(t *testing.T) {
-		// Initialize XRPL service
-		xrplService := services.NewXRPLService(services.XRPLConfig{
+		// Initialize enhanced XRPL service
+		xrplService := services.NewEnhancedXRPLService(services.XRPLConfig{
 			NetworkURL: testConfig.NetworkURL,
 			TestNet:    testConfig.TestNet,
 		})
@@ -187,8 +187,8 @@ func TestXRPLPhase1Integration(t *testing.T) {
 	})
 
 	t.Run("Multiple Wallet Types", func(t *testing.T) {
-		// Initialize XRPL service
-		xrplService := services.NewXRPLService(services.XRPLConfig{
+		// Initialize enhanced XRPL service
+		xrplService := services.NewEnhancedXRPLService(services.XRPLConfig{
 			NetworkURL: testConfig.NetworkURL,
 			TestNet:    testConfig.TestNet,
 		})

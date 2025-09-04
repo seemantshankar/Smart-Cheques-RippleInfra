@@ -57,7 +57,7 @@ func Load() *Config {
 			RefreshTokenDuration: getEnv("JWT_REFRESH_TOKEN_DURATION", "24h"),
 		},
 		XRPL: XRPLConfig{
-			NetworkURL: getEnv("XRPL_NETWORK_URL", "wss://s.altnet.rippletest.net:51233"),
+			NetworkURL: getEnv("XRPL_NETWORK_URL", "https://s.altnet.rippletest.net:51234"),
 			TestNet:    getEnvAsBool("XRPL_TESTNET", true),
 		},
 	}
