@@ -221,9 +221,37 @@ The service provides consistent error handling:
 
 ## Testing
 
-Run the service tests:
+The consolidated XRPL service is tested through the comprehensive integration test:
 ```bash
-go test ./internal/services/consolidated_xrpl_service_test.go ./internal/services/consolidated_xrpl_service.go
+go run test_comprehensive_xrpl.go
+```
+
+This test covers:
+- Wallet funding via XRPL testnet faucet
+- Real payment transactions  
+- Escrow creation with crypto-conditions
+- Full transaction lifecycle on XRPL testnet
+
+### **Test Results Summary**
+
+**✅ SUCCESSFUL OPERATIONS:**
+- **Wallet Funding**: Successfully funded wallets with 10 XRP each via testnet faucet
+- **Payment Transactions**: 0.1 XRP payments working correctly with proper fees
+- **Escrow Creation**: 0.2 XRP escrows with DER-encoded conditions successful
+- **Amount Handling**: Proper conversion from drops strings to xrpl-go types
+- **Condition Generation**: Crypto-conditions library producing valid XRPL conditions
+
+**📊 VERIFIED TRANSACTION EXAMPLES:**
+```
+✅ Payment Transaction: 857E5FCBAD2DF23E1E7A1D6A76E5C231B87D8184F16A254880A5168936D9BEEB
+   - Amount: 100000 drops (0.1 XRP)
+   - Fee: 12 drops
+   - Result: tesSUCCESS
+
+✅ Escrow Transaction: 314E3E730402915FCDAFD42C4337812B11FABD1006868E6D9A6A60240BF93160
+   - Amount: 200000 drops (0.2 XRP)  
+   - Condition: A025802026D7D43C574EF5169EDCE18862A4B5B3F46059189990F4A451BBEF6EFD65BF26810120
+   - Result: tesSUCCESS
 ```
 
 ## Dependencies
@@ -231,6 +259,284 @@ go test ./internal/services/consolidated_xrpl_service_test.go ./internal/service
 - `github.com/smart-payment-infrastructure/pkg/xrpl` - Enhanced XRPL client
 - `github.com/smart-payment-infrastructure/internal/models` - Data models
 - Standard Go libraries: `fmt`, `log`, `strconv`, `time`
+
+## Key Learnings & Common Issues
+
+### **Amount Type Requirements**
+
+**CRITICAL**: XRPL expects specific amount formats depending on the library layer:
+
+```go
+// ❌ WRONG: Raw string passed to xrpl-go types
+Amount: "200000" // This causes type conversion errors
+
+// ✅ CORRECT: Convert string to int64 for xrpl-go library
+amountInt, err := strconv.ParseInt(amount, 10, 64)
+if err != nil {
+    return nil, fmt.Errorf("failed to parse amount: %w", err)
+}
+escrow.Amount = types.XRPCurrencyAmount(amountInt)
+```
+
+**Key Points:**
+- Input amounts should be strings representing drops (1 XRP = 1,000,000 drops)
+- xrpl-go library's `types.XRPCurrencyAmount` expects `int64`
+- The library internally converts back to proper JSON string format for XRPL
+- Example: "200000" drops = 0.2 XRP
+
+### **Crypto-Conditions Implementation**
+
+**CRITICAL**: XRPL requires proper DER-encoded crypto-conditions, not raw SHA-256 hashes.
+
+#### ❌ **Common Mistakes**
+```go
+// Raw SHA-256 hash - causes temMALFORMED
+hash := sha256.Sum256(preimage)
+condition := hex.EncodeToString(hash[:])
+
+// Manual condition format - often incorrect
+condition := "A0258020" + hashHex + "8114" + hashHex + "80"
+```
+
+#### ✅ **Correct Implementation**
+```go
+import cc "github.com/go-interledger/cryptoconditions"
+
+func createXRPLConditionAndFulfillment(preimage []byte) (string, string, error) {
+    // Create PREIMAGE-SHA-256 fulfillment using crypto-conditions library
+    fulfillment := cc.NewPreimageSha256(preimage)
+    
+    // Serialize to binary (DER-encoded)
+    fulfillmentBinary, err := fulfillment.Encode()
+    if err != nil {
+        return "", "", fmt.Errorf("failed to encode fulfillment: %w", err)
+    }
+    
+    // Generate condition from fulfillment
+    condition := fulfillment.Condition()
+    conditionBinary, err := condition.Encode()
+    if err != nil {
+        return "", "", fmt.Errorf("failed to encode condition: %w", err)
+    }
+    
+    // Convert to hexadecimal strings for XRPL
+    conditionHex := fmt.Sprintf("%X", conditionBinary)
+    fulfillmentHex := fmt.Sprintf("%X", fulfillmentBinary)
+    
+    return conditionHex, fulfillmentHex, nil
+}
+```
+
+**Required Dependency:**
+```bash
+go get github.com/go-interledger/cryptoconditions
+```
+
+### **Transaction Autofill Requirements**
+
+**CRITICAL**: Address type conversion required before Autofill
+
+```go
+// ❌ WRONG: Autofill with types.Address causes panic
+flattenedTx := escrow.Flatten()
+client.Autofill(&flattenedTx) // PANIC: interface conversion error
+
+// ✅ CORRECT: Convert addresses to strings first
+flattenedTx := escrow.Flatten()
+
+// Convert types.Address to strings for Autofill compatibility
+if addr, ok := flattenedTx["Account"].(types.Address); ok {
+    flattenedTx["Account"] = string(addr)
+}
+if addr, ok := flattenedTx["Destination"].(types.Address); ok {
+    flattenedTx["Destination"] = string(addr)
+}
+
+// Now Autofill works correctly
+if err := client.Autofill(&flattenedTx); err != nil {
+    return nil, fmt.Errorf("failed to autofill transaction: %w", err)
+}
+```
+
+### **Common Error Codes & Solutions**
+
+#### **temMALFORMED**
+- **Cause**: Incorrect condition format, wrong amount type, or malformed transaction fields
+- **Solution**: Use proper DER-encoded conditions and correct amount types
+
+#### **tecNO_TARGET**
+- **Cause**: Escrow object not found (wrong sequence number or timing issues)
+- **Solution**: Use correct escrow sequence from creation transaction
+
+#### **Interface Conversion Panics**
+- **Cause**: xrpl-go Autofill expects string addresses, not types.Address
+- **Solution**: Convert address types before calling Autofill
+
+### **Best Practices**
+
+#### **1. Amount Handling**
+```go
+// Always validate and convert amounts properly
+func formatAmountForXRPL(amount string) (int64, error) {
+    amountInt, err := strconv.ParseInt(amount, 10, 64)
+    if err != nil {
+        return 0, fmt.Errorf("invalid amount format: %w", err)
+    }
+    return amountInt, nil
+}
+```
+
+#### **2. Condition Generation**
+```go
+// Always use crypto-conditions library for proper DER encoding
+func generateSecureCondition() (string, string, error) {
+    // Generate secure random 32-byte preimage
+    preimage := make([]byte, 32)
+    if _, err := rand.Read(preimage); err != nil {
+        return "", "", err
+    }
+    
+    return createXRPLConditionAndFulfillment(preimage)
+}
+```
+
+#### **3. Transaction Processing**
+```go
+// Always use proper sequence management
+func createEscrowTransaction(client *rpc.Client, escrow *transaction.EscrowCreate) error {
+    flattenedTx := escrow.Flatten()
+    
+    // Convert address types before Autofill
+    convertAddressTypes(&flattenedTx)
+    
+    // Use Autofill for proper sequence, fee, and ledger sequence
+    if err := client.Autofill(&flattenedTx); err != nil {
+        return fmt.Errorf("autofill failed: %w", err)
+    }
+    
+    // Sign and submit transaction
+    return submitTransaction(client, flattenedTx)
+}
+```
+
+### **Debugging Tips**
+
+#### **1. Enable Debug Output**
+```go
+// Add debug output to understand transaction structure
+fmt.Printf("Debug: Transaction fields:\n")
+for key, value := range flattenedTx {
+    fmt.Printf("  %s: %v (type: %T)\n", key, value, value)
+}
+```
+
+#### **2. Validate Conditions**
+```go
+// Verify condition length and format
+fmt.Printf("Condition length: %d characters\n", len(condition))
+fmt.Printf("Expected format: DER-encoded hex string\n")
+```
+
+#### **3. Check Network Responses**
+```go
+// Log actual XRPL responses for debugging
+log.Printf("XRPL submit response: %+v", response)
+```
+
+## Troubleshooting Guide
+
+### **Error Scenario 1: Type Conversion Failures**
+
+**Symptoms:**
+```
+cannot convert amount (variable of type string) to type XRPCurrencyAmount
+```
+
+**Root Cause:** Passing string directly to `types.XRPCurrencyAmount`
+
+**Solution:**
+```go
+// Convert string to int64 first
+amountInt, err := strconv.ParseInt(amountStr, 10, 64)
+if err != nil {
+    return fmt.Errorf("invalid amount: %w", err)
+}
+escrow.Amount = types.XRPCurrencyAmount(amountInt)
+```
+
+### **Error Scenario 2: temMALFORMED with Conditions**
+
+**Symptoms:**
+```
+transaction failed to submit with engine result: temMALFORMED
+```
+
+**Root Cause:** Using raw SHA-256 hash instead of proper DER-encoded condition
+
+**Solution:**
+```go
+// Replace manual condition generation
+import cc "github.com/go-interledger/cryptoconditions"
+
+fulfillment := cc.NewPreimageSha256(preimage)
+conditionBinary, _ := fulfillment.Condition().Encode()
+condition := fmt.Sprintf("%X", conditionBinary)
+```
+
+### **Error Scenario 3: Interface Conversion Panics**
+
+**Symptoms:**
+```
+panic: interface conversion: interface {} is types.Address, not string
+```
+
+**Root Cause:** Autofill expects string addresses, not types.Address
+
+**Solution:**
+```go
+// Convert address types before Autofill
+if addr, ok := flattenedTx["Account"].(types.Address); ok {
+    flattenedTx["Account"] = string(addr)
+}
+if addr, ok := flattenedTx["Destination"].(types.Address); ok {
+    flattenedTx["Destination"] = string(addr)
+}
+
+// Now safe to call Autofill
+err := client.Autofill(&flattenedTx)
+```
+
+### **Error Scenario 4: tecNO_TARGET on EscrowFinish**
+
+**Symptoms:**
+```
+transaction failed to submit with engine result: tecNO_TARGET
+```
+
+**Root Cause:** Incorrect escrow sequence number or escrow not ready
+
+**Solutions:**
+1. Use actual sequence from EscrowCreate transaction
+2. Ensure FinishAfter time has passed
+3. Verify escrow still exists and hasn't been cancelled
+
+### **Validation Checklist**
+
+Before submitting XRPL transactions, verify:
+
+- [ ] **Amount Format**: String input converted to int64 for xrpl-go
+- [ ] **Condition Format**: DER-encoded using crypto-conditions library  
+- [ ] **Address Types**: Converted to strings before Autofill
+- [ ] **Sequence Numbers**: Current account sequence obtained from network
+- [ ] **Timing**: FinishAfter/CancelAfter times properly calculated
+- [ ] **Network**: Connected to correct XRPL network (testnet/mainnet)
+
+### **Performance Considerations**
+
+- **Connection Pooling**: Reuse XRPL client connections
+- **Batch Processing**: Group multiple operations when possible
+- **Error Retry**: Implement exponential backoff for network errors
+- **Rate Limiting**: Respect XRPL network rate limits
 
 ## Future Enhancements
 

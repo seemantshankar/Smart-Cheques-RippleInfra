@@ -369,7 +369,7 @@ func (c *EnhancedClient) Disconnect() error {
 
 ### **Test Files**
 
-1. **`test/integration/xrp_phase1_test.go`**
+1. **`test_comprehensive_xrpl.go`**
    - Comprehensive integration tests
    - Real XRPL testnet validation
    - WebSocket connectivity testing

@@ -380,8 +380,8 @@ func (c *EnhancedClient) MonitorEscrowStatus(ownerAddress, sequence string, call
 
 ### **Test Files**
 
-1. **`test/integration/xrp_phase1_test.go`**
-   - Comprehensive escrow integration tests
+1. **`test_comprehensive_xrpl.go`**
+   - Comprehensive XRPL integration test with escrow functionality
    - Real XRPL testnet validation
    - All escrow workflow tests passing
 

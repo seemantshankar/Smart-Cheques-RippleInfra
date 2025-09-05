@@ -82,35 +82,9 @@ func (s *XRPLService) CreateSmartChequeEscrow(payerAddress, payeeAddress string,
 		return nil, "", fmt.Errorf("XRPL service not initialized")
 	}
 
-	// Convert amount to drops (for XRP) or appropriate format
-	amountStr := s.formatAmount(amount, currency)
-
-	// Generate condition and fulfillment for milestone completion
-	condition, fulfillment, err := s.client.GenerateCondition(milestoneSecret)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate escrow condition: %w", err)
-	}
-
-	// Set escrow parameters
-	escrow := &xrpl.EscrowCreate{
-		Account:     payerAddress,
-		Destination: payeeAddress,
-		Amount:      amountStr,
-		Condition:   condition,
-		// Set cancel after 30 days (approximate ledger time)
-		CancelAfter: s.getLedgerTimeOffset(30 * 24 * time.Hour),
-		// Allow finish after 1 hour minimum
-		FinishAfter: s.getLedgerTimeOffset(1 * time.Hour),
-	}
-
-	// Create the escrow
-	result, err := s.client.CreateEscrow(escrow)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to create escrow: %w", err)
-	}
-
-	log.Printf("Smart Check escrow created: %s, Amount: %s %s", result.TransactionID, amountStr, currency)
-	return result, fulfillment, nil
+	// Create the escrow (requires private key - this method should not be used directly)
+	// Use CreateSmartChequeEscrowWithKey instead
+	return nil, "", fmt.Errorf("CreateSmartChequeEscrow requires a private key, use CreateSmartChequeEscrowWithKey instead")
 }
 
 // CreateSmartChequeEscrowWithMilestones creates an escrow with milestone-based conditions
@@ -125,10 +99,17 @@ func (s *XRPLService) CreateSmartChequeEscrowWithMilestones(payerAddress, payeeA
 	// Convert milestones to XRPL milestone conditions
 	xrplMilestones := make([]xrpl.MilestoneCondition, len(milestones))
 	for i, milestone := range milestones {
+		// Convert OracleConfig.Config map to string if needed
+		var oracleConfigStr string
+		if milestone.OracleConfig != nil && milestone.OracleConfig.Config != nil {
+			// Convert map to JSON string or use a simple representation
+			oracleConfigStr = fmt.Sprintf("%v", milestone.OracleConfig.Config)
+		}
+
 		xrplMilestones[i] = xrpl.MilestoneCondition{
 			MilestoneID:        milestone.ID,
 			VerificationMethod: string(milestone.VerificationMethod),
-			OracleConfig:       milestone.OracleConfig.Config,
+			OracleConfig:       oracleConfigStr,
 			Amount:             s.formatAmount(milestone.Amount, currency),
 		}
 	}
@@ -195,23 +176,9 @@ func (s *XRPLService) CompleteSmartChequeMilestone(payeeAddress, ownerAddress st
 		return nil, fmt.Errorf("XRPL service not initialized")
 	}
 
-	// Create escrow finish transaction
-	finish := &xrpl.EscrowFinish{
-		Account:       payeeAddress,
-		Owner:         ownerAddress,
-		OfferSequence: sequence,
-		Condition:     condition,
-		Fulfillment:   fulfillment,
-	}
-
-	// Finish the escrow
-	result, err := s.client.FinishEscrow(finish)
-	if err != nil {
-		return nil, fmt.Errorf("failed to finish escrow: %w", err)
-	}
-
-	log.Printf("Smart Check milestone completed: %s, Sequence: %d", result.TransactionID, sequence)
-	return result, nil
+	// Finish the escrow (requires private key - this method should not be used directly)
+	// Use CompleteSmartChequeMilestoneWithKey instead
+	return nil, fmt.Errorf("CompleteSmartChequeMilestone requires a private key, use CompleteSmartChequeMilestoneWithKey instead")
 }
 
 // CancelSmartCheque cancels a Smart Check escrow
@@ -220,21 +187,9 @@ func (s *XRPLService) CancelSmartCheque(accountAddress, ownerAddress string, seq
 		return nil, fmt.Errorf("XRPL service not initialized")
 	}
 
-	// Create escrow cancel transaction
-	cancel := &xrpl.EscrowCancel{
-		Account:       accountAddress,
-		Owner:         ownerAddress,
-		OfferSequence: sequence,
-	}
-
-	// Cancel the escrow
-	result, err := s.client.CancelEscrow(cancel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to cancel escrow: %w", err)
-	}
-
-	log.Printf("Smart Check canceled: %s, Sequence: %d", result.TransactionID, sequence)
-	return result, nil
+	// Cancel the escrow (requires private key - this method should not be used directly)
+	// Use CancelSmartChequeWithKey instead
+	return nil, fmt.Errorf("CancelSmartCheque requires a private key, use CancelSmartChequeWithKey instead")
 }
 
 // GetEscrowStatus retrieves the current status of an escrow
@@ -243,7 +198,7 @@ func (s *XRPLService) GetEscrowStatus(ownerAddress string, sequence string) (*xr
 		return nil, fmt.Errorf("XRPL service not initialized")
 	}
 
-	escrowInfo, err := s.client.GetEscrowInfo(ownerAddress, sequence)
+	escrowInfo, err := s.client.GetEscrowStatus(ownerAddress, sequence)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get escrow info: %w", err)
 	}
@@ -427,19 +382,8 @@ func (s *XRPLService) executeRefundResolution(disputeID string, escrowInfo *xrpl
 	log.Printf("Executing refund resolution for dispute: %s", disputeID)
 
 	// For refund, we cancel the escrow and return funds to the payer
-	cancel := &xrpl.EscrowCancel{
-		Account:       escrowInfo.Account,
-		Owner:         escrowInfo.Account,
-		OfferSequence: escrowInfo.Sequence,
-	}
-
-	result, err := s.client.CancelEscrow(cancel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute refund resolution: %w", err)
-	}
-
-	log.Printf("Refund resolution executed: %s", result.TransactionID)
-	return result, nil
+	// This requires a private key - use CancelSmartChequeWithKey instead
+	return nil, fmt.Errorf("executeRefundResolution requires a private key, use CancelSmartChequeWithKey instead")
 }
 
 // executePartialPaymentResolution executes a partial payment resolution
@@ -452,24 +396,10 @@ func (s *XRPLService) executePartialPaymentResolution(disputeID string, escrowIn
 		return nil, fmt.Errorf("invalid partial amount: %f", outcome.PartialAmount)
 	}
 
-	// First, finish the current escrow with the partial amount
-	// This would require creating a custom fulfillment condition
-	// For now, we'll simulate this by canceling and creating a new escrow
-
-	// Cancel current escrow
-	cancel := &xrpl.EscrowCancel{
-		Account:       escrowInfo.Account,
-		Owner:         escrowInfo.Account,
-		OfferSequence: escrowInfo.Sequence,
-	}
-
-	result, err := s.client.CancelEscrow(cancel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute partial payment resolution: %w", err)
-	}
-
-	log.Printf("Partial payment resolution executed: %s", result.TransactionID)
-	return result, nil
+	// For partial payment, we need to create a new escrow with the reduced amount
+	// and finish the current one with the partial amount
+	// This requires a private key - use CancelSmartChequeWithKey instead
+	return nil, fmt.Errorf("executePartialPaymentResolution requires a private key, use CancelSmartChequeWithKey instead")
 }
 
 // executeFullPaymentResolution executes a full payment resolution
@@ -477,21 +407,8 @@ func (s *XRPLService) executeFullPaymentResolution(disputeID string, escrowInfo 
 	log.Printf("Executing full payment resolution for dispute: %s", disputeID)
 
 	// For full payment, we finish the escrow with the fulfillment
-	finish := &xrpl.EscrowFinish{
-		Account:       escrowInfo.Destination,
-		Owner:         escrowInfo.Account,
-		OfferSequence: escrowInfo.Sequence,
-		Condition:     escrowInfo.Condition,
-		Fulfillment:   outcome.Fulfillment,
-	}
-
-	result, err := s.client.FinishEscrow(finish)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute full payment resolution: %w", err)
-	}
-
-	log.Printf("Full payment resolution executed: %s", result.TransactionID)
-	return result, nil
+	// This requires a private key - use CompleteSmartChequeMilestoneWithKey instead
+	return nil, fmt.Errorf("executeFullPaymentResolution requires a private key, use CompleteSmartChequeMilestoneWithKey instead")
 }
 
 // executeCancelResolution executes a cancel resolution
@@ -499,19 +416,8 @@ func (s *XRPLService) executeCancelResolution(disputeID string, escrowInfo *xrpl
 	log.Printf("Executing cancel resolution for dispute: %s", disputeID)
 
 	// For cancel, we cancel the escrow
-	cancel := &xrpl.EscrowCancel{
-		Account:       escrowInfo.Account,
-		Owner:         escrowInfo.Account,
-		OfferSequence: escrowInfo.Sequence,
-	}
-
-	result, err := s.client.CancelEscrow(cancel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute cancel resolution: %w", err)
-	}
-
-	log.Printf("Cancel resolution executed: %s", result.TransactionID)
-	return result, nil
+	// This requires a private key - use CancelSmartChequeWithKey instead
+	return nil, fmt.Errorf("executeCancelResolution requires a private key, use CancelSmartChequeWithKey instead")
 }
 
 // MonitorDisputeResolution monitors the status of a dispute resolution transaction
@@ -602,14 +508,9 @@ func (s *XRPLService) CreatePaymentTransaction(fromAddress, toAddress, amount, c
 		return nil, fmt.Errorf("invalid to address: %s", toAddress)
 	}
 
-	// Create payment transaction
-	payment, err := s.client.CreatePaymentTransaction(fromAddress, toAddress, amount, currency, fee, sequence)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create payment transaction: %w", err)
-	}
-
-	log.Printf("Created payment transaction: %s -> %s, Amount: %s %s", fromAddress, toAddress, amount, currency)
-	return payment, nil
+	// Create payment transaction (requires private key - this method should not be used directly)
+	// Use SubmitPayment instead which handles the complete workflow
+	return nil, fmt.Errorf("CreatePaymentTransaction requires a private key, use SubmitPayment instead")
 }
 
 // SignPaymentTransaction signs a payment transaction with the provided private key

@@ -15,7 +15,7 @@ This document summarizes the consolidation of XRPL client implementations and cl
 
 **KEPT:**
 - `pkg/xrpl/enhanced_client.go` - Main, actively used client with complete implementation
-- `pkg/xrpl/enhanced_client_test.go` - Tests for enhanced client
+- `test_comprehensive_xrpl.go` - Comprehensive XRPL integration test
 
 **NEW:**
 - `internal/services/consolidated_xrpl_service.go` - Unified service using enhanced client

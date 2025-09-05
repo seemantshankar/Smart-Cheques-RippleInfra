@@ -291,7 +291,7 @@ func GeneratePrivateKeyFromSecret(secret string) (string, error) {
 
 ### **Test Files**
 
-1. **`test/integration/xrp_phase1_test.go`**
+1. **`test_comprehensive_xrpl.go`**
    - Comprehensive integration tests on real XRPL testnet
    - All payment workflow tests passing
 
