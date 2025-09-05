@@ -50,7 +50,7 @@ type XRPLTransaction struct {
 	CancelAfter   uint32 `json:"CancelAfter,omitempty"`
 	FinishAfter   uint32 `json:"FinishAfter,omitempty"`
 	OfferSequence uint32 `json:"OfferSequence,omitempty"`
-	Owner         string `json:"Owner,omitempty"`
+	Owner         string `json:"Owner,omitempty"` // Required for EscrowFinish and EscrowCancel
 }
 
 // SignPaymentTransaction signs a payment transaction using Ed25519
@@ -512,7 +512,7 @@ func (ts *TransactionSigner) generateXRPLAddress(publicKey []byte) (string, erro
 	// For XRPL addresses, we need to use a special encoding that ensures 'r' prefix
 	// The key insight is that XRPL addresses use a modified Base58 encoding
 	// where the first character is always 'r' for valid addresses
-	
+
 	// Create the payload without version byte first
 	payload := ripemd160Hash
 

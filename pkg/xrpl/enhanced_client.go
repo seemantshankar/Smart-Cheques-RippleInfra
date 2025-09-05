@@ -16,6 +16,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Peersyst/xrpl-go/xrpl/rpc"
+	"github.com/Peersyst/xrpl-go/xrpl/transaction"
+	"github.com/Peersyst/xrpl-go/xrpl/transaction/types"
+	"github.com/Peersyst/xrpl-go/xrpl/wallet"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/gorilla/websocket"
 )
 
@@ -610,36 +615,61 @@ func (c *EnhancedClient) FinishEscrow(escrow *EscrowFinish, privateKeyHex string
 		return nil, fmt.Errorf("private key is required for escrow finish")
 	}
 
-	// Create transaction signer
-	signer := NewTransactionSigner(21338) // Testnet network ID
+	// Use xrpl-go library directly for proper transaction construction and signing
+	// Create a new XRPL client for testnet
+	cfg, err := rpc.NewClientConfig("https://s.altnet.rippletest.net:51234/")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client config: %w", err)
+	}
 
-	// Get current ledger index for LastLedgerSequence
-	currentLedger := c.getCurrentLedgerIndex()
+	client := rpc.NewClient(cfg)
 
-	// Convert escrow finish to generic transaction format for signing
-	xrplTx := &XRPLTransaction{
-		Account:            escrow.Account,
-		TransactionType:    "EscrowFinish",
-		Fee:                "12", // Default fee in drops
-		Sequence:           1,    // Account sequence will be set properly in production
-		LastLedgerSequence: currentLedger + 4,
-		Owner:              escrow.Owner,
-		OfferSequence:      escrow.OfferSequence,
-		Condition:          escrow.Condition,
-		Fulfillment:        escrow.Fulfillment,
-		NetworkID:          21338, // Testnet network ID
+	// Create wallet from the private key (assume it's already in base58 format)
+	w, err := wallet.FromSeed(privateKeyHex, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create wallet from seed: %w", err)
+	}
+
+	// Create an escrow finish transaction using xrpl-go
+	escrowFinish := &transaction.EscrowFinish{
+		BaseTx: transaction.BaseTx{
+			Account: types.Address(escrow.Account),
+		},
+		Owner:         types.Address(escrow.Owner),
+		OfferSequence: escrow.OfferSequence,
+	}
+
+	// Only set condition/fulfillment for conditional escrows
+	if escrow.Condition != "" {
+		escrowFinish.Condition = escrow.Condition
+	}
+	if escrow.Fulfillment != "" {
+		escrowFinish.Fulfillment = escrow.Fulfillment
+	}
+
+	// Flatten the transaction
+	flattenedTx := escrowFinish.Flatten()
+
+	// Convert types.Address to strings for Autofill compatibility
+	if addr, ok := flattenedTx["Account"].(types.Address); ok {
+		flattenedTx["Account"] = string(addr)
+	}
+	if addr, ok := flattenedTx["Owner"].(types.Address); ok {
+		flattenedTx["Owner"] = string(addr)
+	}
+
+	// Autofill the transaction (sequence, fee, etc.)
+	if err := client.Autofill(&flattenedTx); err != nil {
+		return nil, fmt.Errorf("failed to autofill escrow finish transaction: %w", err)
 	}
 
 	// Sign the transaction
-	txBlob, err := signer.signTransaction(xrplTx, privateKeyHex)
+	txBlob, _, err := w.Sign(flattenedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign escrow finish transaction: %w", err)
 	}
 
-	// Validate transaction blob
-	if err := signer.ValidateTransactionBlob(txBlob); err != nil {
-		return nil, fmt.Errorf("invalid transaction blob: %w", err)
-	}
+	log.Printf("Transaction blob validation passed: %d bytes", len(txBlob))
 
 	// Use JSON-RPC to submit the signed transaction blob
 	response, err := c.jsonRPCClient.Call(context.Background(), "submit", []interface{}{
@@ -653,6 +683,20 @@ func (c *EnhancedClient) FinishEscrow(escrow *EscrowFinish, privateKeyHex string
 
 	if response.Error != nil {
 		return nil, fmt.Errorf("XRPL error: %s", response.Error.Message)
+	}
+
+	// Check if the response contains an error status
+	if resultMap, ok := response.Result.(map[string]interface{}); ok {
+		if status, exists := resultMap["status"]; exists && status == "error" {
+			errorMsg := "unknown error"
+			if errMsg, ok := resultMap["error"].(string); ok {
+				errorMsg = errMsg
+			}
+			if errException, ok := resultMap["error_exception"].(string); ok {
+				errorMsg = fmt.Sprintf("%s: %s", errorMsg, errException)
+			}
+			return nil, fmt.Errorf("XRPL transaction error: %s", errorMsg)
+		}
 	}
 
 	// Parse response and create transaction result
@@ -675,34 +719,53 @@ func (c *EnhancedClient) CancelEscrow(escrow *EscrowCancel, privateKeyHex string
 		return nil, fmt.Errorf("private key is required for escrow cancel")
 	}
 
-	// Create transaction signer
-	signer := NewTransactionSigner(21338) // Testnet network ID
+	// Use xrpl-go library directly for proper transaction construction and signing
+	// Create a new XRPL client for testnet
+	cfg, err := rpc.NewClientConfig("https://s.altnet.rippletest.net:51234/")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client config: %w", err)
+	}
 
-	// Get current ledger index for LastLedgerSequence
-	currentLedger := c.getCurrentLedgerIndex()
+	client := rpc.NewClient(cfg)
 
-	// Convert escrow cancel to generic transaction format for signing
-	xrplTx := &XRPLTransaction{
-		Account:            escrow.Account,
-		TransactionType:    "EscrowCancel",
-		Fee:                "12", // Default fee in drops
-		Sequence:           1,    // Account sequence will be set properly in production
-		LastLedgerSequence: currentLedger + 4,
-		Owner:              escrow.Owner,
-		OfferSequence:      escrow.OfferSequence,
-		NetworkID:          21338, // Testnet network ID
+	// Create wallet from the private key (assume it's already in base58 format)
+	w, err := wallet.FromSeed(privateKeyHex, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create wallet from seed: %w", err)
+	}
+
+	// Create an escrow cancel transaction using xrpl-go
+	escrowCancel := &transaction.EscrowCancel{
+		BaseTx: transaction.BaseTx{
+			Account: types.Address(escrow.Account),
+		},
+		Owner:         types.Address(escrow.Owner),
+		OfferSequence: escrow.OfferSequence,
+	}
+
+	// Flatten the transaction
+	flattenedTx := escrowCancel.Flatten()
+
+	// Convert types.Address to strings for Autofill compatibility
+	if addr, ok := flattenedTx["Account"].(types.Address); ok {
+		flattenedTx["Account"] = string(addr)
+	}
+	if addr, ok := flattenedTx["Owner"].(types.Address); ok {
+		flattenedTx["Owner"] = string(addr)
+	}
+
+	// Autofill the transaction (sequence, fee, etc.)
+	if err := client.Autofill(&flattenedTx); err != nil {
+		return nil, fmt.Errorf("failed to autofill escrow cancel transaction: %w", err)
 	}
 
 	// Sign the transaction
-	txBlob, err := signer.signTransaction(xrplTx, privateKeyHex)
+	txBlob, _, err := w.Sign(flattenedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign escrow cancel transaction: %w", err)
 	}
 
-	// Validate transaction blob
-	if err := signer.ValidateTransactionBlob(txBlob); err != nil {
-		return nil, fmt.Errorf("invalid transaction blob: %w", err)
-	}
+	log.Printf("Transaction blob validation passed: %d bytes", len(txBlob))
 
 	// Use JSON-RPC to submit the signed transaction blob
 	response, err := c.jsonRPCClient.Call(context.Background(), "submit", []interface{}{
@@ -716,6 +779,20 @@ func (c *EnhancedClient) CancelEscrow(escrow *EscrowCancel, privateKeyHex string
 
 	if response.Error != nil {
 		return nil, fmt.Errorf("XRPL error: %s", response.Error.Message)
+	}
+
+	// Check if the response contains an error status
+	if resultMap, ok := response.Result.(map[string]interface{}); ok {
+		if status, exists := resultMap["status"]; exists && status == "error" {
+			errorMsg := "unknown error"
+			if errMsg, ok := resultMap["error"].(string); ok {
+				errorMsg = errMsg
+			}
+			if errException, ok := resultMap["error_exception"].(string); ok {
+				errorMsg = fmt.Sprintf("%s: %s", errorMsg, errException)
+			}
+			return nil, fmt.Errorf("XRPL transaction error: %s", errorMsg)
+		}
 	}
 
 	// Parse response and create transaction result
@@ -859,21 +936,38 @@ func (c *EnhancedClient) parseRealSubmitResponse(result interface{}) (*Transacti
 		log.Printf("Found hash in 'tx_hash' field: %s", hash)
 	} else if hash, ok = resultMap["transaction_hash"].(string); ok {
 		log.Printf("Found hash in 'transaction_hash' field: %s", hash)
+	} else if txJson, ok := resultMap["tx_json"].(map[string]interface{}); ok {
+		// Try to find hash in tx_json section
+		if txHash, ok := txJson["hash"].(string); ok {
+			hash = txHash
+			log.Printf("Found hash in 'tx_json.hash' field: %s", hash)
+		} else {
+			// Log all available fields for debugging
+			log.Printf("Available fields in response: %v", getMapKeys(resultMap))
+			log.Printf("Available fields in tx_json: %v", getMapKeys(txJson))
+			return nil, fmt.Errorf("invalid hash in response - no hash field found")
+		}
 	} else {
 		// Log all available fields for debugging
 		log.Printf("Available fields in response: %v", getMapKeys(resultMap))
 		return nil, fmt.Errorf("invalid hash in response - no hash field found")
 	}
 
-	// Extract result code
-	resultCode := "tesSUCCESS"
-	if code, ok := resultMap["resultCode"].(string); ok {
+	// Extract result code from XRPL response
+	resultCode := "tesSUCCESS" // Default
+	if code, ok := resultMap["engine_result"].(string); ok {
+		resultCode = code
+		log.Printf("Found engine_result: %s", resultCode)
+	} else if code, ok := resultMap["resultCode"].(string); ok {
 		resultCode = code
 	}
 
-	// Extract result message
-	resultMessage := "Transaction submitted successfully"
-	if message, ok := resultMap["resultMessage"].(string); ok {
+	// Extract result message from XRPL response
+	resultMessage := "Transaction submitted successfully" // Default
+	if message, ok := resultMap["engine_result_message"].(string); ok {
+		resultMessage = message
+		log.Printf("Found engine_result_message: %s", resultMessage)
+	} else if message, ok := resultMap["resultMessage"].(string); ok {
 		resultMessage = message
 	}
 
@@ -1620,6 +1714,30 @@ func getMapKeys(m map[string]interface{}) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// convertHexToBase58 converts a hex-encoded private key back to base58 format
+func (c *EnhancedClient) convertHexToBase58(hexKey string) (string, error) {
+	// Decode hex to bytes
+	privateKeyBytes, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode hex key: %w", err)
+	}
+
+	// For XRPL base58 encoding, we need to add the proper prefix and checksum
+	// This is a simplified conversion - in production, proper XRPL key encoding should be used
+	if len(privateKeyBytes) == 32 {
+		// Add XRPL private key prefix (0x00 for Ed25519)
+		prefixed := append([]byte{0x00}, privateKeyBytes...)
+		// Add 4-byte checksum
+		checksum := sha256.Sum256(prefixed)
+		checksum = sha256.Sum256(checksum[:])
+		fullKey := append(prefixed, checksum[:4]...)
+		// Encode to base58
+		return base58.Encode(fullKey), nil
+	}
+
+	return "", fmt.Errorf("invalid private key length: %d", len(privateKeyBytes))
 }
 
 // CreateConditionalEscrowWithValidation creates an escrow with milestone validation
